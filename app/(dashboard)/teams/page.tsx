@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { workspaceErrorMessage } from "@/i18n/workspace-errors";
 import { useTranslations } from "next-intl";
 
@@ -114,12 +116,12 @@ function CreateTeamSheet({
         </SheetHeader>
         <TeamFields name={name} description={desc} color={color}
           onNameChange={setName} onDescriptionChange={setDesc} onColorChange={setColor} />
-        <SheetFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+        <SheetFooter className="h-auto flex-wrap">
+          <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
           <Button
             onClick={onSave}
             disabled={saving || !name.trim()}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
           >
             {saving ? t("creating") : t("createTeam")}
           </Button>
@@ -256,7 +258,7 @@ export default function TeamsPage() {
         <Button
           onClick={openCreateSheet}
           size="sm"
-          className="h-7 text-xs gap-1"
+          className="h-auto text-xs gap-1 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
         >
           <Plus className="size-3" /> {t("newTeam")}
         </Button>
@@ -313,7 +315,7 @@ export default function TeamsPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
-                className="absolute -top-2 -right-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
+                className="absolute -top-2 -end-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
               >
                 <Users className="size-4 text-blue-600 dark:text-blue-400" />
               </motion.div>
@@ -321,7 +323,7 @@ export default function TeamsPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
-                className="absolute -bottom-1 -left-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
+                className="absolute -bottom-1 -start-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
               >
                 <Target className="size-3.5 text-amber-600 dark:text-amber-400" />
               </motion.div>
@@ -367,9 +369,9 @@ export default function TeamsPage() {
               <Button
                 onClick={openCreateSheet}
                 size="lg"
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("createYourFirstTeam")}
               </Button>
             </motion.div>
@@ -399,7 +401,7 @@ export default function TeamsPage() {
                       <div key={j} className="size-6 rounded-full bg-muted/40 ring-2 ring-card" />
                     ))}
                   </div>
-                  <div className="h-3 w-16 rounded bg-muted/30 ml-1" />
+                  <div className="h-3 w-16 rounded bg-muted/30 ms-1" />
                 </div>
               </div>
             ))}
@@ -432,7 +434,7 @@ export default function TeamsPage() {
             <FolderKanban className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalTeams")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums min-w-0 whitespace-normal [overflow-wrap:anywhere]">
             {teams.length}
           </p>
         </motion.div>
@@ -442,7 +444,7 @@ export default function TeamsPage() {
             <Users className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalMembers")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums min-w-0 whitespace-normal [overflow-wrap:anywhere]">
             {totalMembers}
           </p>
         </motion.div>
@@ -452,7 +454,7 @@ export default function TeamsPage() {
             <BarChart3 className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("avgTeamSize")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums min-w-0 whitespace-normal [overflow-wrap:anywhere]">
             {avgTeamSize}
           </p>
         </motion.div>
@@ -462,15 +464,15 @@ export default function TeamsPage() {
             <Crown className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("largestTeam")}</span>
           </div>
-          <p className="mt-2 text-sm font-bold truncate" title={largestTeam?.name}>
+          <p className="mt-2 text-sm font-bold min-w-0 whitespace-normal [overflow-wrap:anywhere]" title={largestTeam?.name}>
             {largestTeam ? (
               <span className="flex items-center gap-1.5">
                 <span
                   className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: largestTeam.color || "#6b7280" }}
                 />
-                <span className="truncate">{largestTeam.name}</span>
-                <span className="text-muted-foreground font-normal text-xs ml-auto shrink-0">
+                <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{largestTeam.name}</BidiText></span>
+                <span className="text-muted-foreground font-normal text-xs ms-auto shrink-0">
                   {t("memberCount", { count: getMemberCount(largestTeam) })}
                 </span>
               </span>
@@ -485,17 +487,17 @@ export default function TeamsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input aria-label={t("searchTeams")} dir="auto"
               placeholder={t("searchTeams")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
+              className="ps-9 pe-8 h-8 text-sm"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]"
                 aria-label={t("clearSearch")}
               >
                 <X className="size-3.5" />
@@ -505,8 +507,8 @@ export default function TeamsPage() {
 
           <div className="flex items-center gap-2">
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-              <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs">
-                <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+              <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-full sm:w-[150px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
+                <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -563,23 +565,23 @@ export default function TeamsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.04 }}
                     onClick={() => router.push(`/teams/${team.id}`)}
-                    className="group relative rounded-xl border bg-card text-left hover:bg-muted/50 transition-colors overflow-hidden"
+                    className="group relative rounded-xl border bg-card text-start hover:bg-muted/50 transition-colors overflow-hidden"
                   >
                     {/* Colored accent bar */}
                     <div
-                      className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
+                      className="absolute start-0 top-0 bottom-0 w-1 rounded-s-xl"
                       style={{ backgroundColor: color }}
                     />
 
-                    <div className="p-4 pl-5">
-                      <div className="flex items-start justify-between gap-2">
+                    <div className="p-4 ps-5">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium truncate">{team.name}</p>
+                            <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{team.name}</BidiText></p>
                           </div>
                           {team.description ? (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {team.description}
+                            <p className="text-xs text-muted-foreground mt-1 [overflow-wrap:anywhere]">
+                              <BidiText className="min-w-0 max-w-full">{team.description}</BidiText>
                             </p>
                           ) : (
                             <p className="text-xs text-muted-foreground/50 mt-1 italic">
@@ -593,7 +595,7 @@ export default function TeamsPage() {
                         />
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between">
+                      <div className="mt-4 flex flex-wrap items-center justify-between">
                         <div className="flex items-center gap-2">
                           {/* Member avatar stack */}
                           {team.members && team.members.length > 0 ? (
@@ -604,7 +606,7 @@ export default function TeamsPage() {
                                   className="flex size-6 items-center justify-center rounded-full bg-muted text-[9px] font-medium ring-2 ring-card"
                                   title={m.name}
                                 >
-                                  {m.name ? getInitials(m.name) : "?"}
+                                  <BidiText className="min-w-0 max-w-full">{m.name ? getInitials(m.name) : "?"}</BidiText>
                                 </div>
                               ))}
                               {team.members.length > 4 && (
@@ -625,9 +627,9 @@ export default function TeamsPage() {
 
                         <Badge
                           variant="outline"
-                          className="text-[10px] border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400"
+                          className="text-[10px] border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                         >
-                          <FolderKanban className="size-2.5 mr-0.5" />
+                          <FolderKanban className="size-2.5 me-0.5" />
                           {t("team")}
                         </Badge>
                       </div>

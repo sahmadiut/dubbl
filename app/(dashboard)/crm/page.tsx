@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { formatExactCurrencyDecimal } from "@/i18n/numbers";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -343,9 +345,9 @@ export default function CRMPage() {
             <Button
               onClick={handleSetupPipeline}
               disabled={setupLoading}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="bg-emerald-600 hover:bg-emerald-700 shrink-0 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {setupLoading ? t("settingUp") : t("createPipeline")}
             </Button>
           </div>
@@ -363,9 +365,9 @@ export default function CRMPage() {
                     <div key={stage.id} className="flex items-center gap-2">
                       <div className="flex items-center gap-1.5">
                         <div className="size-2 rounded-full" style={{ backgroundColor: stage.color, opacity: 0.7 }} />
-                        <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">{stage.name}</span>
+                        <span className="text-[11px] font-medium text-muted-foreground whitespace-normal"><BidiText className="min-w-0 max-w-full">{stage.name}</BidiText></span>
                       </div>
-                      {i < 4 && <ArrowRight className="size-3 text-muted-foreground/30 shrink-0" />}
+                      {i < 4 && <ArrowRight className="size-3 text-muted-foreground/30 shrink-0 rtl:rotate-180" />}
                     </div>
                   ))}
                 </div>
@@ -378,10 +380,10 @@ export default function CRMPage() {
                     <div key={deal.title} className="flex items-center gap-3 rounded-lg border p-3">
                       <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: deal.stage.color }} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{deal.title}</p>
+                        <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{deal.title}</BidiText></p>
                         <p className="text-[11px] text-muted-foreground">{deal.contact}</p>
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="text-end shrink-0">
                         <p className="text-xs font-mono font-medium tabular-nums">{deal.value}</p>
                         <p className="text-[10px] text-muted-foreground">{deal.prob}</p>
                       </div>
@@ -389,9 +391,9 @@ export default function CRMPage() {
                   ))}
                 </div>
                 <div className="mt-4 h-px bg-border" />
-                <div className="mt-3 flex items-center justify-between">
+                <div className="mt-3 flex flex-wrap items-center justify-between">
                   <p className="text-[11px] text-muted-foreground font-mono tabular-nums">{t("sampleSummary")}</p>
-                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+                  <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                     {t("sampleProbability")}
                   </Badge>
                 </div>
@@ -403,17 +405,17 @@ export default function CRMPage() {
                 {t("capabilities")}
               </p>
               {[
-                { title: t("trackTitle"), desc: t("trackDescription"), icon: Handshake, color: "border-l-blue-400" },
-                { title: t("forecastTitle"), desc: t("forecastDescription"), icon: DollarSign, color: "border-l-emerald-400" },
-                { title: t("logTitle"), desc: t("logDescription"), icon: Users, color: "border-l-orange-400" },
-                { title: t("analyzeTitle"), desc: t("analyzeDescription"), icon: BarChart3, color: "border-l-violet-400" },
+                { title: t("trackTitle"), desc: t("trackDescription"), icon: Handshake, color: "border-s-blue-400" },
+                { title: t("forecastTitle"), desc: t("forecastDescription"), icon: DollarSign, color: "border-s-emerald-400" },
+                { title: t("logTitle"), desc: t("logDescription"), icon: Users, color: "border-s-orange-400" },
+                { title: t("analyzeTitle"), desc: t("analyzeDescription"), icon: BarChart3, color: "border-s-violet-400" },
               ].map(({ title, desc, icon: Icon, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <div className="flex items-center gap-2">
                     <Icon className="size-3.5 text-muted-foreground" />
-                    <p className="text-sm font-medium">{title}</p>
+                    <p className="text-sm font-medium"><BidiText className="min-w-0 max-w-full">{title}</BidiText></p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 ml-[22px]">{desc}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 ms-[22px]"><BidiText className="min-w-0 max-w-full">{desc}</BidiText></p>
                 </div>
               ))}
             </div>
@@ -433,21 +435,21 @@ export default function CRMPage() {
             : undefined
         }
       >
-        <Button size="sm" className="h-8 text-xs gap-1.5" onClick={() => openDrawer("deal")}>
+        <Button size="sm" className="h-auto min-h-8 text-xs gap-1.5 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => openDrawer("deal")}>
           <Plus className="size-3" /> {t("newDeal")}
         </Button>
       </PageHeader>
 
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">{t("currency")}</span>
-        <CurrencySelect value={currency} onValueChange={setCurrency} compact />
-        {currency && <Button size="sm" variant="ghost" onClick={() => setCurrency("")}>{t("allCurrencies")}</Button>}
+        <CurrencySelect className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={currency} onValueChange={setCurrency} compact />
+        {currency && <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" size="sm" variant="ghost" onClick={() => setCurrency("")}>{t("allCurrencies")}</Button>}
       </div>
       {error && <ErrorState message={t(error === "moreFailed" ? "moreFailed" : "dealsFailed")} onRetry={() => { setPage(1); fetchDeals(1, true); }} />}
       {/* Pipeline funnel bar */}
       {summary && summary.activeCount > 0 && (
         <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between mb-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <BarChart3 className="size-4" />
               <span className="text-xs font-medium uppercase tracking-wide">{t("stageDistribution")}</span>
@@ -456,7 +458,7 @@ export default function CRMPage() {
               <span className="font-mono tabular-nums">{t("activeCount", { count: summary.activeCount })}</span>
               {summary.wonCount > 0 && (
                 <span className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {t("wonSummary", { count: summary.wonCount, value: formatMoney(summary.wonValue, summary.currency, unitPresentation) })}
+                  {t.rich("wonSummary", { count: summary.wonCount, value: formatMoney(summary.wonValue, summary.currency, unitPresentation) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
                 </span>
               )}
             </div>
@@ -466,7 +468,7 @@ export default function CRMPage() {
             {stageDistribution.filter((s) => s.count > 0).map((stage) => (
               <div
                 key={stage.id}
-                className="transition-all duration-500 first:rounded-l-full last:rounded-r-full"
+                className="transition-all duration-500 first:rounded-s-full last:rounded-e-full"
                 style={{
                   width: `${(stage.count / (summary.activeCount || 1)) * 100}%`,
                   backgroundColor: stage.color,
@@ -486,7 +488,7 @@ export default function CRMPage() {
                 )}
               >
                 <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
-                {t("stageSummary", { stage: stage.name, count: stage.count, value: formatMoney(stage.value, summary?.currency, unitPresentation) })}
+                {t.rich("stageSummary", { stage: stage.name, count: stage.count, value: formatMoney(stage.value, summary?.currency, unitPresentation) , em: chunks => <BidiText className="min-w-0 max-w-full">{chunks}</BidiText>, code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
               </button>
             ))}
           </div>
@@ -503,7 +505,7 @@ export default function CRMPage() {
                 key={s.id}
                 onClick={() => setStageFilter(s.id)}
                 className={cn(
-                  "relative z-10 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap",
+                  "relative z-10 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-normal",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
                 )}
               >
@@ -517,7 +519,7 @@ export default function CRMPage() {
                 {s.color && (
                   <span className="relative z-10 size-1.5 rounded-full" style={{ backgroundColor: s.color }} />
                 )}
-                <span className="relative z-10">{s.name}</span>
+                <span className="relative z-10"><BidiText className="min-w-0 max-w-full">{s.name}</BidiText></span>
               </button>
             );
           })}
@@ -533,8 +535,8 @@ export default function CRMPage() {
           />
 
           <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="h-8 w-full sm:w-[140px] text-xs">
-              <Filter className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger aria-label={t("source")} className="h-auto min-h-8 w-full sm:w-[140px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
+              <Filter className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -545,7 +547,7 @@ export default function CRMPage() {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 w-full sm:w-[130px] text-xs">
+            <SelectTrigger aria-label={t("allStatus")} className="h-auto min-h-8 w-full sm:w-[130px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -556,8 +558,8 @@ export default function CRMPage() {
           </Select>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[120px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-full sm:w-[120px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -578,7 +580,7 @@ export default function CRMPage() {
           </Button>
 
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 text-muted-foreground" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-auto min-h-8 text-xs gap-1 text-muted-foreground whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={clearFilters}>
               <X className="size-3" />
               {t("clear")}
             </Button>
@@ -606,7 +608,7 @@ export default function CRMPage() {
             {hasActiveFilters ? t("tryFilters") : t("firstDeal")}
           </p>
           {hasActiveFilters && (
-            <Button variant="outline" size="sm" className="mt-3 h-7 text-xs" onClick={clearFilters}>
+            <Button variant="outline" size="sm" className="mt-3 h-auto text-xs min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={clearFilters}>
               {t("clearFilters")}
             </Button>
           )}
@@ -623,21 +625,21 @@ export default function CRMPage() {
                 <button
                   key={deal.id}
                   onClick={() => router.push(`/crm/deals/${deal.id}`)}
-                  className="w-full rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/50 space-y-3"
+                  className="w-full rounded-xl border bg-card p-4 text-start transition-colors hover:bg-muted/50 space-y-3 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{deal.title}</p>
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{deal.title}</BidiText></p>
                       {deal.contact && (
                         <div className="flex items-center gap-1 mt-0.5">
                           <User className="size-3 text-muted-foreground shrink-0" />
-                          <p className="text-[11px] text-muted-foreground truncate">{deal.contact.name}</p>
+                          <p className="text-[11px] text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{deal.contact.name}</BidiText></p>
                         </div>
                       )}
                     </div>
                     <Badge
                       variant="outline"
-                      className="shrink-0 text-[10px] gap-1"
+                      className="shrink-0 text-[10px] gap-1 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                       style={{
                         borderColor: stage.color + "40",
                         backgroundColor: stage.color + "10",
@@ -645,13 +647,13 @@ export default function CRMPage() {
                       }}
                     >
                       <span className="size-1.5 rounded-full" style={{ backgroundColor: stage.color }} />
-                      {isWon ? t("won") : isLost ? t("lost") : stage.name}
+                      <BidiText className="min-w-0 max-w-full">{isWon ? t("won") : isLost ? t("lost") : stage.name}</BidiText>
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between">
                     <span className="text-lg font-bold font-mono tabular-nums tracking-tight">
-                      {formatMoney(deal.valueCents, deal.currency, unitPresentation)}
+                      <IdentifierText className="min-w-0 max-w-full">{formatMoney(deal.valueCents, deal.currency, unitPresentation)}</IdentifierText>
                     </span>
                     {deal.probability !== null && (
                       <div className="flex items-center gap-1.5">
@@ -666,7 +668,7 @@ export default function CRMPage() {
                           />
                         </div>
                         <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
-                          {deal.probability}%
+                          <IdentifierText>{deal.probability}%</IdentifierText>
                         </span>
                       </div>
                     )}
@@ -676,15 +678,15 @@ export default function CRMPage() {
                     {deal.expectedCloseDate && (
                       <span className="flex items-center gap-1">
                         <Calendar className="size-3" />
-                        {new Date(deal.expectedCloseDate).toLocaleDateString(undefined, {
+                        <IdentifierText className="min-w-0 max-w-full">{new Date(deal.expectedCloseDate).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
-                        })}
+                        })}</IdentifierText>
                       </span>
                     )}
                     {deal.source && <span className="capitalize">{t(crmSourceKeys[deal.source as keyof typeof crmSourceKeys])}</span>}
                     {deal.assignedUser && (
-                      <span className="ml-auto truncate max-w-[100px]">{deal.assignedUser.name}</span>
+                      <span className="ms-auto min-w-0 whitespace-normal [overflow-wrap:anywhere] max-w-[100px]"><BidiText className="min-w-0 max-w-full">{deal.assignedUser.name}</BidiText></span>
                     )}
                   </div>
                 </button>

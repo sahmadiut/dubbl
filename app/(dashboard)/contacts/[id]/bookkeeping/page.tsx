@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
+
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
@@ -126,38 +128,38 @@ export default function ContactBookkeepingPage() {
         <Section title={t("accounts")} description={t("accountsDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("income")}</Label>
+              <Label htmlFor="rtl018-contacts--id--bookkeeping-page-tsx-1" className="text-xs">{t("income")}</Label>
               <Select
                 value={formRevenueAccountId}
                 onValueChange={setFormRevenueAccountId}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("income")} id="rtl018-contacts--id--bookkeeping-page-tsx-1" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                   <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("none")}</SelectItem>
                   {revenueAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.code} - {a.name}
+                      <IdentifierText className="min-w-0 max-w-full">{a.code}</IdentifierText> - <BidiText className="min-w-0 max-w-full">{a.name}</BidiText>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("expense")}</Label>
+              <Label htmlFor="rtl018-contacts--id--bookkeeping-page-tsx-2" className="text-xs">{t("expense")}</Label>
               <Select
                 value={formExpenseAccountId}
                 onValueChange={setFormExpenseAccountId}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("expense")} id="rtl018-contacts--id--bookkeeping-page-tsx-2" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                   <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("none")}</SelectItem>
                   {expenseAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.code} - {a.name}
+                      <IdentifierText className="min-w-0 max-w-full">{a.code}</IdentifierText> - <BidiText className="min-w-0 max-w-full">{a.name}</BidiText>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -174,14 +176,14 @@ export default function ContactBookkeepingPage() {
               value={formTaxRateId}
               onValueChange={setFormTaxRateId}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label={t("selectTax")} className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                 <SelectValue placeholder={t("selectTax")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("none")}</SelectItem>
                 {taxRates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name} ({(t.rate / 100).toFixed(1)}%)
+                    <BidiText className="min-w-0 max-w-full">{t.name}</BidiText> <IdentifierText>({(t.rate / 100).toFixed(1)}%)</IdentifierText>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -196,7 +198,7 @@ export default function ContactBookkeepingPage() {
             type="submit"
             loading={saving}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
           >
             {t("save")}
           </Button>

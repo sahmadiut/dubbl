@@ -1,4 +1,6 @@
 "use client";
+
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -60,8 +62,8 @@ export default function CRMAnalyticsPage() {
 
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{t("currency")}</span>
-          <CurrencySelect value={currency} onValueChange={value => { if (value !== currency) { setLoading(true); setCurrency(value); } }} compact />
-          {currency && <Button variant="ghost" size="sm" onClick={() => { setLoading(true); setCurrency(""); }}>{t("allCurrencies")}</Button>}
+          <CurrencySelect className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={currency} onValueChange={value => { if (value !== currency) { setLoading(true); setCurrency(value); } }} compact />
+          {currency && <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" variant="ghost" size="sm" onClick={() => { setLoading(true); setCurrency(""); }}>{t("allCurrencies")}</Button>}
         </div>
         {error && <ErrorState message={error} onRetry={() => window.location.reload()} />}
         {data && <>
@@ -93,19 +95,19 @@ export default function CRMAnalyticsPage() {
           <div className="rounded-lg border bg-card p-5">
             <h3 className="text-sm font-medium mb-4">{t("dealSummary")}</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between text-sm">
                 <span className="text-muted-foreground">{t("totalDeals")}</span>
                 <span className="font-medium">{data.totalDeals}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between text-sm">
                 <span className="text-muted-foreground">{t("open")}</span>
                 <span className="font-medium text-blue-600">{data.openDeals}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between text-sm">
                 <span className="text-muted-foreground">{t("won")}</span>
                 <span className="font-medium text-emerald-600">{data.wonDeals}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-wrap items-center justify-between text-sm">
                 <span className="text-muted-foreground">{t("lost")}</span>
                 <span className="font-medium text-red-600">{data.lostDeals}</span>
               </div>
@@ -116,11 +118,11 @@ export default function CRMAnalyticsPage() {
             <h3 className="text-sm font-medium mb-4">{t("stageDistribution")}</h3>
             <div className="space-y-2">
               {Object.entries(data.stageDistribution).map(([stage, info]) => (
-                <div key={stage} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground capitalize">{Object.hasOwn(crmAnalyticsStageKeys, stage) ? stages(crmAnalyticsStageKeys[stage as keyof typeof crmAnalyticsStageKeys]) : stage}</span>
+                <div key={stage} className="flex flex-wrap items-center justify-between text-sm">
+                  <span className="text-muted-foreground capitalize"><BidiText>{Object.hasOwn(crmAnalyticsStageKeys, stage) ? stages(crmAnalyticsStageKeys[stage as keyof typeof crmAnalyticsStageKeys]) : stage}</BidiText></span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("dealCount", { count: info.count })}</span>
-                    <span className="font-mono text-xs font-medium tabular-nums">{formatMoney(info.value, data.currency, unitPresentation)}</span>
+                    <span className="font-mono text-xs font-medium tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(info.value, data.currency, unitPresentation)}</IdentifierText></span>
                   </div>
                 </div>
               ))}

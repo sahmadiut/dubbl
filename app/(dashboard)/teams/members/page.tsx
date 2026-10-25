@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback } from "react";
@@ -103,17 +105,17 @@ export default function TeamMembersPage() {
       {/* Search */}
       <div className="flex flex-col gap-3">
         <div className="relative flex-1 sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label={t("searchByNameOrEmail")} dir="auto"
             placeholder={t("searchByNameOrEmail")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-8 h-8 text-sm"
+            className="ps-9 pe-8 h-8 text-sm"
           />
           {search && (
-            <button
+            <button aria-label={t("clearSearch")}
               onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="size-3.5" />
             </button>
@@ -156,15 +158,15 @@ export default function TeamMembersPage() {
               {filtered.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between gap-4 px-4 py-3 first:rounded-t-xl last:rounded-b-xl"
+                  className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 first:rounded-t-xl last:rounded-b-xl"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                      {getInitials(member.name)}
+                      <BidiText className="min-w-0 max-w-full">{getInitials(member.name)}</BidiText>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{member.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{member.name}</BidiText></p>
+                      <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]"><IdentifierText className="min-w-0 max-w-full">{member.email}</IdentifierText></p>
                     </div>
                   </div>
 
@@ -174,13 +176,13 @@ export default function TeamMembersPage() {
                         <Badge
                           key={team.id}
                           variant="outline"
-                          className="text-[11px] gap-1"
+                          className="text-[11px] gap-1 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                         >
                           <span
                             className="size-1.5 rounded-full shrink-0"
                             style={{ backgroundColor: team.color || "#6b7280" }}
                           />
-                          {team.name}
+                          <BidiText className="min-w-0 max-w-full">{team.name}</BidiText>
                         </Badge>
                       ))
                     ) : (

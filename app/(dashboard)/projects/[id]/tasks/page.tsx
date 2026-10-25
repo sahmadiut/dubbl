@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
+
 import { useProjectTaskPresentation, projectTaskMutationJson } from "@/i18n/project-task-presentation";
 
 import { projectWholeMinutes } from "@/lib/money/project-display";
@@ -289,8 +291,8 @@ export default function TasksPage() {
       <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <div className="flex items-center gap-2 overflow-x-auto">
           <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="h-8">
-              <TabsTrigger value="all" className="text-xs">{t("allTasks", { count: tasks.length })}</TabsTrigger>
+            <TabsList className="h-8 h-auto flex-wrap">
+              <TabsTrigger value="all" className="text-xs h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("allTasks", { count: tasks.length })}</TabsTrigger>
               <TabsTrigger value="todo" className="text-xs">{taskStatusConfig.todo.label}</TabsTrigger>
               <TabsTrigger value="in_progress" className="text-xs">{taskStatusConfig.in_progress.label}</TabsTrigger>
               <TabsTrigger value="in_review" className="text-xs">{taskStatusConfig.in_review.label}</TabsTrigger>
@@ -301,21 +303,21 @@ export default function TasksPage() {
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-md border bg-card">
             <button
-              className={cn("p-1.5 rounded-l-md transition-colors", viewMode === "list" ? "bg-muted" : "hover:bg-muted/50")}
+              className={cn("p-1.5 rounded-s-md transition-colors", viewMode === "list" ? "bg-muted" : "hover:bg-muted/50")}
               aria-label={t("listView")}
               onClick={() => setViewMode("list")}
             >
               <LayoutList className="size-3.5" />
             </button>
             <button
-              className={cn("p-1.5 rounded-r-md transition-colors", viewMode === "board" ? "bg-muted" : "hover:bg-muted/50")}
+              className={cn("p-1.5 rounded-e-md transition-colors", viewMode === "board" ? "bg-muted" : "hover:bg-muted/50")}
               aria-label={t("boardView")}
               onClick={() => setViewMode("board")}
             >
               <Columns3 className="size-3.5" />
             </button>
           </div>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={() => setAddOpen(true)}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => setAddOpen(true)}>
             <Plus className="size-3.5" />{t("task")}
           </Button>
         </div>
@@ -339,12 +341,12 @@ export default function TasksPage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</p>
               <div className="space-y-2">
-                <Label>{t("titleRequired")}</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t("taskTitle")} />
+                <Label htmlFor="rtl018-projects--id--tasks-page-tsx-1">{t("titleRequired")}</Label>
+                <Input aria-label={t("titleRequired")} id="rtl018-projects--id--tasks-page-tsx-1" dir="auto" value={title} onChange={e => setTitle(e.target.value)} placeholder={t("taskTitle")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("description")}</Label>
-                <Textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={4} />
+                <Label htmlFor="rtl018-projects--id--tasks-page-tsx-2">{t("description")}</Label>
+                <Textarea aria-label={t("description")} id="rtl018-projects--id--tasks-page-tsx-2" dir="auto" value={desc} onChange={e => setDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={4} />
               </div>
             </div>
 
@@ -354,9 +356,9 @@ export default function TasksPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("classification")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t("priority")}</Label>
+                  <Label htmlFor="rtl018-projects--id--tasks-page-tsx-3">{t("priority")}</Label>
                   <Select value={priority} onValueChange={setPriority}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label={t("priority")} id="rtl018-projects--id--tasks-page-tsx-3" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="low">{priorityConfig.low.label}</SelectItem>
                       <SelectItem value="medium">{priorityConfig.medium.label}</SelectItem>
@@ -366,9 +368,9 @@ export default function TasksPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("status")}</Label>
+                  <Label htmlFor="rtl018-projects--id--tasks-page-tsx-4">{t("status")}</Label>
                   <Select value={taskStatus} onValueChange={setTaskStatus}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label={t("status")} id="rtl018-projects--id--tasks-page-tsx-4" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="backlog">{taskStatusConfig.backlog.label}</SelectItem>
                       <SelectItem value="todo">{taskStatusConfig.todo.label}</SelectItem>
@@ -386,30 +388,30 @@ export default function TasksPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("assignment")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t("assignee")}</Label>
+                  <Label htmlFor="rtl018-projects--id--tasks-page-tsx-5">{t("assignee")}</Label>
                   <Select value={assigneeId} onValueChange={setAssigneeId}>
-                    <SelectTrigger><SelectValue placeholder={t("unassigned")} /></SelectTrigger>
+                    <SelectTrigger aria-label={t("assignee")} id="rtl018-projects--id--tasks-page-tsx-5" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("unassigned")} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t("unassigned")}</SelectItem>
                       {members.map(m => (
                         <SelectItem key={m.member.id} value={m.member.id}>
-                          {m.member.user.name || m.member.user.email}
+                          <BidiText className="min-w-0 max-w-full">{m.member.user.name || m.member.user.email}</BidiText>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("team")}</Label>
+                  <Label htmlFor="rtl018-projects--id--tasks-page-tsx-6">{t("team")}</Label>
                   <Select value={teamId} onValueChange={setTeamId}>
-                    <SelectTrigger><SelectValue placeholder={t("noTeam")} /></SelectTrigger>
+                    <SelectTrigger aria-label={t("team")} id="rtl018-projects--id--tasks-page-tsx-6" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("noTeam")} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t("noTeam")}</SelectItem>
                       {teams.map(t => (
                         <SelectItem key={t.id} value={t.id}>
                           <span className="flex items-center gap-1.5">
                             <span className="size-2 rounded-full" style={{ backgroundColor: t.color }} />
-                            {t.name}
+                            <BidiText className="min-w-0 max-w-full">{t.name}</BidiText>
                           </span>
                         </SelectItem>
                       ))}
@@ -426,16 +428,16 @@ export default function TasksPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("startDate")}</Label>
-                  <DatePicker value={startDate} onChange={setStartDate} placeholder={t("selectStartDate")} />
+                  <div role="group" aria-label={t("startDate")}><DatePicker className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={startDate} onChange={setStartDate} placeholder={t("selectStartDate")} /></div>
                 </div>
                 <div className="space-y-2">
                   <Label>{t("dueDate")}</Label>
-                  <DatePicker value={dueDate} onChange={setDueDate} placeholder={t("selectDueDate")} />
+                  <div role="group" aria-label={t("dueDate")}><DatePicker className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={dueDate} onChange={setDueDate} placeholder={t("selectDueDate")} /></div>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>{t("estimatedTime")}</Label>
-                <Input type="number" min={1} value={estimatedMinutes} onChange={e => setEstimatedMinutes(e.target.value)} placeholder={t("estimatePlaceholder")} />
+                <Label htmlFor="rtl018-projects--id--tasks-page-tsx-7">{t("estimatedTime")}</Label>
+                <Input aria-label={t("estimatedTime")} id="rtl018-projects--id--tasks-page-tsx-7" dir="ltr" type="number" min={1} value={estimatedMinutes} onChange={e => setEstimatedMinutes(e.target.value)} placeholder={t("estimatePlaceholder")} />
               </div>
             </div>
 
@@ -452,15 +454,15 @@ export default function TasksPage() {
                         onClick={() => setSelectedLabels(prev =>
                           prev.includes(l.id) ? prev.filter(x => x !== l.id) : [...prev, l.id]
                         )}
-                        className={cn(
+                        className={(cn(
                           "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-colors",
                           selectedLabels.includes(l.id)
                             ? "border-foreground/30 bg-foreground/5 font-medium"
                             : "border-border hover:bg-muted"
-                        )}
+                        )) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}
                       >
                         <span className="size-2 rounded-full" style={{ backgroundColor: l.color }} />
-                        {l.name}
+                        <BidiText className="min-w-0 max-w-full">{l.name}</BidiText>
                       </button>
                     ))}
                   </div>
@@ -469,8 +471,8 @@ export default function TasksPage() {
             )}
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleAdd} disabled={saving || !title.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={handleAdd} disabled={saving || !title.trim()} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">
               {saving ? t("creating") : t("createTask")}
             </Button>
           </div>
@@ -591,19 +593,19 @@ function TaskListView({ tasks, proj, labels, onToggle, onDelete, onView, togglin
             </button>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className={cn("text-[13px] truncate", task.status === "done" && "line-through text-muted-foreground")}>
-                  {task.title}
+                <span className={cn("text-[13px] min-w-0 whitespace-normal [overflow-wrap:anywhere]", task.status === "done" && "line-through text-muted-foreground")}>
+                  <BidiText className="min-w-0 max-w-full">{task.title}</BidiText>
                 </span>
                 {taskLabels.map(l => l && (
                   <span key={l.id} className="size-2 rounded-full shrink-0" style={{ backgroundColor: l.color }} title={l.name} />
                 ))}
               </div>
-              {task.description && <p className="text-[11px] text-muted-foreground truncate mt-0.5">{task.description}</p>}
+              {task.description && <p className="text-[11px] text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere] mt-0.5"><BidiText className="min-w-0 max-w-full">{task.description}</BidiText></p>}
             </div>
 
             {checkTotal > 0 && (
               <span className="text-[10px] text-muted-foreground shrink-0 font-mono tabular-nums flex items-center gap-0.5">
-                <ListChecks className="size-2.5" />{checkDone}/{checkTotal}
+                <ListChecks className="size-2.5" /><IdentifierText className="min-w-0 max-w-full">{checkDone}/{checkTotal}</IdentifierText>
               </span>
             )}
 
@@ -616,32 +618,32 @@ function TaskListView({ tasks, proj, labels, onToggle, onDelete, onView, togglin
             {team && (
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 bg-muted px-1.5 py-0.5 rounded">
                 <span className="size-1.5 rounded-full" style={{ backgroundColor: team.color }} />
-                {team.name}
+                <BidiText className="min-w-0 max-w-full">{team.name}</BidiText>
               </span>
             )}
 
             {assignee && (
               <div className="size-5 rounded-full flex items-center justify-center text-[9px] font-semibold text-white shrink-0" style={{ backgroundColor: proj.color }} title={assignee.user.name || assignee.user.email}>
-                {(assignee.user.name || assignee.user.email)[0].toUpperCase()}
+                <BidiText className="min-w-0 max-w-full">{(assignee.user.name || assignee.user.email)[0].toUpperCase()}</BidiText>
               </div>
             )}
 
             {task.estimatedMinutes && (
               <span className="text-[10px] text-muted-foreground shrink-0 font-mono tabular-nums hidden sm:flex items-center gap-0.5">
-                <Clock className="size-2.5" />{formatHours(task.estimatedMinutes)}
+                <Clock className="size-2.5" /><IdentifierText className="min-w-0 max-w-full">{formatHours(task.estimatedMinutes)}</IdentifierText>
               </span>
             )}
 
-            <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", priorityConfig[task.priority]?.color)}>
+            <Badge variant="outline" className={(cn("text-[9px] min-h-4 h-auto shrink-0", priorityConfig[task.priority]?.color)) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
               {priorityConfig[task.priority]?.label}
             </Badge>
-            <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", tsc?.bg, tsc?.text)}>
+            <Badge variant="outline" className={(cn("text-[9px] min-h-4 h-auto shrink-0", tsc?.bg, tsc?.text)) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
               {tsc?.label}
             </Badge>
             {task.dueDate && (
               <span className={cn("text-[10px] shrink-0 tabular-nums", overdue ? "text-red-600 font-medium" : "text-muted-foreground")}>
-                {overdue && <AlertCircle className="size-2.5 inline mr-0.5" />}
-                {formatDateShort(task.dueDate)}
+                {overdue && <AlertCircle className="size-2.5 inline me-0.5" />}
+                <IdentifierText className="min-w-0 max-w-full">{formatDateShort(task.dueDate)}</IdentifierText>
               </span>
             )}
             <button
@@ -688,7 +690,7 @@ function TaskBoardView({ tasks, proj, labels, onUpdate, onView }: {
             <div className="flex items-center gap-1.5 px-3 py-2 border-b bg-card rounded-t-lg">
               <span className={cn("size-2 rounded-full", tsc.bar)} />
               <span className="text-[11px] font-semibold">{tsc.label}</span>
-              <span className="text-[10px] font-mono tabular-nums text-muted-foreground ml-auto">{colTasks.length}</span>
+              <span className="text-[10px] font-mono tabular-nums text-muted-foreground ms-auto">{colTasks.length}</span>
             </div>
             <div className="flex-1 p-1.5 space-y-1.5 overflow-y-auto">
               {colTasks.map(task => {
@@ -703,27 +705,27 @@ function TaskBoardView({ tasks, proj, labels, onUpdate, onView }: {
                     className="rounded-md border bg-card p-2.5 cursor-pointer hover:shadow-sm transition-shadow"
                     onClick={() => onView(task)}
                   >
-                    <p className="text-[12px] font-medium leading-snug mb-1">{task.title}</p>
+                    <p className="text-[12px] font-medium leading-snug mb-1"><BidiText className="min-w-0 max-w-full">{task.title}</BidiText></p>
                     <div className="flex items-center gap-1 flex-wrap">
                       {taskLabels.map(l => l && (
                         <span key={l.id} className="flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded" style={{ backgroundColor: l.color + "20", color: l.color }}>
-                          {l.name}
+                          <BidiText className="min-w-0 max-w-full">{l.name}</BidiText>
                         </span>
                       ))}
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5">
-                      <Badge variant="outline" className={cn("text-[8px] h-3.5 px-1", priorityConfig[task.priority]?.color)}>
+                      <Badge variant="outline" className={(cn("text-[8px] min-h-3 h-auto.5 px-1", priorityConfig[task.priority]?.color)) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
                         {priorityConfig[task.priority]?.label}
                       </Badge>
                       {task.dueDate && (
                         <span className={cn("text-[9px] tabular-nums", overdue ? "text-red-600" : "text-muted-foreground")}>
-                          {formatDateShort(task.dueDate)}
+                          <IdentifierText className="min-w-0 max-w-full">{formatDateShort(task.dueDate)}</IdentifierText>
                         </span>
                       )}
                       <span className="flex-1" />
                       {assignee && (
                         <div className="size-4 rounded-full flex items-center justify-center text-[8px] font-semibold text-white" style={{ backgroundColor: proj.color }} title={assignee.user.name || assignee.user.email}>
-                          {(assignee.user.name || assignee.user.email)[0].toUpperCase()}
+                          <BidiText className="min-w-0 max-w-full">{(assignee.user.name || assignee.user.email)[0].toUpperCase()}</BidiText>
                         </div>
                       )}
                     </div>
@@ -802,19 +804,19 @@ function TaskDetailDrawer({
           </button>
           <div className="flex-1 min-w-0">
             <SheetTitle className={cn("text-lg leading-snug", task.status === "done" && "line-through text-muted-foreground")}>
-              {task.title}
+              <BidiText className="min-w-0 max-w-full">{task.title}</BidiText>
             </SheetTitle>
             <SheetDescription className="mt-0.5">
-              {creator ? t("createdBy", { name: creator.name || creator.email }) : t("taskDetails")}
+              <BidiText className="min-w-0 max-w-full">{creator ? t.rich("createdBy", { name: creator.name || creator.email , em: chunks => <BidiText className="min-w-0 max-w-full">{chunks}</BidiText> }) : t("taskDetails")}</BidiText>
               {" · "}
-              {formatCreated(task.createdAt)}
+              <IdentifierText className="min-w-0 max-w-full">{formatCreated(task.createdAt)}</IdentifierText>
             </SheetDescription>
             {taskLabels.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {taskLabels.map(l => l && (
                   <span key={l.id} className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border" style={{ borderColor: l.color + "40", backgroundColor: l.color + "10", color: l.color }}>
                     <span className="size-1.5 rounded-full" style={{ backgroundColor: l.color }} />
-                    {l.name}
+                    <BidiText className="min-w-0 max-w-full">{l.name}</BidiText>
                   </span>
                 ))}
               </div>
@@ -829,9 +831,9 @@ function TaskDetailDrawer({
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("classification")}</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>{t("status")}</Label>
+              <Label htmlFor="rtl018-projects--id--tasks-page-tsx-8">{t("status")}</Label>
               <Select value={editStatus} onValueChange={(v) => { setEditStatus(v); onUpdate(task.id, { status: v }); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={t("status")} id="rtl018-projects--id--tasks-page-tsx-8" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(taskStatusConfig).map(([key, cfg]) => (
                     <SelectItem key={key} value={key}>
@@ -842,9 +844,9 @@ function TaskDetailDrawer({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t("priority")}</Label>
+              <Label htmlFor="rtl018-projects--id--tasks-page-tsx-9">{t("priority")}</Label>
               <Select value={editPriority} onValueChange={(v) => { setEditPriority(v); onUpdate(task.id, { priority: v }); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={t("priority")} id="rtl018-projects--id--tasks-page-tsx-9" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(priorityConfig).map(([key, cfg]) => (
                     <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
@@ -861,7 +863,7 @@ function TaskDetailDrawer({
             <div className="h-px bg-border" />
             <div className="space-y-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("description")}</p>
-              <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap rounded-lg bg-muted/30 p-4">{task.description}</p>
+              <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap rounded-lg bg-muted/30 p-4"><BidiText className="min-w-0 max-w-full">{task.description}</BidiText></p>
             </div>
           </>
         )}
@@ -875,20 +877,20 @@ function TaskDetailDrawer({
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5"><User2 className="size-3" /> {t("assignee")}</Label>
               <Select value={editAssigneeId} onValueChange={(v) => { setEditAssigneeId(v); onUpdate(task.id, { assigneeId: v === "none" ? null : v }); }}>
-                <SelectTrigger><SelectValue placeholder={t("unassigned")} /></SelectTrigger>
+                <SelectTrigger aria-label={t("unassigned")} className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("unassigned")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("unassigned")}</SelectItem>
-                  {members.map(m => <SelectItem key={m.member.id} value={m.member.id}>{m.member.user.name || m.member.user.email}</SelectItem>)}
+                  {members.map(m => <SelectItem key={m.member.id} value={m.member.id}><BidiText className="min-w-0 max-w-full">{m.member.user.name || m.member.user.email}</BidiText></SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5"><Users className="size-3" /> {t("team")}</Label>
               <Select value={editTeamId} onValueChange={(v) => { setEditTeamId(v); onUpdate(task.id, { teamId: v === "none" ? null : v }); }}>
-                <SelectTrigger><SelectValue placeholder={t("noTeam")} /></SelectTrigger>
+                <SelectTrigger aria-label={t("noTeam")} className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("noTeam")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("noTeam")}</SelectItem>
-                  {teams.map(t => <SelectItem key={t.id} value={t.id}><span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: t.color }} />{t.name}</span></SelectItem>)}
+                  {teams.map(t => <SelectItem key={t.id} value={t.id}><span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: t.color }} /><BidiText className="min-w-0 max-w-full">{t.name}</BidiText></span></SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -901,29 +903,29 @@ function TaskDetailDrawer({
         <div className="space-y-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("schedule")}</p>
           <div className="rounded-lg border divide-y">
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between px-4 py-3">
               <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CalendarDays className="size-3.5" /> {t("dueDate")}</span>
               {task.dueDate ? (
                 <span className={cn("text-[13px] font-mono tabular-nums font-medium", overdue ? "text-red-600" : "")}>
-                  {formatDate(task.dueDate)}
-                  {overdue && <AlertCircle className="size-3.5 inline ml-1.5 text-red-500" />}
+                  <IdentifierText className="min-w-0 max-w-full">{formatDate(task.dueDate)}</IdentifierText>
+                  {overdue && <AlertCircle className="size-3.5 inline ms-1.5 text-red-500" />}
                 </span>
               ) : <span className="text-[13px] text-muted-foreground/40">{t("notSet")}</span>}
             </div>
             {task.startDate && (
-              <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between px-4 py-3">
                 <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CalendarDays className="size-3.5" /> {t("startDate")}</span>
-                <span className="text-[13px] font-mono tabular-nums">{formatDate(task.startDate)}</span>
+                <span className="text-[13px] font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatDate(task.startDate)}</IdentifierText></span>
               </div>
             )}
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between px-4 py-3">
               <span className="text-[13px] text-muted-foreground flex items-center gap-2"><Clock className="size-3.5" /> {t("estimate")}</span>
               <span className="text-[13px] font-mono tabular-nums">{task.estimatedMinutes ? formatHours(task.estimatedMinutes) : <span className="text-muted-foreground/40">{t("notSet")}</span>}</span>
             </div>
             {task.completedAt && (
-              <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between px-4 py-3">
                 <span className="text-[13px] text-muted-foreground flex items-center gap-2"><CheckCircle2 className="size-3.5" /> {t("completed")}</span>
-                <span className="text-[13px] font-mono tabular-nums">{formatCreated(task.completedAt)}</span>
+                <span className="text-[13px] font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatCreated(task.completedAt)}</IdentifierText></span>
               </div>
             )}
           </div>
@@ -933,10 +935,10 @@ function TaskDetailDrawer({
 
         {/* Checklist */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <ListChecks className="size-3.5" /> {t("checklist")}
-              {checklist.length > 0 && <span className="text-muted-foreground/60 font-mono">({checkDone}/{checklist.length})</span>}
+              {checklist.length > 0 && <span className="text-muted-foreground/60 font-mono">(<IdentifierText className="min-w-0 max-w-full">{checkDone}/{checklist.length}</IdentifierText>)</span>}
             </p>
           </div>
           {checklist.length > 0 && (
@@ -951,7 +953,7 @@ function TaskDetailDrawer({
                   checked={item.isCompleted}
                   onCheckedChange={(checked) => onToggleCheckItem(task.id, item.id, !!checked)}
                 />
-                <span className={cn("text-[13px] flex-1", item.isCompleted && "line-through text-muted-foreground")}>{item.title}</span>
+                <span className={cn("text-[13px] flex-1", item.isCompleted && "line-through text-muted-foreground")}><BidiText className="min-w-0 max-w-full">{item.title}</BidiText></span>
                 <button
                   aria-label={t("deleteItem")}
                   onClick={() => onDeleteCheckItem(task.id, item.id)}
@@ -964,7 +966,7 @@ function TaskDetailDrawer({
             ))}
           </div>
           <div className="flex gap-2">
-            <Input
+            <Input aria-label={t("checklistPlaceholder")} dir="auto"
               value={newCheckItem}
               onChange={e => setNewCheckItem(e.target.value)}
               placeholder={t("checklistPlaceholder")}
@@ -985,7 +987,7 @@ function TaskDetailDrawer({
             <MessageSquare className="size-3.5" /> {t("comments", { count: comments.length })}
           </p>
           <div className="space-y-2">
-            <Textarea
+            <Textarea aria-label={t("commentPlaceholder")} dir="auto"
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               placeholder={t("commentPlaceholder")}
@@ -994,7 +996,7 @@ function TaskDetailDrawer({
             />
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
               onClick={() => onAddComment(task.id)}
               disabled={commentSaving || !newComment.trim()}
             >
@@ -1005,10 +1007,10 @@ function TaskDetailDrawer({
             <div className="space-y-2 pt-3 border-t">
               {comments.map(c => (
                 <div key={c.id} className="rounded-lg bg-muted/30 p-3.5 group">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[12px] font-medium">{c.author.name || c.author.email}</span>
+                  <div className="flex flex-wrap items-center justify-between mb-1.5">
+                    <span className="text-[12px] font-medium"><BidiText className="min-w-0 max-w-full">{c.author.name || c.author.email}</BidiText></span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">{formatCreated(c.createdAt, true)}</span>
+                      <span className="text-[11px] text-muted-foreground"><IdentifierText className="min-w-0 max-w-full">{formatCreated(c.createdAt, true)}</IdentifierText></span>
                       <button
                         aria-label={t("deleteComment")}
                         onClick={() => onDeleteComment(task.id, c.id)}
@@ -1019,7 +1021,7 @@ function TaskDetailDrawer({
                       </button>
                     </div>
                   </div>
-                  <p className="text-[13px] text-muted-foreground whitespace-pre-wrap leading-relaxed">{c.content}</p>
+                  <p className="text-[13px] text-muted-foreground whitespace-pre-wrap leading-relaxed"><BidiText className="min-w-0 max-w-full">{c.content}</BidiText></p>
                 </div>
               ))}
             </div>
@@ -1028,13 +1030,13 @@ function TaskDetailDrawer({
       </div>
 
       {/* Footer */}
-      <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => onDelete(task.id)} disabled={deletingId === task.id}>
+      <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
+        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={() => onDelete(task.id)} disabled={deletingId === task.id}>
           {deletingId === task.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}{deletingId === task.id ? t("deleting") : t("delete")}
         </Button>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={onClose}>{t("close")}</Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { onToggleStatus(task.id, task.status); onClose(); }} disabled={togglingId === task.id}>
+          <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" variant="outline" onClick={onClose}>{t("close")}</Button>
+          <Button className="bg-emerald-600 hover:bg-emerald-700 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={() => { onToggleStatus(task.id, task.status); onClose(); }} disabled={togglingId === task.id}>
             {togglingId === task.id ? t("saving") : task.status === "done" ? t("reopenTask") : t("markDone")}
           </Button>
         </div>

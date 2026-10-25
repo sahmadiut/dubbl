@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { crmDealDetailJson, crmDealMutationJson, crmActivityCreatedJson, type CrmDealDetail } from "@/i18n/crm-presentation";
@@ -204,7 +206,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">{t("unavailable")}</p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/crm")}>
+        <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" variant="outline" size="sm" onClick={() => router.push("/crm")}>
           {t("backToPipeline")}
         </Button>
       </div>
@@ -243,9 +245,9 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
         {/* Back button */}
         <button
           onClick={() => router.push("/crm")}
-          className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-3.5 rtl:rotate-180" />
           {t("backToPipeline")}
         </button>
 
@@ -253,38 +255,38 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-2">
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-lg sm:text-xl font-semibold tracking-tight truncate">{deal.title}</h1>
+              <h1 className="text-lg sm:text-xl font-semibold tracking-tight min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{deal.title}</BidiText></h1>
               {isWon && (
-                <Badge className="bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/60 dark:text-emerald-400 shrink-0">
-                  <Trophy className="size-3 mr-1" /> {t("won")}
+                <Badge className="bg-emerald-100 text-emerald-700 border-0 dark:bg-emerald-900/60 dark:text-emerald-400 shrink-0 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
+                  <Trophy className="size-3 me-1" /> {t("won")}
                 </Badge>
               )}
               {isLost && (
-                <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-900/60 dark:text-red-400 shrink-0">
-                  <XCircle className="size-3 mr-1" /> {t("lost")}
+                <Badge className="bg-red-100 text-red-700 border-0 dark:bg-red-900/60 dark:text-red-400 shrink-0 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
+                  <XCircle className="size-3 me-1" /> {t("lost")}
                 </Badge>
               )}
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono font-semibold tabular-nums text-foreground text-base">
-                {formatMoney(deal.valueCents, deal.currency, unitPresentation)}
+                <IdentifierText className="min-w-0 max-w-full">{formatMoney(deal.valueCents, deal.currency, unitPresentation)}</IdentifierText>
               </span>
               {deal.probability !== null && (
                 <span className="flex items-center gap-1">
                   <Target className="size-3" />
-                  {deal.probability}%
+                  <IdentifierText>{deal.probability}%</IdentifierText>
                 </span>
               )}
               {deal.contact && (
                 <span className="flex items-center gap-1">
                   <User className="size-3" />
-                  {deal.contact.name}
+                  <BidiText className="min-w-0 max-w-full">{deal.contact.name}</BidiText>
                 </span>
               )}
               {deal.pipeline && (
                 <span className="flex items-center gap-1">
                   <Briefcase className="size-3" />
-                  {deal.pipeline.name}
+                  <BidiText className="min-w-0 max-w-full">{deal.pipeline.name}</BidiText>
                 </span>
               )}
             </div>
@@ -292,10 +294,10 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
 
           {!isClosed && (
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30" disabled={stageChanging} onClick={markLost}>
+              <Button variant="outline" size="sm" className="h-auto min-h-8 text-xs gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/30 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" disabled={stageChanging} onClick={markLost}>
                 <XCircle className="size-3" /> {t("markLost")}
               </Button>
-              <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" disabled={stageChanging} onClick={markWon}>
+              <Button size="sm" className="h-auto min-h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" disabled={stageChanging} onClick={markWon}>
                 <Trophy className="size-3" /> {t("markWon")}
               </Button>
             </div>
@@ -354,7 +356,7 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
                       )}
                       style={isCurrent ? { color: stage.color } : undefined}
                     >
-                      {stage.name}
+                      <BidiText className="min-w-0 max-w-full">{stage.name}</BidiText>
                     </span>
                   </div>
                 );
@@ -377,12 +379,12 @@ export default function DealDetailLayout({ children }: { children: React.ReactNo
               <button
                 key={tab.value}
                 onClick={() => router.push(tabHref)}
-                className={cn(
+                className={(cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 pt-3 text-[13px] font-medium transition-colors",
                   active
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
+                )) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}
               >
                 <Icon className="size-3.5" />
                 {t(tab.label)}

@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -187,24 +189,24 @@ export default function ContactDetailsPage() {
         <Section title={t("general")} description={t("generalDescription")}>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("name")}</Label>
-              <Input name="name" required defaultValue={contact.name} placeholder={t("namePlaceholder")} />
+              <Label htmlFor="rtl018-contacts--id--page-tsx-1" className="text-xs">{t("name")}</Label>
+              <Input aria-label={t("name")} id="rtl018-contacts--id--page-tsx-1" dir="auto" name="name" required defaultValue={contact.name} placeholder={t("namePlaceholder")} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("email")}</Label>
-                <Input name="email" type="email" defaultValue={contact.email || ""} placeholder="email@example.com" />
+                <Label htmlFor="rtl018-contacts--id--page-tsx-2" className="text-xs">{t("email")}</Label>
+                <Input aria-label={t("email")} id="rtl018-contacts--id--page-tsx-2" dir="ltr" name="email" type="email" defaultValue={contact.email || ""} placeholder="email@example.com" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("phone")}</Label>
-                <Input name="phone" defaultValue={contact.phone || ""} placeholder="+1 (555) 000-0000" />
+                <Label htmlFor="rtl018-contacts--id--page-tsx-3" className="text-xs">{t("phone")}</Label>
+                <Input aria-label={t("phone")} id="rtl018-contacts--id--page-tsx-3" dir="ltr" name="phone" defaultValue={contact.phone || ""} placeholder="+1 (555) 000-0000" />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("type")}</Label>
+                <Label htmlFor="rtl018-contacts--id--page-tsx-4" className="text-xs">{t("type")}</Label>
                 <Select value={formType} onValueChange={setFormType}>
-                  <SelectTrigger>
+                  <SelectTrigger aria-label={t("type")} id="rtl018-contacts--id--page-tsx-4" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -215,8 +217,8 @@ export default function ContactDetailsPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("taxNumber")}</Label>
-                <Input name="taxNumber" defaultValue={contact.taxNumber || ""} placeholder={t("taxPlaceholder")} />
+                <Label htmlFor="rtl018-contacts--id--page-tsx-5" className="text-xs">{t("taxNumber")}</Label>
+                <Input aria-label={t("taxNumber")} id="rtl018-contacts--id--page-tsx-5" dir="ltr" name="taxNumber" defaultValue={contact.taxNumber || ""} placeholder={t("taxPlaceholder")} />
               </div>
             </div>
           </div>
@@ -228,8 +230,8 @@ export default function ContactDetailsPage() {
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("terms")}</Label>
-                <Input
+                <Label htmlFor="rtl018-contacts--id--page-tsx-6" className="text-xs">{t("terms")}</Label>
+                <Input aria-label={t("terms")} id="rtl018-contacts--id--page-tsx-6" dir="ltr"
                   name="paymentTermsDays"
                   type="number"
                   min={0}
@@ -239,16 +241,16 @@ export default function ContactDetailsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("currency")}</Label>
-                <CurrencySelect
+                <div role="group" aria-label={t("currency")}><CurrencySelect className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]"
                   value={formCurrencyCode}
                   onValueChange={setFormCurrencyCode}
-                />
+                /></div>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("creditLimit")}</Label>
-                <CurrencyInput
+                <Label htmlFor="rtl018-contacts--id--page-tsx-7" className="text-xs">{t("creditLimit")}</Label>
+                <CurrencyInput aria-label={t("creditLimit")} id="rtl018-contacts--id--page-tsx-7"
                   prefix={formCurrencyCode || undefined}
                   fractionDigits={formCurrencyCode ? currencyMetadata(formCurrencyCode).minorUnits : 2}
                   value={formCreditLimit}
@@ -258,7 +260,7 @@ export default function ContactDetailsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">{t("taxStatus")}</Label>
-                <div className="flex h-9 items-center space-x-2">
+                <div className="flex min-h-9 h-auto flex-wrap items-center gap-2">
                   <Checkbox
                     id="isTaxExempt"
                     checked={formTaxExempt}
@@ -305,38 +307,38 @@ export default function ContactDetailsPage() {
         <Section title={t("accounts")} description={t("accountsDescription")}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("incomeAccount")}</Label>
+              <Label htmlFor="rtl018-contacts--id--page-tsx-8" className="text-xs">{t("incomeAccount")}</Label>
               <Select
                 value={formRevenueAccountId}
                 onValueChange={setFormRevenueAccountId}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("incomeAccount")} id="rtl018-contacts--id--page-tsx-8" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                   <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("none")}</SelectItem>
                   {revenueAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.code} - {a.name}
+                      <IdentifierText className="min-w-0 max-w-full">{a.code}</IdentifierText> - <BidiText className="min-w-0 max-w-full">{a.name}</BidiText>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("expenseAccount")}</Label>
+              <Label htmlFor="rtl018-contacts--id--page-tsx-9" className="text-xs">{t("expenseAccount")}</Label>
               <Select
                 value={formExpenseAccountId}
                 onValueChange={setFormExpenseAccountId}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("expenseAccount")} id="rtl018-contacts--id--page-tsx-9" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                   <SelectValue placeholder={t("selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">{t("none")}</SelectItem>
                   {expenseAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.code} - {a.name}
+                      <IdentifierText className="min-w-0 max-w-full">{a.code}</IdentifierText> - <BidiText className="min-w-0 max-w-full">{a.name}</BidiText>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -353,14 +355,14 @@ export default function ContactDetailsPage() {
               value={formTaxRateId}
               onValueChange={setFormTaxRateId}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label={t("selectTaxRate")} className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                 <SelectValue placeholder={t("selectTaxRate")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">{t("none")}</SelectItem>
                 {taxRates.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name} ({(t.rate / 100).toFixed(1)}%)
+                    <BidiText className="min-w-0 max-w-full">{t.name}</BidiText> <IdentifierText>({(t.rate / 100).toFixed(1)}%)</IdentifierText>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -371,7 +373,7 @@ export default function ContactDetailsPage() {
         <div className="h-px bg-border" />
 
         <Section title={t("notes")} description={t("notesDescription")}>
-          <Textarea
+          <Textarea aria-label={t("notesPlaceholder")} dir="auto"
             name="notes"
             defaultValue={contact.notes || ""}
             rows={3}
@@ -386,7 +388,7 @@ export default function ContactDetailsPage() {
             type="submit"
             loading={saving}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
           >
             {saving ? t("saving") : t("save")}
           </Button>
@@ -403,7 +405,7 @@ export default function ContactDetailsPage() {
                 {t("deleteHint")}
               </p>
             </div>
-            <Button
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               variant="destructive"
               type="button"
               size="sm"

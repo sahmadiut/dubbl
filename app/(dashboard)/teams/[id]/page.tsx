@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { workspaceErrorMessage } from "@/i18n/workspace-errors";
 import { useTranslations } from "next-intl";
 
@@ -345,10 +347,10 @@ export default function TeamDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            className="mt-4"
+            className="mt-4 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
             onClick={() => router.push("/teams")}
           >
-            <ArrowLeft className="mr-2 size-3.5" />
+            <ArrowLeft className="me-2 size-3.5 rtl:rotate-180" />
             {t("backToTeams")}
           </Button>
         </div>
@@ -365,7 +367,7 @@ export default function TeamDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
           <Button
             variant="ghost"
@@ -373,7 +375,7 @@ export default function TeamDetailPage() {
             className="size-8 shrink-0 mt-0.5"
             onClick={() => router.push("/teams")}
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4 rtl:rotate-180" />
           </Button>
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
@@ -381,17 +383,17 @@ export default function TeamDetailPage() {
                 className="size-3.5 rounded-full shrink-0 ring-2 ring-background"
                 style={{ backgroundColor: teamColor }}
               />
-              <h1 className="text-lg font-semibold truncate">{team.name}</h1>
+              <h1 className="text-lg font-semibold min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{team.name}</BidiText></h1>
               <Badge
                 variant="outline"
-                className="text-[10px] shrink-0"
+                className="text-[10px] shrink-0 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
               >
                 {t("memberCount", { count: team.members.length })}
               </Badge>
             </div>
             {team.description && (
-              <p className="mt-1 text-sm text-muted-foreground ml-6">
-                {team.description}
+              <p className="mt-1 text-sm text-muted-foreground ms-6">
+                <BidiText className="min-w-0 max-w-full">{team.description}</BidiText>
               </p>
             )}
           </div>
@@ -400,7 +402,7 @@ export default function TeamDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs gap-1.5"
+            className="h-auto min-h-8 text-xs gap-1.5 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
             onClick={openEdit}
           >
             <Pencil className="size-3" />
@@ -409,7 +411,7 @@ export default function TeamDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
+            className="h-auto min-h-8 text-xs gap-1.5 text-destructive hover:text-destructive whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
             onClick={handleDeleteTeam}
           >
             <Trash2 className="size-3" />
@@ -447,7 +449,7 @@ export default function TeamDetailPage() {
               {t("teamColor")}
             </span>
           </div>
-          <p className="mt-2 text-sm font-mono font-medium">{teamColor}</p>
+          <p className="mt-2 text-sm font-mono font-medium"><IdentifierText className="min-w-0 max-w-full">{teamColor}</IdentifierText></p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -457,14 +459,14 @@ export default function TeamDetailPage() {
             </span>
           </div>
           <p className="mt-2 text-2xl font-bold font-mono tabular-nums">
-            {team.members.filter((m) => m.email).length}
+            <IdentifierText className="min-w-0 max-w-full">{team.members.filter((m) => m.email).length}</IdentifierText>
           </p>
         </div>
       </div>
 
       {/* Members section */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between">
           <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("teamMembers")}{" "}
             {debouncedSearch && t("filteredCount", { count: filteredMembers.length, total: team.members.length })}
@@ -473,7 +475,7 @@ export default function TeamDetailPage() {
             <PopoverTrigger asChild>
               <Button
                 size="sm"
-                className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                className="h-auto min-h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               >
                 <UserPlus className="size-3" />
                 {t("addMember")}
@@ -507,20 +509,20 @@ export default function TeamDetailPage() {
                             className="gap-2.5 py-2"
                           >
                             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
-                              {getInitials(member.name)}
+                              <BidiText className="min-w-0 max-w-full">{getInitials(member.name)}</BidiText>
                             </div>
                             <div className="flex flex-col min-w-0 flex-1">
-                              <span className="text-sm font-medium truncate">
-                                {member.name || t("unnamed")}
+                              <span className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                                <BidiText className="min-w-0 max-w-full">{member.name || t("unnamed")}</BidiText>
                               </span>
                               {member.email && (
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {member.email}
+                                <span className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                                  <IdentifierText className="min-w-0 max-w-full">{member.email}</IdentifierText>
                                 </span>
                               )}
                             </div>
                             {addingMemberId === member.id && (
-                              <Loader2 className="ml-auto size-3.5 animate-spin text-muted-foreground shrink-0" />
+                              <Loader2 className="ms-auto size-3.5 animate-spin text-muted-foreground shrink-0" />
                             )}
                           </CommandItem>
                         ))}
@@ -535,12 +537,12 @@ export default function TeamDetailPage() {
 
         {team.members.length > 5 && (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <Input
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input aria-label={t("searchMembersByNameOrEmail")} dir="auto"
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
               placeholder={t("searchMembersByNameOrEmail")}
-              className="pl-9 h-9 text-sm"
+              className="ps-9 h-9 text-sm"
             />
           </div>
         )}
@@ -570,7 +572,7 @@ export default function TeamDetailPage() {
                 <div
                   key={member.id}
                   className={cn(
-                    "group flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/20",
+                    "group flex flex-wrap items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/20",
                     i < visibleMembers.length - 1 && "border-b"
                   )}
                 >
@@ -579,15 +581,15 @@ export default function TeamDetailPage() {
                       className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
                       style={{ backgroundColor: teamColor }}
                     >
-                      {getInitials(member.name)}
+                      <BidiText className="min-w-0 max-w-full">{getInitials(member.name)}</BidiText>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {member.name || t("unnamed")}
+                      <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                        <BidiText className="min-w-0 max-w-full">{member.name || t("unnamed")}</BidiText>
                       </p>
                       {member.email && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {member.email}
+                        <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                          <IdentifierText className="min-w-0 max-w-full">{member.email}</IdentifierText>
                         </p>
                       )}
                     </div>
@@ -611,7 +613,7 @@ export default function TeamDetailPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-xs text-muted-foreground"
+                  className="text-xs text-muted-foreground h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                   onClick={() => setVisibleCount((c) => c + 20)}
                 >
                   {t("showMore", { count: filteredMembers.length - visibleCount })}
@@ -630,14 +632,14 @@ export default function TeamDetailPage() {
           </SheetHeader>
           <TeamFields name={editName} description={editDesc} color={editColor} editing
             onNameChange={setEditName} onDescriptionChange={setEditDesc} onColorChange={setEditColor} />
-          <SheetFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
+          <SheetFooter className="h-auto flex-wrap">
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" variant="outline" onClick={() => setEditOpen(false)}>
               {t("cancel")}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={editSaving || !editName.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
             >
               {editSaving ? t("saving") : t("saveChanges")}
             </Button>

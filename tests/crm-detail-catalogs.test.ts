@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -25,7 +26,7 @@ const activity = { id: "activity-a", type: "call", content: caller, createdAt: n
 const deal = { id: "deal-a", title: caller, stageId: "lead", valueCents: Number.MAX_SAFE_INTEGER, valueCentsMinor: String(Number.MAX_SAFE_INTEGER), currency: "KWD", probability: 33, expectedCloseDate: "2024-02-29", source: "cold_outreach", notes: caller, lostReason: caller, createdAt: "2026-10-21T00:00:00.000Z", wonAt: null, lostAt: null, contact: { id: "contact-a", name: caller, email: "caller@example.test" }, assignedUser: { id: "user-a", name: caller }, pipeline, activities: [activity] };
 type Locale = "en-US" | "fa-IR";
 const locales: Locale[] = ["en-US", "fa-IR"];
-const translator = (locale: Locale) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "CrmDetail" });
+const translator = (locale: Locale) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "CrmDetail" });
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 type Capture = { kind: string; props: Record<string, unknown> };
 type Context = { [key: string]: unknown; deal: typeof deal };
@@ -113,7 +114,7 @@ test("CRM detail, overview and settings render bilingual copy with escaped calle
     assert.ok(form.html.includes("2024-02-29") && form.html.includes('name="probability"'));
     const presentation = resolvePresentation({ user: { language: locale } });
     assert.ok(page.html.includes(escape(formatDateOnly(deal.expectedCloseDate, presentation, { year: "numeric", month: "long", day: "numeric" }))));
-    assert.ok(page.html.includes(escape(t("createdOn", { date: formatInstant(new Date(deal.createdAt), presentation, { year: "numeric", month: "long", day: "numeric" }) }))));
+    assert.ok(visibleText(page.html).includes(escape(t("createdOn", { date: formatInstant(new Date(deal.createdAt), presentation, { year: "numeric", month: "long", day: "numeric" }) }))));
     for (const key of ["overview", "activity", "settings"] as const) {
       const nav = shell.captured.find(c => c.kind === "button" && childText(c.props.children) === t(key))!;
       (nav.props.onClick as () => void)();
@@ -124,7 +125,7 @@ test("CRM detail, overview and settings render bilingual copy with escaped calle
     for (const [field, key] of [["wonAt", "won"], ["lostAt", "lost"]] as const) {
       const closed = render(layout, { ...loaded, deal: { ...deal, [field]: deal.createdAt } }, locale);
       assert.ok(closed.html.includes(escape(t(key)))); assert.equal(button(closed, t("markWon")), undefined);
-      assert.ok(render(overview, { context: { deal: { ...deal, [field]: deal.createdAt } } }, locale).html.includes(escape(t(field === "wonAt" ? "wonOn" : "lostOn", { date: "" }).trim())));
+      assert.ok(visibleText(render(overview, { context: { deal: { ...deal, [field]: deal.createdAt } } }, locale).html).includes(escape(t(field === "wonAt" ? "wonOn" : "lostOn", { date: "" }).trim())));
     }
     assert.ok(render(layout, { loading: false }, locale).html.includes(escape(t("unavailable"))));
     assert.ok(render(settings, { context: { saving: true } }, locale).html.includes(escape(t("saving"))));

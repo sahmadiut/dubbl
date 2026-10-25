@@ -1,4 +1,6 @@
 "use client";
+
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -276,7 +278,7 @@ export default function MilestonesPage() {
       <div className={cn("grid gap-2 sm:gap-3 grid-cols-1", isBillable ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
         <div className="rounded-lg border bg-card p-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("progress")}</p>
-          <p className="text-lg font-bold font-mono tabular-nums mt-0.5">{completed}/{total}</p>
+          <p className="text-lg font-bold font-mono tabular-nums mt-0.5"><IdentifierText>{completed}/{total}</IdentifierText></p>
           {total > 0 && (
             <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-2">
               <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct(completed, total)}%` }} />
@@ -285,16 +287,16 @@ export default function MilestonesPage() {
         </div>
         <div className="rounded-lg border bg-card p-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("totalValue")}</p>
-          <p className="text-lg font-bold font-mono tabular-nums mt-0.5">{formatMoney(totalAmount)}</p>
+          <p className="text-lg font-bold font-mono tabular-nums mt-0.5"><IdentifierText className="min-w-0 max-w-full">{formatMoney(totalAmount)}</IdentifierText></p>
         </div>
         <div className="rounded-lg border bg-card p-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("completedValue")}</p>
-          <p className="text-lg font-bold font-mono tabular-nums text-emerald-600 mt-0.5">{formatMoney(completedAmount)}</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-emerald-600 mt-0.5"><IdentifierText className="min-w-0 max-w-full">{formatMoney(completedAmount)}</IdentifierText></p>
         </div>
         {isBillable && (
           <div className="rounded-lg border bg-card p-3">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("invoiced")}</p>
-            <p className="text-lg font-bold font-mono tabular-nums text-blue-600 mt-0.5">{formatMoney(totalInvoiced)}</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-blue-600 mt-0.5"><IdentifierText className="min-w-0 max-w-full">{formatMoney(totalInvoiced)}</IdentifierText></p>
             {totalAmount > 0 && (
               <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-2">
                 <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${pct(totalInvoiced, totalAmount)}%` }} />
@@ -306,11 +308,11 @@ export default function MilestonesPage() {
 
       <div className="flex justify-end gap-2">
         {isBillable && (
-          <Button size="sm" variant="outline" className="h-8" onClick={() => setInvoiceOpen(true)}>
+          <Button size="sm" variant="outline" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => setInvoiceOpen(true)}>
             <FileText className="size-3.5" />{t("createInvoice")}
           </Button>
         )}
-        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={() => setAddOpen(true)}>
+        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => setAddOpen(true)}>
           <Plus className="size-3.5" />{t("milestone")}
         </Button>
       </div>
@@ -333,12 +335,12 @@ export default function MilestonesPage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</p>
               <div className="space-y-2">
-                <Label>{t("titleRequired")}</Label>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t("titlePlaceholder")} />
+                <Label htmlFor="rtl018-projects--id--milestones-page-tsx-1">{t("titleRequired")}</Label>
+                <Input aria-label={t("titleRequired")} id="rtl018-projects--id--milestones-page-tsx-1" dir="auto" value={title} onChange={e => setTitle(e.target.value)} placeholder={t("titlePlaceholder")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("description")}</Label>
-                <Textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={3} />
+                <Label htmlFor="rtl018-projects--id--milestones-page-tsx-2">{t("description")}</Label>
+                <Textarea aria-label={t("description")} id="rtl018-projects--id--milestones-page-tsx-2" dir="auto" value={desc} onChange={e => setDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={3} />
               </div>
             </div>
 
@@ -349,18 +351,18 @@ export default function MilestonesPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("dueDate")}</Label>
-                  <DatePicker value={dueDate} onChange={setDueDate} placeholder={t("dueDatePlaceholder")} />
+                  <div role="group" aria-label={t("dueDate")}><DatePicker className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={dueDate} onChange={setDueDate} placeholder={t("dueDatePlaceholder")} /></div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("amount")}</Label>
-                  <CurrencyInput prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={amount} onChange={setAmount} />
+                  <Label htmlFor="rtl018-projects--id--milestones-page-tsx-3">{t("amount")}</Label>
+                  <CurrencyInput aria-label={t("amount")} id="rtl018-projects--id--milestones-page-tsx-3" prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={amount} onChange={setAmount} />
                 </div>
               </div>
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleAdd} disabled={saving || !title.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={handleAdd} disabled={saving || !title.trim()} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">
               {saving ? t("creating") : t("createMilestone")}
             </Button>
           </div>
@@ -388,24 +390,24 @@ export default function MilestonesPage() {
                   )}
                 </button>
                 <div className="flex-1 min-w-0">
-                  <span className={cn("text-[13px] font-medium", ms.status === "completed" && "line-through text-muted-foreground")}>{ms.title}</span>
-                  {ms.description && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{ms.description}</p>}
+                  <span className={cn("text-[13px] font-medium", ms.status === "completed" && "line-through text-muted-foreground")}><BidiText className="min-w-0 max-w-full">{ms.title}</BidiText></span>
+                  {ms.description && <p className="text-[11px] text-muted-foreground mt-0.5 min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{ms.description}</BidiText></p>}
                 </div>
                 {ms.dueDate && (
-                  <span className={cn("text-[11px] tabular-nums shrink-0", overdue ? "text-red-600 font-medium" : "text-muted-foreground")}>{formatDateShort(ms.dueDate)}</span>
+                  <span className={cn("text-[11px] tabular-nums shrink-0", overdue ? "text-red-600 font-medium" : "text-muted-foreground")}><IdentifierText className="min-w-0 max-w-full">{formatDateShort(ms.dueDate)}</IdentifierText></span>
                 )}
                 {ms.amount > 0 && (
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[11px] font-mono text-muted-foreground">{formatMoney(ms.amount)}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground"><IdentifierText className="min-w-0 max-w-full">{formatMoney(ms.amount)}</IdentifierText></span>
                     {ms.invoicedAmountCents > 0 && ms.invoicedAmountCents >= ms.amount && (
-                      <Badge variant="outline" className="text-[9px] h-4 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">{t("invoiced")}</Badge>
+                      <Badge variant="outline" className="text-[9px] min-h-4 h-auto bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800 min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">{t("invoiced")}</Badge>
                     )}
                     {ms.invoicedAmountCents > 0 && ms.invoicedAmountCents < ms.amount && (
-                      <Badge variant="outline" className="text-[9px] h-4 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">{t("partial")}</Badge>
+                      <Badge variant="outline" className="text-[9px] min-h-4 h-auto bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">{t("partial")}</Badge>
                     )}
                   </div>
                 )}
-                <button onClick={() => { setAssignMilestoneId(ms.id); setAssignments([]); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-emerald-600 transition-opacity" title={t("manageAssignments")}>
+                <button onClick={() => { setAssignMilestoneId(ms.id); setAssignments([]); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-emerald-600 transition-opacity h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" title={t("manageAssignments")}>
                   <Users className="size-3" />
                 </button>
                 <button aria-label={t("deleteMilestone")} onClick={() => deleteMilestone(ms.id)} disabled={deletingId === ms.id} className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity", deletingId === ms.id && "opacity-100 pointer-events-none")}>
@@ -446,15 +448,15 @@ export default function MilestonesPage() {
                   {assignments.map((a) => (
                     <div key={a.id} className="px-4 py-3 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium truncate">{a.member?.user?.name || a.member?.user?.email || t("member")}</p>
-                        {a.description && <p className="text-[11px] text-muted-foreground truncate">{a.description}</p>}
+                        <p className="text-[13px] font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{a.member?.user?.name || a.member?.user?.email || t("member")}</BidiText></p>
+                        {a.description && <p className="text-[11px] text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{a.description}</BidiText></p>}
                       </div>
-                      <span className="text-[11px] font-mono text-muted-foreground shrink-0">{formatMoney(a.amount)}</span>
+                      <span className="text-[11px] font-mono text-muted-foreground shrink-0"><IdentifierText className="min-w-0 max-w-full">{formatMoney(a.amount)}</IdentifierText></span>
                       {a.isPaid ? (
-                        <Badge variant="outline" className="text-[9px] h-4 bg-emerald-50 text-emerald-700 border-emerald-200">{t("paid")}</Badge>
+                        <Badge variant="outline" className="text-[9px] min-h-4 h-auto bg-emerald-50 text-emerald-700 border-emerald-200 min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">{t("paid")}</Badge>
                       ) : (
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={() => markAssignmentPaid(a.id)}>
-                          <DollarSign className="size-3 mr-1" />{t("markPaid")}
+                        <Button size="sm" variant="outline" className="h-auto text-[10px] px-2 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => markAssignmentPaid(a.id)}>
+                          <DollarSign className="size-3 me-1" />{t("markPaid")}
                         </Button>
                       )}
                     </div>
@@ -469,32 +471,32 @@ export default function MilestonesPage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("addAssignment")}</p>
               <div className="space-y-2">
-                <Label>{t("member")}</Label>
+                <Label htmlFor="rtl018-projects--id--milestones-page-tsx-4">{t("member")}</Label>
                 <Select value={assignMemberId} onValueChange={setAssignMemberId}>
-                  <SelectTrigger><SelectValue placeholder={t("memberPlaceholder")} /></SelectTrigger>
+                  <SelectTrigger aria-label={t("member")} id="rtl018-projects--id--milestones-page-tsx-4" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("memberPlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>{t("memberPlaceholder")}</SelectItem>
                     {members.map(m => (
-                      <SelectItem key={m.member.id} value={m.member.id}>{m.member.user.name || m.member.user.email}</SelectItem>
+                      <SelectItem key={m.member.id} value={m.member.id}><BidiText className="min-w-0 max-w-full">{m.member.user.name || m.member.user.email}</BidiText></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t("amount")}</Label>
-                  <CurrencyInput prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={assignAmount} onChange={setAssignAmount} />
+                  <Label htmlFor="rtl018-projects--id--milestones-page-tsx-5">{t("amount")}</Label>
+                  <CurrencyInput aria-label={t("amount")} id="rtl018-projects--id--milestones-page-tsx-5" prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={assignAmount} onChange={setAssignAmount} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("description")}</Label>
-                  <Input value={assignDesc} onChange={e => setAssignDesc(e.target.value)} placeholder={t("notePlaceholder")} />
+                  <Label htmlFor="rtl018-projects--id--milestones-page-tsx-6">{t("description")}</Label>
+                  <Input aria-label={t("description")} id="rtl018-projects--id--milestones-page-tsx-6" dir="auto" value={assignDesc} onChange={e => setAssignDesc(e.target.value)} placeholder={t("notePlaceholder")} />
                 </div>
               </div>
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAssignMilestoneId(null)}>{t("close")}</Button>
-            <Button onClick={handleAddAssignment} disabled={assignSaving || assignMemberId === "none"} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={() => setAssignMilestoneId(null)}>{t("close")}</Button>
+            <Button onClick={handleAddAssignment} disabled={assignSaving || assignMemberId === "none"} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
               {assignSaving ? t("adding") : t("addAssignment")}
             </Button>
           </div>
@@ -544,14 +546,14 @@ export default function MilestonesPage() {
                                 disabled={!hasRemaining}
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="text-[13px] font-medium truncate">{m.title}</p>
+                                <p className="text-[13px] font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{m.title}</BidiText></p>
                                 <p className="text-[11px] text-muted-foreground">
-                                  {t("milestoneBilling", { total: formatMoney(m.amount), invoiced: formatMoney(m.invoicedAmountCents) })}
+                                  {t.rich("milestoneBilling", { total: formatMoney(m.amount), invoiced: formatMoney(m.invoicedAmountCents) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
                                 </p>
                               </div>
-                              <div className="text-right shrink-0">
+                              <div className="text-end shrink-0">
                                 <p className={cn("text-[13px] font-mono tabular-nums font-medium", hasRemaining ? "text-foreground" : "text-muted-foreground")}>
-                                  {formatMoney(m.remaining)}
+                                  <IdentifierText className="min-w-0 max-w-full">{formatMoney(m.remaining)}</IdentifierText>
                                 </p>
                                 <p className="text-[10px] text-muted-foreground">{t("remainingLower")}</p>
                               </div>
@@ -568,11 +570,11 @@ export default function MilestonesPage() {
                 {/* Hourly billing */}
                 {uninvoicedData.billingType === "hourly" && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between">
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("uninvoicedTime")}</p>
                       {(uninvoicedData.timeEntries ?? []).length > 0 && (
                         <button
-                          className="text-[11px] text-blue-600 hover:underline font-medium"
+                          className="text-[11px] text-blue-600 hover:underline font-medium h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                           onClick={() => {
                             const allIds = (uninvoicedData.timeEntries ?? []).map((e) => e.id);
                             setSelectedTimeEntryIds(prev =>
@@ -593,13 +595,13 @@ export default function MilestonesPage() {
                               onCheckedChange={() => toggleTimeEntrySelection(e.id)}
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] truncate">{e.description || t("timeEntry")}</p>
+                              <p className="text-[13px] min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{e.description || t("timeEntry")}</BidiText></p>
                               <p className="text-[11px] text-muted-foreground">
-                                {t("timeBilling", { date: formatDateShort(e.date), hours: Math.round((e.minutes / 60) * 100) / 100, rate: formatMoney(e.hourlyRate) })}
+                                {t.rich("timeBilling", { date: formatDateShort(e.date), hours: Math.round((e.minutes / 60) * 100) / 100, rate: formatMoney(e.hourlyRate) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
                               </p>
                             </div>
                             <span className="text-[13px] font-mono tabular-nums font-medium shrink-0">
-                              {formatMoney(e.amount)}
+                              <IdentifierText className="min-w-0 max-w-full">{formatMoney(e.amount)}</IdentifierText>
                             </span>
                           </label>
                         ))}
@@ -616,17 +618,17 @@ export default function MilestonesPage() {
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("fixedProgress")}</p>
                     <div className="rounded-lg border p-4 space-y-3">
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[13px]">
+                        <div className="flex flex-wrap items-center justify-between text-[13px]">
                           <span className="text-muted-foreground">{t("fixedPrice")}</span>
-                          <span className="font-mono tabular-nums font-medium">{formatMoney(uninvoicedData.fixedPrice ?? 0)}</span>
+                          <span className="font-mono tabular-nums font-medium"><IdentifierText className="min-w-0 max-w-full">{formatMoney(uninvoicedData.fixedPrice ?? 0)}</IdentifierText></span>
                         </div>
-                        <div className="flex items-center justify-between text-[13px]">
+                        <div className="flex flex-wrap items-center justify-between text-[13px]">
                           <span className="text-muted-foreground">{t("alreadyInvoiced")}</span>
-                          <span className="font-mono tabular-nums">{formatMoney(uninvoicedData.totalInvoiced ?? 0)} ({uninvoicedData.invoicedPercent ?? 0}%)</span>
+                          <span className="font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(uninvoicedData.totalInvoiced ?? 0)}</IdentifierText> <IdentifierText>({uninvoicedData.invoicedPercent ?? 0}%)</IdentifierText></span>
                         </div>
-                        <div className="flex items-center justify-between text-[13px]">
+                        <div className="flex flex-wrap items-center justify-between text-[13px]">
                           <span className="text-muted-foreground">{t("remaining")}</span>
-                          <span className="font-mono tabular-nums font-medium text-emerald-600">{formatMoney(uninvoicedData.remaining ?? 0)}</span>
+                          <span className="font-mono tabular-nums font-medium text-emerald-600"><IdentifierText className="min-w-0 max-w-full">{formatMoney(uninvoicedData.remaining ?? 0)}</IdentifierText></span>
                         </div>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -637,9 +639,9 @@ export default function MilestonesPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("percentageToInvoice")}</Label>
+                      <Label htmlFor="rtl018-projects--id--milestones-page-tsx-7">{t("percentageToInvoice")}</Label>
                       <div className="flex items-center gap-2">
-                        <Input
+                        <Input aria-label={t("percentageToInvoice")} id="rtl018-projects--id--milestones-page-tsx-7" dir="ltr"
                           type="number"
                           min={0}
                           max={100 - (uninvoicedData.invoicedPercent || 0)}
@@ -652,7 +654,7 @@ export default function MilestonesPage() {
                       </div>
                       {fixedPercent && (
                         <p className="text-[11px] text-muted-foreground">
-                          {t("invoiceAmount", { amount: formatMoney(invoicePreviewTotal) })}
+                          {t.rich("invoiceAmount", { amount: formatMoney(invoicePreviewTotal) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
                         </p>
                       )}
                     </div>
@@ -662,8 +664,8 @@ export default function MilestonesPage() {
                 {/* Notes */}
                 <div className="h-px bg-border" />
                 <div className="space-y-2">
-                  <Label>{t("invoiceNotes")}</Label>
-                  <Textarea
+                  <Label htmlFor="rtl018-projects--id--milestones-page-tsx-8">{t("invoiceNotes")}</Label>
+                  <Textarea aria-label={t("invoiceNotes")} id="rtl018-projects--id--milestones-page-tsx-8" dir="auto"
                     value={invoiceNotes}
                     onChange={e => setInvoiceNotes(e.target.value)}
                     placeholder={t("invoiceNotesPlaceholder")}
@@ -680,18 +682,18 @@ export default function MilestonesPage() {
           <div className="sticky bottom-0 z-10 border-t bg-background/80 backdrop-blur-sm">
             {invoicePreviewTotal > 0 && (
               <div className="px-6 py-3 border-b bg-muted/30">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between">
                   <span className="text-[12px] font-medium text-muted-foreground">{t("invoiceTotal")}</span>
-                  <span className="text-lg font-bold font-mono tabular-nums">{formatMoney(invoicePreviewTotal)}</span>
+                  <span className="text-lg font-bold font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(invoicePreviewTotal)}</IdentifierText></span>
                 </div>
               </div>
             )}
             <div className="flex items-center justify-end gap-3 px-6 py-4">
-              <Button type="button" variant="outline" onClick={() => setInvoiceOpen(false)}>{t("cancel")}</Button>
+              <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={() => setInvoiceOpen(false)}>{t("cancel")}</Button>
               <Button
                 onClick={handleCreateInvoice}
                 disabled={invoiceSaving || invoicePreviewTotal <= 0}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
               >
                 {invoiceSaving ? t("creating") : t("createInvoice")}
               </Button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
@@ -72,9 +74,9 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       sortKey: "name",
       render: (r) => (
         <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{r.name}</p>
+          <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{r.name}</BidiText></p>
           {r.email && (
-            <p className="text-xs text-muted-foreground truncate">{r.email}</p>
+            <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]"><IdentifierText className="min-w-0 max-w-full">{r.email}</IdentifierText></p>
           )}
         </div>
       ),
@@ -84,7 +86,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       header: t("type"),
       className: "w-28",
       render: (r) => (
-        <Badge variant="outline" className={typeBadgeClass[r.type]}>
+        <Badge variant="outline" className={(typeBadgeClass[r.type]) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
           {r.type === "customer" ? t("customer") : r.type === "supplier" ? t("supplier") : r.type === "both" ? t("both") : r.type}
         </Badge>
       ),
@@ -94,7 +96,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       header: t("phone"),
       className: "w-36",
       render: (r) => (
-        <span className="text-sm text-muted-foreground">{r.phone || "-"}</span>
+        <span className="text-sm text-muted-foreground"><IdentifierText className="min-w-0 max-w-full">{r.phone || "-"}</IdentifierText></span>
       ),
     },
     {
@@ -112,24 +114,24 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       key: "creditLimit",
       header: t("creditLimit"),
       sortKey: "creditLimit",
-      className: "w-32 text-right",
+      className: "w-32 text-end",
       render: (r) => (
         <span className="text-sm tabular-nums text-muted-foreground">
-          {r.creditLimit != null
+          <IdentifierText className="min-w-0 max-w-full">{r.creditLimit != null
             ? formatMoney(r.creditLimit, r.currencyCode || "USD", unitPresentation)
-            : t("noLimit")}
+            : t("noLimit")}</IdentifierText>
         </span>
       ),
     },
     {
       key: "owesYou",
       header: t("owesYou"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="text-sm tabular-nums">
           {r.owesYou && r.owesYou > 0 ? (
             <span className="font-medium text-emerald-600 dark:text-emerald-400">
-              {formatMoney(r.owesYou, r.currencyCode || "USD", unitPresentation)}
+              <IdentifierText className="min-w-0 max-w-full">{formatMoney(r.owesYou, r.currencyCode || "USD", unitPresentation)}</IdentifierText>
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -140,12 +142,12 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
     {
       key: "youOwe",
       header: t("youOwe"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="text-sm tabular-nums">
           {r.youOwe && r.youOwe > 0 ? (
             <span className="font-medium text-orange-600 dark:text-orange-400">
-              {formatMoney(r.youOwe, r.currencyCode || "USD", unitPresentation)}
+              <IdentifierText className="min-w-0 max-w-full">{formatMoney(r.youOwe, r.currencyCode || "USD", unitPresentation)}</IdentifierText>
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -156,12 +158,12 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
     {
       key: "overdue",
       header: t("overdue"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="text-sm tabular-nums">
           {r.overdue && r.overdue > 0 ? (
             <span className="font-semibold text-red-600 dark:text-red-400">
-              {formatMoney(r.overdue, r.currencyCode || "USD", unitPresentation)}
+              <IdentifierText className="min-w-0 max-w-full">{formatMoney(r.overdue, r.currencyCode || "USD", unitPresentation)}</IdentifierText>
             </span>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -178,7 +180,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
           {r.isTaxExempt && (
             <Badge
               variant="outline"
-              className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+              className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
               title={t("taxHint")}
             >
               {t("noTax")}
@@ -187,7 +189,7 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
           {r.is1099Vendor && (
             <Badge
               variant="outline"
-              className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
               title={t("vendorHint")}
             >
               1099
@@ -213,14 +215,14 @@ function buildColumns(t: ContactTranslator, onDelete: (c: Contact) => void, onOp
       key: "createdAt",
       header: t("created"),
       sortKey: "created",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="text-sm tabular-nums text-muted-foreground">
-          {new Date(r.createdAt).toLocaleDateString("en-US", {
+          <IdentifierText className="min-w-0 max-w-full">{new Date(r.createdAt).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
-          })}
+          })}</IdentifierText>
         </span>
       ),
     },
@@ -458,7 +460,7 @@ export default function ContactsPage() {
                 <div className="h-2 w-12 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-8 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-10 rounded bg-muted-foreground/20 hidden sm:block" />
-                <div className="ml-auto h-2 w-16 rounded bg-muted-foreground/20 hidden sm:block" />
+                <div className="ms-auto h-2 w-16 rounded bg-muted-foreground/20 hidden sm:block" />
                 <div className="h-2 w-12 rounded bg-muted-foreground/20" />
               </div>
               {/* Data rows */}
@@ -501,9 +503,9 @@ export default function ContactsPage() {
             <Button
               onClick={() => openDrawer("contact")}
               size="lg"
-              className="mt-6 bg-emerald-600 hover:bg-emerald-700"
+              className="mt-6 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
             >
-              <UserPlus className="mr-2 size-4" />
+              <UserPlus className="me-2 size-4" />
               {t("firstContact")}
             </Button>
           </div>
@@ -540,9 +542,9 @@ export default function ContactsPage() {
                 <div className={`flex size-9 items-center justify-center rounded-lg ${bg}`}>
                   <Icon className={`size-4.5 ${color}`} />
                 </div>
-                <h3 className="mt-3 text-[13px] font-semibold">{title}</h3>
+                <h3 className="mt-3 text-[13px] font-semibold"><BidiText className="min-w-0 max-w-full">{title}</BidiText></h3>
                 <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                  {description}
+                  <BidiText className="min-w-0 max-w-full">{description}</BidiText>
                 </p>
               </div>
             ))}
@@ -564,18 +566,18 @@ export default function ContactsPage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-9"
+              className="h-auto min-h-9 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => router.push("/reports/duplicate-detection")}
               title={t("duplicatesHint")}
             >
-              <Copy className="mr-1.5 size-4" />
+              <Copy className="me-1.5 size-4" />
               {t("duplicates")}
             </Button>
             <Tabs value={typeFilter} onValueChange={setTypeFilter}>
-              <TabsList>
-                <TabsTrigger value="all">{t("all")}</TabsTrigger>
-                <TabsTrigger value="customer">{t("customers")}</TabsTrigger>
-                <TabsTrigger value="supplier">{t("suppliers")}</TabsTrigger>
+              <TabsList className="h-auto flex-wrap">
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="all">{t("all")}</TabsTrigger>
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="customer">{t("customers")}</TabsTrigger>
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="supplier">{t("suppliers")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -619,10 +621,10 @@ export default function ContactsPage() {
               aria-label={accessibleLabel}
               className={`flex min-w-0 flex-col items-center justify-center border-t-4 border-e border-e-border last:border-e-0 px-3 py-6 text-center sm:px-5 sm:py-7 ${panel}`}
             >
-              <dt className="order-2 mt-2 text-xs font-semibold sm:text-sm">{label}</dt>
+              <dt className="order-2 mt-2 text-xs font-semibold sm:text-sm"><BidiText className="min-w-0 max-w-full">{label}</BidiText></dt>
               <dd className="order-1 flex items-center gap-2 text-lg font-semibold tabular-nums sm:text-xl">
                 <span aria-hidden="true" className={`size-2.5 rounded-full ${dot}`} />
-                {format.number(count)}
+                <IdentifierText className="min-w-0 max-w-full">{format.number(count)}</IdentifierText>
               </dd>
             </div>
           ))}
@@ -630,31 +632,31 @@ export default function ContactsPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input aria-label={t("search")} dir="auto"
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
-            <DatePicker
+            <div role="group" aria-label={t("startDate")}><DatePicker
               value={dateFrom}
               onChange={(v) => setDateFrom(v)}
               placeholder={t("startDate")}
-              className="h-8 w-40 text-xs"
-            />
+              className="h-auto min-h-8 w-40 text-xs whitespace-normal [overflow-wrap:anywhere]"
+            /></div>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
-            <DatePicker
+            <div role="group" aria-label={t("endDate")}><DatePicker
               value={dateTo}
               onChange={(v) => setDateTo(v)}
               placeholder={t("endDate")}
-              className="h-8 w-40 text-xs"
-            />
+              className="h-auto min-h-8 w-40 text-xs whitespace-normal [overflow-wrap:anywhere]"
+            /></div>
           </div>
           <Select
             value={`${sortBy}:${sortOrder}`}
@@ -664,7 +666,7 @@ export default function ContactsPage() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-44 text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -680,13 +682,13 @@ export default function ContactsPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto min-h-8 text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => {
                 setDateFrom("");
                 setDateTo("");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearDates")}
             </Button>
           )}

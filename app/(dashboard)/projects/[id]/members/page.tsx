@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -198,7 +200,7 @@ export default function MembersPage() {
       {readError && <p role="alert" className="text-sm text-destructive">{t("assignmentsLoadFailed")}</p>}
       {/* Team assignments */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <UsersRound className="size-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold">{t("teams")}</h3>
@@ -206,7 +208,7 @@ export default function MembersPage() {
               <span className="text-[12px] text-muted-foreground">{t("assignedCount", { count: teamAssignments.length })}</span>
             )}
           </div>
-          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setAddTeamOpen(true)}>
+          <Button size="sm" variant="outline" className="h-auto min-h-8 text-xs gap-1.5 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => setAddTeamOpen(true)}>
             <Plus className="size-3" />
             {t("assignTeam")}
           </Button>
@@ -227,12 +229,12 @@ export default function MembersPage() {
                     className="size-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 text-white"
                     style={{ backgroundColor: a.team.color }}
                   >
-                    {a.team.name[0].toUpperCase()}
+                    <BidiText className="min-w-0 max-w-full">{a.team.name[0].toUpperCase()}</BidiText>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium truncate">{a.team.name}</p>
+                    <p className="text-[13px] font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{a.team.name}</BidiText></p>
                     <p className="text-[11px] text-muted-foreground">{t("memberCount", { count: a.team.members.length })}</p>
-                    <Badge variant="outline" className={cn("text-[9px] h-4 mt-1.5 capitalize", roleColors[a.defaultRole])}>
+                    <Badge variant="outline" className={(cn("text-[9px] min-h-4 h-auto mt-1.5 capitalize", roleColors[a.defaultRole])) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
                       {roleLabel(a.defaultRole)}
                     </Badge>
                   </div>
@@ -241,7 +243,7 @@ export default function MembersPage() {
                     onClick={() => removeTeam(a.teamId)}
                     disabled={removingTeamId === a.teamId}
                     className={cn(
-                      "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity absolute top-3 right-3",
+                      "opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity absolute top-3 end-3",
                       removingTeamId === a.teamId && "opacity-100 pointer-events-none"
                     )}
                   >
@@ -273,9 +275,9 @@ export default function MembersPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("selectTeamHeading")}</p>
               <div className="space-y-2">
                 {teamChoicesError && <p role="alert" className="text-sm text-destructive">{t("teamsLoadFailed")}</p>}
-                <Label>{t("team")}</Label>
+                <Label htmlFor="rtl018-projects--id--members-page-tsx-1">{t("team")}</Label>
                 <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
-                  <SelectTrigger><SelectValue placeholder={t("selectTeam")} /></SelectTrigger>
+                  <SelectTrigger aria-label={t("team")} id="rtl018-projects--id--members-page-tsx-1" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("selectTeam")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>{t("selectTeam")}</SelectItem>
                     {availableTeams.length === 0 && <div className="py-2 px-3 text-sm text-muted-foreground">{t("allTeamsAssigned")}</div>}
@@ -283,7 +285,7 @@ export default function MembersPage() {
                       <SelectItem key={t.id} value={t.id}>
                         <div className="flex items-center gap-2">
                           <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
-                          {t.name}
+                          <BidiText className="min-w-0 max-w-full">{t.name}</BidiText>
                         </div>
                       </SelectItem>
                     ))}
@@ -297,9 +299,9 @@ export default function MembersPage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("defaultRole")}</p>
               <div className="space-y-2">
-                <Label>{t("teamRole")}</Label>
+                <Label htmlFor="rtl018-projects--id--members-page-tsx-2">{t("teamRole")}</Label>
                 <Select value={selectedTeamRole} onValueChange={setSelectedTeamRole}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label={t("teamRole")} id="rtl018-projects--id--members-page-tsx-2" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="manager">{t("manager")}</SelectItem>
                     <SelectItem value="contributor">{t("contributor")}</SelectItem>
@@ -311,8 +313,8 @@ export default function MembersPage() {
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAddTeamOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleAddTeam} disabled={savingTeam || selectedTeamId === "none"} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={() => setAddTeamOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={handleAddTeam} disabled={savingTeam || selectedTeamId === "none"} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">
               {savingTeam ? t("assigning") : t("assignTeam")}
             </Button>
           </div>
@@ -323,14 +325,14 @@ export default function MembersPage() {
 
       {/* Individual members */}
       <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 sm:gap-3 text-[12px] text-muted-foreground flex-wrap">
           <span>{t("totalCount", { count: members.length })}</span>
           {managers.length > 0 && <><span className="text-border">|</span><span>{t("managerCount", { count: managers.length })}</span></>}
           {contributors.length > 0 && <><span className="text-border">|</span><span>{t("contributorCount", { count: contributors.length })}</span></>}
           {viewers.length > 0 && <><span className="text-border">|</span><span>{t("viewerCount", { count: viewers.length })}</span></>}
         </div>
-        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={() => setAddOpen(true)}>
+        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={() => setAddOpen(true)}>
           <Plus className="size-3.5" />{t("addMember")}
         </Button>
       </div>
@@ -354,14 +356,14 @@ export default function MembersPage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("selectMemberHeading")}</p>
               <div className="space-y-2">
                 {memberChoicesError && <p role="alert" className="text-sm text-destructive">{t("membersLoadFailed")}</p>}
-                <Label>{t("member")}</Label>
+                <Label htmlFor="rtl018-projects--id--members-page-tsx-3">{t("member")}</Label>
                 <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-                  <SelectTrigger><SelectValue placeholder={t("selectMember")} /></SelectTrigger>
+                  <SelectTrigger aria-label={t("member")} id="rtl018-projects--id--members-page-tsx-3" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("selectMember")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>{t("selectMember")}</SelectItem>
                     {availableMembers.length === 0 && <div className="py-2 px-3 text-sm text-muted-foreground">{t("allMembersAdded")}</div>}
                     {availableMembers.map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.userName || m.userEmail}</SelectItem>
+                      <SelectItem key={m.id} value={m.id}><BidiText className="min-w-0 max-w-full">{m.userName || m.userEmail}</BidiText></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -373,9 +375,9 @@ export default function MembersPage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("permissions")}</p>
               <div className="space-y-2">
-                <Label>{t("role")}</Label>
+                <Label htmlFor="rtl018-projects--id--members-page-tsx-4">{t("role")}</Label>
                 <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label={t("role")} id="rtl018-projects--id--members-page-tsx-4" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="manager">{t("manager")}</SelectItem>
                     <SelectItem value="contributor">{t("contributor")}</SelectItem>
@@ -386,15 +388,15 @@ export default function MembersPage() {
               <div className="rounded-lg border divide-y text-[12px]">
                 <div className="px-4 py-3">
                   <span className="font-medium">{t("manager")}</span>
-                  <span className="text-muted-foreground ml-2">{t("managerHint")}</span>
+                  <span className="text-muted-foreground ms-2">{t("managerHint")}</span>
                 </div>
                 <div className="px-4 py-3">
                   <span className="font-medium">{t("contributor")}</span>
-                  <span className="text-muted-foreground ml-2">{t("contributorHint")}</span>
+                  <span className="text-muted-foreground ms-2">{t("contributorHint")}</span>
                 </div>
                 <div className="px-4 py-3">
                   <span className="font-medium">{t("viewer")}</span>
-                  <span className="text-muted-foreground ml-2">{t("viewerShortHint")}</span>
+                  <span className="text-muted-foreground ms-2">{t("viewerShortHint")}</span>
                 </div>
               </div>
             </div>
@@ -404,15 +406,15 @@ export default function MembersPage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("compensation")}</p>
               <div className="space-y-2">
-                <Label>{t("hourlyRate")}</Label>
-                <CurrencyInput prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={hourlyRate} onChange={setHourlyRate} />
+                <Label htmlFor="rtl018-projects--id--members-page-tsx-5">{t("hourlyRate")}</Label>
+                <CurrencyInput aria-label={t("hourlyRate")} id="rtl018-projects--id--members-page-tsx-5" prefix={proj?.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj?.currency} value={hourlyRate} onChange={setHourlyRate} />
                 <p className="text-[11px] text-muted-foreground">{t("hourlyRateHint")}</p>
               </div>
             </div>
           </div>
           <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-6 py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleAdd} disabled={saving || selectedMemberId === "none"} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={() => setAddOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={handleAdd} disabled={saving || selectedMemberId === "none"} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">
               {saving ? t("adding") : t("addMember")}
             </Button>
           </div>
@@ -430,19 +432,19 @@ export default function MembersPage() {
             <div key={m.id} className="rounded-lg border bg-card p-4 group hover:border-emerald-200 transition-colors relative">
               <div className="flex items-start gap-3">
                 <div className="size-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-semibold shrink-0">
-                  {(m.member.user.name || m.member.user.email)[0].toUpperCase()}
+                  <BidiText className="min-w-0 max-w-full">{(m.member.user.name || m.member.user.email)[0].toUpperCase()}</BidiText>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium truncate">{m.member.user.name || t("unnamed")}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{m.member.user.email}</p>
-                  <Badge variant="outline" className={cn("text-[9px] h-4 mt-1.5 capitalize", roleColors[m.role])}>
+                  <p className="text-[13px] font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{m.member.user.name || t("unnamed")}</BidiText></p>
+                  <p className="text-[11px] text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]"><IdentifierText className="min-w-0 max-w-full">{m.member.user.email}</IdentifierText></p>
+                  <Badge variant="outline" className={(cn("text-[9px] min-h-4 h-auto mt-1.5 capitalize", roleColors[m.role])) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
                     {roleLabel(m.role)}
                   </Badge>
                   {m.hourlyRate && (
-                    <span className="text-[10px] font-mono text-muted-foreground mt-0.5 block">{t("ratePerHour", { amount: formatMoney(m.hourlyRate) })}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground mt-0.5 block">{t.rich("ratePerHour", { amount: formatMoney(m.hourlyRate) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</span>
                   )}
                 </div>
-                <button aria-label={t("removeMember")} onClick={() => removeMember(m.member.id)} disabled={removingId === m.member.id} className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity absolute top-3 right-3", removingId === m.member.id && "opacity-100 pointer-events-none")}>
+                <button aria-label={t("removeMember")} onClick={() => removeMember(m.member.id)} disabled={removingId === m.member.id} className={cn("opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity absolute top-3 end-3", removingId === m.member.id && "opacity-100 pointer-events-none")}>
                   {removingId === m.member.id ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
                 </button>
               </div>

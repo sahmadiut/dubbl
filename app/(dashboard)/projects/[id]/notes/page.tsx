@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
+
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePresentation } from "@/i18n/provider";
@@ -174,7 +176,7 @@ export default function NotesPage() {
     <div className="space-y-4">
       {/* Compose */}
       <div className="rounded-xl border bg-card p-4">
-        <Textarea
+        <Textarea aria-label={t("writeNote")} dir="auto"
           value={content}
           onChange={e => setContent(e.target.value)}
           placeholder={t("writeNote")}
@@ -184,11 +186,11 @@ export default function NotesPage() {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && content.trim()) handleAdd();
           }}
         />
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex flex-wrap items-center justify-between mt-2">
           <span className="text-[10px] text-muted-foreground">
             {t("submitShortcut")}
           </span>
-          <Button size="sm" onClick={handleAdd} disabled={saving || !content.trim()} className="bg-emerald-600 hover:bg-emerald-700 h-7 text-xs">
+          <Button size="sm" onClick={handleAdd} disabled={saving || !content.trim()} className="bg-emerald-600 hover:bg-emerald-700 h-auto text-xs min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">
             {saving ? t("adding") : t("addNote")}
           </Button>
         </div>
@@ -197,12 +199,12 @@ export default function NotesPage() {
       {/* Stats + Filter bar */}
       {notes.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t("notes")}
                 {hasActiveFilters && (
-                  <span className="ml-1.5 text-muted-foreground/60">
+                  <span className="ms-1.5 text-muted-foreground/60">
                     {t("filteredCount", { count: sortedNotes.length, total: notes.length })}
                   </span>
                 )}
@@ -215,7 +217,7 @@ export default function NotesPage() {
             </div>
             <div className="flex items-center gap-2">
               <Select value={sortBy} onValueChange={v => setSortBy(v as "newest" | "oldest")}>
-                <SelectTrigger className="h-7 text-xs w-auto min-w-[100px]">
+                <SelectTrigger aria-label={t("sortBy")} className="h-auto text-xs w-auto min-w-[100px] min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,31 +231,31 @@ export default function NotesPage() {
           {/* Filters */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative flex-1 min-w-[180px] max-w-[280px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50" />
-              <Input
+              <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50" />
+              <Input aria-label={t("searchNotes")} dir="auto"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={t("searchNotes")}
-                className="h-7 text-xs pl-8"
+                className="h-7 text-xs ps-8"
               />
             </div>
 
             {uniqueAuthors.length > 1 && (
               <Select value={filterAuthor} onValueChange={setFilterAuthor}>
-                <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterAuthor !== "all" && "border-blue-300 bg-blue-50/50")}>
+                <SelectTrigger aria-label={t("author")} className={((cn("h-auto min-h-7 h-auto text-xs w-auto min-w-[120px]", filterAuthor !== "all" && "border-blue-300 bg-blue-50/50")) + " h-auto min-h-8 h-auto whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal") + " min-w-0 max-w-full"}>
                   <SelectValue placeholder={t("author")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("allAuthors")}</SelectItem>
                   {uniqueAuthors.map(a => (
-                    <SelectItem key={a.email} value={a.email}>{a.name || a.email}</SelectItem>
+                    <SelectItem key={a.email} value={a.email}><BidiText className="min-w-0 max-w-full">{a.name || a.email}</BidiText></SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
 
             <Select value={filterPinned} onValueChange={setFilterPinned}>
-              <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[110px]", filterPinned !== "all" && "border-blue-300 bg-blue-50/50")}>
+              <SelectTrigger aria-label={t("pinStatus")} className={((cn("h-auto min-h-7 h-auto text-xs w-auto min-w-[110px]", filterPinned !== "all" && "border-blue-300 bg-blue-50/50")) + " h-auto min-h-8 h-auto whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal") + " min-w-0 max-w-full"}>
                 <SelectValue placeholder={t("pinStatus")} />
               </SelectTrigger>
               <SelectContent>
@@ -264,8 +266,8 @@ export default function NotesPage() {
             </Select>
 
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground px-2" onClick={clearFilters}>
-                <X className="size-3 mr-1" />{t("clear")}
+              <Button variant="ghost" size="sm" className="h-auto text-xs text-muted-foreground px-2 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={clearFilters}>
+                <X className="size-3 me-1" />{t("clear")}
               </Button>
             )}
           </div>
@@ -283,7 +285,7 @@ export default function NotesPage() {
         <div className="rounded-lg border border-dashed p-8 text-center">
           <Search className="mx-auto size-6 text-muted-foreground/30" />
           <p className="mt-2 text-sm text-muted-foreground">{t("noMatches")}</p>
-          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={clearFilters}>{t("clearFilters")}</Button>
+          <Button variant="ghost" size="sm" className="mt-2 text-xs h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={clearFilters}>{t("clearFilters")}</Button>
         </div>
       ) : (
         <div className="space-y-2">
@@ -353,13 +355,13 @@ function NoteCard({
           {note.isPinned && <Pin className="size-3 text-amber-500" />}
           <div className="flex items-center gap-1.5 rounded-full bg-muted/50 px-2 py-0.5">
             <User className="size-2.5 text-muted-foreground/60" />
-            <span className="text-[11px] font-medium">{note.author.name || note.author.email}</span>
+            <span className="text-[11px] font-medium"><BidiText className="min-w-0 max-w-full">{note.author.name || note.author.email}</BidiText></span>
           </div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <Calendar className="size-2.5" />
-            {formatInstant(new Date(note.createdAt), presentation, { month: "short", day: "numeric", year: "numeric" })}
-            <span className="text-muted-foreground/50 ml-0.5">
-              {formatInstant(new Date(note.createdAt), presentation, { hour: "numeric", minute: "2-digit" })}
+            <IdentifierText className="min-w-0 max-w-full">{formatInstant(new Date(note.createdAt), presentation, { month: "short", day: "numeric", year: "numeric" })}</IdentifierText>
+            <span className="text-muted-foreground/50 ms-0.5">
+              <IdentifierText className="min-w-0 max-w-full">{formatInstant(new Date(note.createdAt), presentation, { hour: "numeric", minute: "2-digit" })}</IdentifierText>
             </span>
           </div>
         </div>
@@ -403,7 +405,7 @@ function NoteCard({
       {/* Content */}
       {isEditing ? (
         <div className="space-y-2">
-          <Textarea
+          <Textarea aria-label={t("edit")} dir="auto"
             value={editContent}
             onChange={e => onEditContentChange(e.target.value)}
             rows={4}
@@ -414,21 +416,21 @@ function NoteCard({
               if (e.key === "Escape") onCancelEdit();
             }}
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <span className="text-[10px] text-muted-foreground">
               {t("editShortcut")}
             </span>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onCancelEdit}>
+              <Button variant="ghost" size="sm" className="h-auto text-xs min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={onCancelEdit}>
                 {t("cancel")}
               </Button>
               <Button
                 size="sm"
-                className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                className="h-auto text-xs bg-blue-600 hover:bg-blue-700 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                 onClick={onSaveEdit}
                 disabled={editSaving || !editContent.trim()}
               >
-                {editSaving ? <Loader2 className="size-3 animate-spin mr-1" /> : <Check className="size-3 mr-1" />}
+                {editSaving ? <Loader2 className="size-3 animate-spin me-1" /> : <Check className="size-3 me-1" />}
                 {t("save")}
               </Button>
             </div>
@@ -436,7 +438,7 @@ function NoteCard({
         </div>
       ) : (
         <p className="text-[13px] whitespace-pre-wrap leading-relaxed text-muted-foreground">
-          {searchQuery ? highlightText(note.content, searchQuery) : note.content}
+          <BidiText className="min-w-0 max-w-full">{searchQuery ? highlightText(note.content, searchQuery) : note.content}</BidiText>
         </p>
       )}
     </div>

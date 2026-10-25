@@ -1,4 +1,6 @@
 "use client";
+
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { crmActivitiesJson, type CrmActivity } from "@/i18n/crm-presentation";
@@ -245,8 +247,8 @@ export default function DealActivityPage() {
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium text-emerald-700 dark:text-emerald-300">{t("dealWon")}</p>
               <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60">
-                {t("closedOn", { date: dateLabel(deal.wonAt!) })}
-                {deal.valueCents > 0 && <> · {formatMoney(deal.valueCents, deal.currency, unitPresentation)}</>}
+                {t.rich("closedOn", { date: dateLabel(deal.wonAt!) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
+                {deal.valueCents > 0 && <> · <IdentifierText className="min-w-0 max-w-full">{formatMoney(deal.valueCents, deal.currency, unitPresentation)}</IdentifierText></>}
               </p>
             </div>
           </div>
@@ -257,9 +259,9 @@ export default function DealActivityPage() {
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium text-red-700 dark:text-red-300">{t("dealLost")}</p>
               <p className="text-[11px] text-red-600/70 dark:text-red-400/60">
-                {deal.lostReason
-                  ? deal.lostReason
-                  : t("closedOn", { date: dateLabel(deal.lostAt!) })}
+                <BidiText className="min-w-0 max-w-full">{deal.lostReason
+                  ? <BidiText>{deal.lostReason}</BidiText>
+                  : t.rich("closedOn", { date: dateLabel(deal.lostAt!) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</BidiText>
               </p>
             </div>
           </div>
@@ -285,7 +287,7 @@ export default function DealActivityPage() {
               </button>
             ))}
           </div>
-          <Textarea
+          <Textarea aria-label={placeholder(activityType)} dir="auto"
             placeholder={placeholder(activityType)}
             value={activityContent}
             onChange={(e) => setActivityContent(e.target.value)}
@@ -296,13 +298,13 @@ export default function DealActivityPage() {
               }
             }}
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <p className="text-[10px] text-muted-foreground">
-              {t("shortcut", { key: typeof navigator !== "undefined" && navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl" })}
+              {t.rich("shortcut", { key: typeof navigator !== "undefined" && navigator.platform?.includes("Mac") ? "Cmd" : "Ctrl" , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
             </p>
             <Button
               size="sm"
-              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={handleAddActivity}
               disabled={!activityContent.trim() || submitting}
             >
@@ -321,7 +323,7 @@ export default function DealActivityPage() {
             loading={pendingSearch}
           />
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-8 w-full sm:w-[130px] text-xs">
+            <SelectTrigger aria-label={t("allTypes")} className="h-auto min-h-8 w-full sm:w-[130px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
               <SelectValue placeholder={t("allTypes")} />
             </SelectTrigger>
             <SelectContent>
@@ -334,8 +336,8 @@ export default function DealActivityPage() {
             </SelectContent>
           </Select>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as ActivitySortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[120px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-full sm:w-[120px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -357,7 +359,7 @@ export default function DealActivityPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto min-h-8 text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => { setSearch(""); setTypeFilter("all"); }}
             >
               {t("clearFilters")}
@@ -399,7 +401,7 @@ export default function DealActivityPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs mt-2"
+                    className="h-auto text-xs mt-2 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                     onClick={() => { setSearch(""); setTypeFilter("all"); }}
                   >
                     {t("clearFilters")}
@@ -427,9 +429,9 @@ export default function DealActivityPage() {
                 {grouped.map((group, gi) => (
                   <div key={group.date}>
                     {/* Day header with dot on timeline */}
-                    <div className="relative flex items-center gap-3 py-3 pl-[9px]">
+                    <div className="relative flex items-center gap-3 py-3 ps-[9px]">
                       {gi > 0 && (
-                        <div className="absolute left-[12px] -top-0 h-3 w-px bg-border" />
+                        <div className="absolute start-[12px] -top-0 h-3 w-px bg-border" />
                       )}
                       <div className="relative z-10 flex size-2 shrink-0 rounded-full bg-border ring-4 ring-background" />
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
@@ -443,7 +445,7 @@ export default function DealActivityPage() {
 
                     {/* Timeline entries */}
                     <div className="relative">
-                      <div className="absolute left-[12px] top-0 bottom-0 w-px bg-border" />
+                      <div className="absolute start-[12px] top-0 bottom-0 w-px bg-border" />
 
                       {group.items.map((activity, i) => {
                         const Icon = ACTIVITY_ICONS[activity.type] || MessageSquare;
@@ -454,7 +456,7 @@ export default function DealActivityPage() {
                           <div
                             key={activity.id}
                             className={cn(
-                              "relative flex items-start gap-3 pr-3 py-2.5 transition-colors hover:bg-muted/30 rounded-lg group",
+                              "relative flex items-start gap-3 pe-3 py-2.5 transition-colors hover:bg-muted/30 rounded-lg group",
                               isLastEntry && "pb-4"
                             )}
                           >
@@ -469,24 +471,24 @@ export default function DealActivityPage() {
                             </div>
 
                             {/* Content card */}
-                            <div className="flex-1 min-w-0 flex items-start justify-between gap-3 rounded-lg border bg-card px-3.5 py-2.5 shadow-xs transition-shadow group-hover:shadow-sm">
+                            <div className="flex-1 min-w-0 flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card px-3.5 py-2.5 shadow-xs transition-shadow group-hover:shadow-sm">
                               <div className="min-w-0">
                                 <p className="text-[13px] leading-snug">
                                   {t.rich("logged", {
                                     name: activity.user?.name || t("system"), type: activityLabel(activity.type),
-                                    strong: chunks => <span className="font-medium">{chunks}</span>,
-                                    em: chunks => <span className="font-medium capitalize">{chunks}</span>,
+                                    strong: chunks => <BidiText className="font-medium">{chunks}</BidiText>,
+                                    em: chunks => <BidiText className="font-medium capitalize">{chunks}</BidiText>,
                                   })}
                                 </p>
                                 {activity.content && (
                                   <p className="text-[13px] text-muted-foreground mt-1.5 whitespace-pre-wrap leading-relaxed">
-                                    {activity.content}
+                                    <BidiText className="min-w-0 max-w-full">{activity.content}</BidiText>
                                   </p>
                                 )}
                               </div>
 
                               {/* Timestamp */}
-                              <div className="text-right shrink-0">
+                              <div className="text-end shrink-0">
                                 <p className="text-[11px] text-muted-foreground tabular-nums">
                                   {clock(activity.createdAt)}
                                 </p>
@@ -538,8 +540,8 @@ export default function DealActivityPage() {
                   <div className={cn("flex size-6 items-center justify-center rounded-md", ACTIVITY_COLORS[type])}>
                     <Icon className="size-3" />
                   </div>
-                  <div className="flex-1 text-left">
-                    <div className="flex items-center justify-between">
+                  <div className="flex-1 text-start">
+                    <div className="flex flex-wrap items-center justify-between">
                       <span className={cn("text-xs capitalize", isActive && "font-medium")}>{pluralLabel(type)}</span>
                       <span className="text-[10px] font-mono tabular-nums text-muted-foreground">
                         {count}
@@ -560,7 +562,7 @@ export default function DealActivityPage() {
             })}
           </div>
           <div className="h-px bg-border" />
-          <div className="flex items-center justify-between px-2">
+          <div className="flex flex-wrap items-center justify-between px-2">
             <span className="text-xs text-muted-foreground">{t("totalActivities")}</span>
             <span className="text-xs font-mono tabular-nums font-bold">{totalAll}</span>
           </div>
@@ -571,19 +573,19 @@ export default function DealActivityPage() {
           <div className="rounded-xl border bg-card p-4 space-y-3">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("quickStats")}</h3>
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between">
                 <span className="text-xs text-muted-foreground">{t("firstLogged")}</span>
                 <span className="text-xs tabular-nums">
                   {dateLabel(activities.reduce((first, row) => Date.parse(row.createdAt) < Date.parse(first.createdAt) ? row : first).createdAt)}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between">
                 <span className="text-xs text-muted-foreground">{t("mostRecent")}</span>
                 <span className="text-xs tabular-nums">
                   {timeAgo(activities.reduce((last, row) => Date.parse(row.createdAt) > Date.parse(last.createdAt) ? row : last).createdAt)}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between">
                 <span className="text-xs text-muted-foreground">{t("mostCommon")}</span>
                 <span className="text-xs capitalize">
                   {activityLabel(Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "")}

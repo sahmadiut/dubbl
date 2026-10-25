@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { projectInvoiceJson } from "@/i18n/project-presentation";
@@ -43,7 +45,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <p role={loadError ? "alert" : undefined} className="text-sm text-muted-foreground">{t(loadError || "notFound")}</p>
-        <Button variant="ghost" size="sm" asChild className="mt-2">
+        <Button variant="ghost" size="sm" asChild className="mt-2 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">
           <Link href="/projects">{t("backToProjects")}</Link>
         </Button>
       </div>
@@ -85,36 +87,36 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
     <div>
       {/* ── Header: full-width spread ── */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-3">
-        <Button variant="ghost" size="icon" asChild className="shrink-0 size-7 -ml-1">
-          <Link href="/projects" aria-label={t("backToProjects")}><ArrowLeft className="size-3.5" /></Link>
+        <Button variant="ghost" size="icon" asChild className="shrink-0 size-7 -ms-1">
+          <Link href="/projects" aria-label={t("backToProjects")}><ArrowLeft className="size-3.5 rtl:rotate-180" /></Link>
         </Button>
         <div className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: proj.color }} />
-        <h1 className="text-base font-semibold tracking-tight truncate">{proj.name}</h1>
-        <Badge variant="outline" className={cn("text-[10px] h-5 shrink-0", sc.color)}>
-          <span className={cn("size-1.5 rounded-full mr-1", sc.dot)} />{sc.label}
+        <h1 className="text-base font-semibold tracking-tight min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{proj.name}</BidiText></h1>
+        <Badge variant="outline" className={(cn("text-[10px] min-h-5 h-auto shrink-0", sc.color)) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
+          <span className={cn("size-1.5 rounded-full me-1", sc.dot)} />{sc.label}
         </Badge>
-        <Badge variant="outline" className={cn("text-[10px] h-5 shrink-0", priorityConfig[proj.priority]?.color)}>
+        <Badge variant="outline" className={(cn("text-[10px] min-h-5 h-auto shrink-0", priorityConfig[proj.priority]?.color)) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
           {priorityConfig[proj.priority]?.label}
         </Badge>
 
-        {/* Spacer pushes right-side stats and actions */}
+        {/* Spacer pushes end-side stats and actions */}
         <div className="flex-1" />
 
         {/* Inline stats on the right */}
         <div className="hidden sm:flex items-center gap-3 text-[11px] text-muted-foreground">
           {proj.enableTimeTracking && (
             <span className="flex items-center gap-1 font-mono tabular-nums">
-              <Clock className="size-3" />{formatHours(proj.totalHours)}
-              {proj.estimatedHours > 0 && <span className="text-muted-foreground/50">/{formatHours(proj.estimatedHours)}</span>}
+              <Clock className="size-3" /><IdentifierText className="min-w-0 max-w-full">{formatHours(proj.totalHours)}</IdentifierText>
+              {proj.estimatedHours > 0 && <span className="text-muted-foreground/50">/<IdentifierText className="min-w-0 max-w-full">{formatHours(proj.estimatedHours)}</IdentifierText></span>}
             </span>
           )}
           {proj.enableTasks && totalTasks > 0 && (
             <span className="flex items-center gap-1 font-mono tabular-nums">
-              <CheckCircle2 className="size-3" />{doneTasks}/{totalTasks}
+              <CheckCircle2 className="size-3" /><IdentifierText className="min-w-0 max-w-full">{doneTasks}/{totalTasks}</IdentifierText>
             </span>
           )}
           {proj.enableBilling && proj.budget > 0 && (
-            <span className="font-mono tabular-nums">{formatMoney(proj.totalBilled)}/{formatMoney(proj.budget)}</span>
+            <span className="font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(proj.totalBilled)}/{formatMoney(proj.budget)}</IdentifierText></span>
           )}
           {proj.members.length > 0 && (
             <span className="flex items-center gap-1"><Users className="size-3" />{proj.members.length}</span>
@@ -127,12 +129,12 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {proj.contact && (
-          <span className="text-[11px] text-muted-foreground shrink-0 hidden lg:block border-l pl-3 ml-1">{proj.contact.name}</span>
+          <span className="text-[11px] text-muted-foreground shrink-0 hidden lg:block border-s ps-3 ms-1"><BidiText className="min-w-0 max-w-full">{proj.contact.name}</BidiText></span>
         )}
 
         {proj.enableBilling && proj.contactId && (
-          <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={handleGenerateInvoice}>
-            <Receipt className="mr-1 size-3" />{t("invoice")}
+          <Button size="sm" variant="outline" className="h-auto text-xs shrink-0 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={handleGenerateInvoice}>
+            <Receipt className="me-1 size-3" />{t("invoice")}
           </Button>
         )}
       </div>
@@ -153,7 +155,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
               href={tab.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors whitespace-nowrap shrink-0",
+                "flex items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors whitespace-normal shrink-0",
                 isActive
                   ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -162,7 +164,7 @@ function ProjectLayoutInner({ children }: { children: React.ReactNode }) {
               <Icon className="size-3.5" />
               {tab.label}
               {"count" in tab && (tab.count as number) > 0 && (
-                <span className="size-4 rounded-full bg-muted text-[9px] font-medium flex items-center justify-center ml-0.5">{tab.count as number}</span>
+                <span className="size-4 rounded-full bg-muted text-[9px] font-medium flex items-center justify-center ms-0.5">{tab.count as number}</span>
               )}
             </Link>
           );

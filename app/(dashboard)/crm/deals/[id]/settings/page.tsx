@@ -72,13 +72,13 @@ export default function DealSettingsPage() {
       <Section title={t("general")} description={t("generalDescription")}>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("dealTitle")}</Label>
-            <Input name="title" required defaultValue={deal.title} />
+            <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-1" className="text-xs">{t("dealTitle")}</Label>
+            <Input aria-label={t("dealTitle")} id="rtl018-crm-deals--id--settings-page-tsx-1" dir="auto" name="title" required defaultValue={deal.title} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("probability")}</Label>
-              <Input
+              <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-2" className="text-xs">{t("probability")}</Label>
+              <Input aria-label={t("probability")} id="rtl018-crm-deals--id--settings-page-tsx-2" dir="ltr"
                 name="probability"
                 type="number"
                 min={0}
@@ -88,8 +88,8 @@ export default function DealSettingsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("expectedCloseDate")}</Label>
-              <Input
+              <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-3" className="text-xs">{t("expectedCloseDate")}</Label>
+              <Input aria-label={t("expectedCloseDate")} id="rtl018-crm-deals--id--settings-page-tsx-3" dir="ltr"
                 name="expectedCloseDate"
                 type="date"
                 defaultValue={deal.expectedCloseDate || ""}
@@ -104,32 +104,32 @@ export default function DealSettingsPage() {
       <Section title={t("details")} description={t("detailsDescription")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("source")}</Label>
-            <Input
+            <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-4" className="text-xs">{t("source")}</Label>
+            <Input aria-label={t("source")} id="rtl018-crm-deals--id--settings-page-tsx-4" dir="auto"
               value={sourceLabel(deal.source)}
               disabled
               className="bg-muted/50"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("contact")}</Label>
-            <Input
+            <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-5" className="text-xs">{t("contact")}</Label>
+            <Input aria-label={t("contact")} id="rtl018-crm-deals--id--settings-page-tsx-5" dir="auto"
               value={deal.contact?.name || "-"}
               disabled
               className="bg-muted/50"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("assignedTo")}</Label>
-            <Input
+            <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-6" className="text-xs">{t("assignedTo")}</Label>
+            <Input aria-label={t("assignedTo")} id="rtl018-crm-deals--id--settings-page-tsx-6" dir="auto"
               value={deal.assignedUser?.name || "-"}
               disabled
               className="bg-muted/50"
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("value")}</Label>
-            <Input
+            <Label htmlFor="rtl018-crm-deals--id--settings-page-tsx-7" className="text-xs">{t("value")}</Label>
+            <Input aria-label={t("value")} id="rtl018-crm-deals--id--settings-page-tsx-7" dir="ltr"
               value={formatMoney(deal.valueCents, deal.currency, unitPresentation)}
               disabled
               className="bg-muted/50 font-mono tabular-nums"
@@ -141,7 +141,7 @@ export default function DealSettingsPage() {
       <div className="h-px bg-border" />
 
       <Section title={t("notes")} description={t("notesDescription")}>
-        <Textarea
+        <Textarea aria-label={t("notesPlaceholder")} dir="auto"
           name="notes"
           defaultValue={deal.notes || ""}
           rows={3}
@@ -150,7 +150,7 @@ export default function DealSettingsPage() {
       </Section>
 
       <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={saving}>
+        <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="submit" size="sm" disabled={saving}>
           {saving ? t("saving") : t("saveChanges")}
         </Button>
       </div>
@@ -163,7 +163,7 @@ export default function DealSettingsPage() {
             <p className="text-sm font-medium text-red-700 dark:text-red-400">{t("deleteDealHeading")}</p>
             <p className="text-xs text-red-600/70 dark:text-red-400/60">{t("deleteWarning")}</p>
           </div>
-          <Button type="button" size="sm" variant="destructive" onClick={handleDelete}>
+          <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" size="sm" variant="destructive" onClick={handleDelete}>
             {t("deleteDeal")}
           </Button>
         </div>

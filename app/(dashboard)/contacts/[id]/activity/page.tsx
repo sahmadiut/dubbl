@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
@@ -109,7 +111,7 @@ export default function ContactActivityPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <Select value={activityTypeFilter} onValueChange={setActivityTypeFilter}>
-            <SelectTrigger className="w-40 h-8 text-sm">
+            <SelectTrigger aria-label={t("all")} className="w-40 h-auto min-h-8 text-sm whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
               <SelectValue placeholder={t("all")} />
             </SelectTrigger>
             <SelectContent>
@@ -121,30 +123,30 @@ export default function ContactActivityPage() {
               <SelectItem value="bill">{t("bills")}</SelectItem>
             </SelectContent>
           </Select>
-          <DatePicker
+          <div role="group" aria-label={t("from")}><DatePicker
             value={activityStartDate}
             onChange={setActivityStartDate}
             placeholder={t("from")}
-            className="w-36 h-8 text-sm"
-          />
-          <DatePicker
+            className="w-36 h-auto min-h-8 text-sm whitespace-normal [overflow-wrap:anywhere]"
+          /></div>
+          <div role="group" aria-label={t("to")}><DatePicker
             value={activityEndDate}
             onChange={setActivityEndDate}
             placeholder={t("to")}
-            className="w-36 h-8 text-sm"
-          />
+            className="w-36 h-auto min-h-8 text-sm whitespace-normal [overflow-wrap:anywhere]"
+          /></div>
           {(activityStartDate || activityEndDate || activityTypeFilter !== "all") && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2 text-xs text-muted-foreground"
+              className="h-auto min-h-8 px-2 text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => {
                 setActivityStartDate("");
                 setActivityEndDate("");
                 setActivityTypeFilter("all");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clear")}
             </Button>
           )}
@@ -177,7 +179,7 @@ export default function ContactActivityPage() {
           <ContentReveal key={`activity-list-${activityTypeFilter}-${activityStartDate}-${activityEndDate}`}>
             <div className="relative">
               {/* Timeline line */}
-              <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
+              <div className="absolute start-[19px] top-2 bottom-2 w-px bg-border" />
 
               <div className="space-y-1">
                 {activityItems.map((item) => {
@@ -187,32 +189,31 @@ export default function ContactActivityPage() {
                     <button
                       key={`${item.type}-${item.id}`}
                       onClick={() => router.push(config.href(item.id))}
-                      className="relative flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/50"
+                      className="relative flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-start transition-colors hover:bg-muted/50 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]"
                     >
                       <div className={cn("relative z-10 flex size-[38px] shrink-0 items-center justify-center rounded-full border bg-card", config.bg)}>
                         <Icon className={cn("size-4", config.color)} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{item.number}</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          <span className="text-sm font-medium"><IdentifierText className="min-w-0 max-w-full">{item.number}</IdentifierText></span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                             {t(config.labelKey)}
                           </Badge>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                             {t(activityStatusKey(item.status))}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(item.date).toLocaleDateString("en-US", {
+                          <IdentifierText className="min-w-0 max-w-full">{new Date(item.date).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
-                          })}
+                          })}</IdentifierText>
                         </p>
                       </div>
                       <span className="text-sm font-medium tabular-nums">
-                        {item.type === "credit_note" ? "-" : ""}
-                        {formatMoney(item.amount, item.currencyCode, unitPresentation)}
+                        <IdentifierText className="min-w-0 max-w-full">{item.type === "credit_note" ? "-" : ""}{formatMoney(item.amount, item.currencyCode, unitPresentation)}</IdentifierText>
                       </span>
                     </button>
                   );

@@ -1,4 +1,6 @@
 "use client";
+
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { projectTimerJson, projectTimeEntryJson, projectTimeDeleteJson } from "@/i18n/project-time-presentation";
@@ -388,19 +390,19 @@ export default function TimePage() {
   const weekTotalMinutes = weekData.reduce((sum, d) => sum + d.hours * 60, 0);
 
   const columns: Column<TimeEntryData>[] = [
-    { key: "date", header: t("date"), className: "w-24", render: r => <span className="text-[13px] tabular-nums">{formatDateShort(r.date)}</span> },
-    { key: "user", header: t("user"), className: "w-28", render: r => <span className="text-xs text-muted-foreground">{r.user?.name || "-"}</span> },
+    { key: "date", header: t("date"), className: "w-24", render: r => <span className="text-[13px] tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatDateShort(r.date)}</IdentifierText></span> },
+    { key: "user", header: t("user"), className: "w-28", render: r => <span className="text-xs text-muted-foreground"><BidiText className="min-w-0 max-w-full">{r.user?.name || "-"}</BidiText></span> },
     { key: "description", header: t("description"), render: r => (
       <div>
-        <span className="text-[13px]">{r.description || "-"}</span>
-        {r.task && <Badge variant="outline" className="text-[9px] h-4 ml-1.5 align-middle">{r.task.title}</Badge>}
+        <span className="text-[13px]"><BidiText className="min-w-0 max-w-full">{r.description || "-"}</BidiText></span>
+        {r.task && <Badge variant="outline" className="text-[9px] min-h-4 h-auto ms-1.5 align-middle min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{r.task.title}</BidiText></Badge>}
       </div>
     )},
-    { key: "duration", header: t("duration"), className: "w-20 text-right", render: r => <span className="text-[13px] font-mono tabular-nums font-medium">{formatHours(r.minutes)}</span> },
-    { key: "amount", header: t("amount"), className: "w-24 text-right", render: r => <span className="text-[13px] font-mono tabular-nums">{formatMoney(projectTimeCents(r.minutes, r.hourlyRate))}</span> },
+    { key: "duration", header: t("duration"), className: "w-20 text-end", render: r => <span className="text-[13px] font-mono tabular-nums font-medium"><IdentifierText className="min-w-0 max-w-full">{formatHours(r.minutes)}</IdentifierText></span> },
+    { key: "amount", header: t("amount"), className: "w-24 text-end", render: r => <span className="text-[13px] font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(projectTimeCents(r.minutes, r.hourlyRate))}</IdentifierText></span> },
     { key: "status", header: "", className: "w-20", render: r => {
-      if (r.invoiceId) return <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] h-4">{t("invoiced")}</Badge>;
-      return <Badge variant="outline" className={cn("text-[9px] h-4", r.isBillable ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-gray-50 text-gray-600")}>{r.isBillable ? t("billable") : t("nonBillableShort")}</Badge>;
+      if (r.invoiceId) return <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[9px] min-h-4 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">{t("invoiced")}</Badge>;
+      return <Badge variant="outline" className={(cn("text-[9px] min-h-4 h-auto", r.isBillable ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-gray-50 text-gray-600")) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>{r.isBillable ? t("billable") : t("nonBillableShort")}</Badge>;
     }},
   ];
 
@@ -488,7 +490,7 @@ export default function TimePage() {
           timerIsRunning && !timerIsPaused && "border-emerald-300 bg-gradient-to-b from-emerald-50/40 to-card dark:from-emerald-950/20",
           timerIsPaused && "border-amber-300 bg-gradient-to-b from-amber-50/30 to-card dark:from-amber-950/20",
         )}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className={cn(
                 "size-2 rounded-full",
@@ -502,14 +504,14 @@ export default function TimePage() {
             </div>
             {timerData && (
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                {t("started", { time: formatInstant(new Date(timerData.startedAt), presentation, { hour: "2-digit", minute: "2-digit" }) })}
+                {t.rich("started", { time: formatInstant(new Date(timerData.startedAt), presentation, { hour: "2-digit", minute: "2-digit" }) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
               </span>
             )}
           </div>
 
           {/* Timer Display */}
           <div className="flex items-center justify-center py-3 sm:py-4">
-            <div className="flex items-baseline gap-1 select-none">
+            <div dir="ltr" className="flex items-baseline gap-1 select-none [unicode-bidi:isolate]">
               <span className={cn(
                 "text-3xl sm:text-4xl font-bold font-mono tabular-nums tracking-tight transition-colors",
                 timerIsRunning && !timerIsPaused && "text-emerald-700 dark:text-emerald-400",
@@ -548,7 +550,7 @@ export default function TimePage() {
           {/* Timer Description + Task */}
           {timerIsRunning && (
             <div className="space-y-2 mb-3">
-              <Input
+              <Input aria-label={t("workingPlaceholder")} dir="auto"
                 value={timerDesc}
                 onChange={e => setTimerDesc(e.target.value)}
                 placeholder={t("workingPlaceholder")}
@@ -556,25 +558,25 @@ export default function TimePage() {
               />
               {tasks.length > 0 && (
                 <Select value={timerTaskId} onValueChange={setTimerTaskId}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger aria-label={t("linkTaskPlaceholder")} className="h-auto min-h-8 text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                     <SelectValue placeholder={t("linkTaskPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("noTask")}</SelectItem>
                     {tasks.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}><BidiText className="min-w-0 max-w-full">{t.title}</BidiText></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
               <button
                 onClick={() => setTimerBillable(!timerBillable)}
-                className={cn(
+                className={(cn(
                   "flex items-center gap-1.5 text-[11px] rounded-md px-2 py-1 transition-colors w-fit",
                   timerBillable
                     ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/40"
                     : "text-muted-foreground bg-muted hover:bg-muted/80",
-                )}
+                )) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}
               >
                 <DollarSign className="size-3" />
                 {timerBillable ? t("billable") : t("nonBillable")}
@@ -587,7 +589,7 @@ export default function TimePage() {
             {!timerIsRunning ? (
               <Button
                 size="sm"
-                className="flex-1 h-9 bg-emerald-600 hover:bg-emerald-700 gap-2 text-sm font-medium"
+                className="flex-1 h-auto min-h-9 bg-emerald-600 hover:bg-emerald-700 gap-2 text-sm font-medium whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                 onClick={startTimer}
               >
                 <Play className="size-3.5 fill-current" />
@@ -599,7 +601,7 @@ export default function TimePage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-9 gap-2 text-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    className="flex-1 h-auto min-h-9 gap-2 text-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                     onClick={resumeTimer}
                   >
                     <Play className="size-3.5 fill-current" />
@@ -609,7 +611,7 @@ export default function TimePage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-9 gap-2 text-sm border-amber-200 text-amber-700 hover:bg-amber-50"
+                    className="flex-1 h-auto min-h-9 gap-2 text-sm border-amber-200 text-amber-700 hover:bg-amber-50 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                     onClick={pauseTimer}
                   >
                     <Pause className="size-3.5" />
@@ -618,7 +620,7 @@ export default function TimePage() {
                 )}
                 <Button
                   size="sm"
-                  className="flex-1 h-9 gap-2 text-sm bg-emerald-600 hover:bg-emerald-700"
+                  className="flex-1 h-auto min-h-9 gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                   onClick={stopTimer}
                 >
                   <Square className="size-3 fill-current" />
@@ -640,15 +642,15 @@ export default function TimePage() {
 
         {/* Weekly Chart */}
         <div className="rounded-xl border bg-card p-4 sm:p-5 flex flex-col">
-          <div className="flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-1">
+          <div className="flex flex-wrap items-center justify-between mb-3 sm:mb-4 gap-1">
             <div className="flex items-center gap-2">
               <CalendarDays className="size-3.5 text-muted-foreground/60" />
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("thisWeek")}</span>
             </div>
-            <span className="text-xs text-muted-foreground font-mono tabular-nums">{t("weekTotal", { duration: formatHours(Math.round(weekTotalMinutes)) })}</span>
+            <span className="text-xs text-muted-foreground font-mono tabular-nums">{t.rich("weekTotal", { duration: formatHours(Math.round(weekTotalMinutes)) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</span>
           </div>
 
-          <div className="flex-1 min-h-[140px]">
+          <div dir="ltr" className="flex-1 min-h-[140px] [unicode-bidi:isolate]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekData} barSize={28} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
@@ -719,16 +721,16 @@ export default function TimePage() {
 
       {/* Action bar + Filters */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {t("allEntries")}
             {hasActiveFilters && (
-              <span className="ml-1.5 text-muted-foreground/60">
+              <span className="ms-1.5 text-muted-foreground/60">
                 {t("filteredCount", { count: filteredEntries.length, total: entries.length })}
               </span>
             )}
           </p>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-8" onClick={openAdd}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={openAdd}>
             <Plus className="size-3.5" />{t("logTime")}
           </Button>
         </div>
@@ -739,20 +741,20 @@ export default function TimePage() {
 
           {uniqueMembers.length > 0 && (
             <Select value={filterMember} onValueChange={setFilterMember}>
-              <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterMember !== "all" && "border-blue-300 bg-blue-50/50")}>
+              <SelectTrigger aria-label={t("member")} className={((cn("h-auto min-h-7 h-auto text-xs w-auto min-w-[120px]", filterMember !== "all" && "border-blue-300 bg-blue-50/50")) + " h-auto min-h-8 h-auto whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal") + " min-w-0 max-w-full"}>
                 <SelectValue placeholder={t("member")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("allMembers")}</SelectItem>
                 {uniqueMembers.map(name => (
-                  <SelectItem key={name} value={name!}>{name}</SelectItem>
+                  <SelectItem key={name} value={name!}><BidiText className="min-w-0 max-w-full">{name}</BidiText></SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
 
           <Select value={filterBillable} onValueChange={setFilterBillable}>
-            <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterBillable !== "all" && "border-blue-300 bg-blue-50/50")}>
+            <SelectTrigger aria-label={t("status")} className={((cn("h-auto min-h-7 h-auto text-xs w-auto min-w-[120px]", filterBillable !== "all" && "border-blue-300 bg-blue-50/50")) + " h-auto min-h-8 h-auto whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal") + " min-w-0 max-w-full"}>
               <SelectValue placeholder={t("status")} />
             </SelectTrigger>
             <SelectContent>
@@ -765,22 +767,22 @@ export default function TimePage() {
 
           {uniqueTasks.length > 0 && (
             <Select value={filterTask} onValueChange={setFilterTask}>
-              <SelectTrigger className={cn("h-7 text-xs w-auto min-w-[120px]", filterTask !== "all" && "border-blue-300 bg-blue-50/50")}>
+              <SelectTrigger aria-label={t("task")} className={((cn("h-auto min-h-7 h-auto text-xs w-auto min-w-[120px]", filterTask !== "all" && "border-blue-300 bg-blue-50/50")) + " h-auto min-h-8 h-auto whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal") + " min-w-0 max-w-full"}>
                 <SelectValue placeholder={t("task")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("allTasks")}</SelectItem>
                 <SelectItem value="none">{t("noTask")}</SelectItem>
                 {uniqueTasks.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                  <SelectItem key={t.id} value={t.id}><BidiText className="min-w-0 max-w-full">{t.title}</BidiText></SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
 
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground px-2" onClick={clearFilters}>
-              <X className="size-3 mr-1" />{t("clear")}
+            <Button variant="ghost" size="sm" className="h-auto text-xs text-muted-foreground px-2 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" onClick={clearFilters}>
+              <X className="size-3 me-1" />{t("clear")}
             </Button>
           )}
         </div>
@@ -810,7 +812,7 @@ export default function TimePage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("when")}</p>
               <div className="space-y-2">
                 <Label>{t("date")}</Label>
-                <DatePicker value={entryDate} onChange={setEntryDate} placeholder={t("selectDate")} />
+                <div role="group" aria-label={t("date")}><DatePicker className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={entryDate} onChange={setEntryDate} placeholder={t("selectDate")} /></div>
               </div>
             </div>
 
@@ -819,18 +821,18 @@ export default function TimePage() {
             <div className="space-y-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</p>
               <div className="space-y-2">
-                <Label>{t("description")}</Label>
-                <Textarea value={entryDesc} onChange={e => setEntryDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={3} />
+                <Label htmlFor="rtl018-projects--id--time-page-tsx-6">{t("description")}</Label>
+                <Textarea aria-label={t("description")} id="rtl018-projects--id--time-page-tsx-6" dir="auto" value={entryDesc} onChange={e => setEntryDesc(e.target.value)} placeholder={t("descriptionPlaceholder")} rows={3} />
               </div>
               {tasks.length > 0 && (
                 <div className="space-y-2">
-                  <Label>{t("relatedTask")}</Label>
+                  <Label htmlFor="rtl018-projects--id--time-page-tsx-7">{t("relatedTask")}</Label>
                   <Select value={entryTaskId} onValueChange={setEntryTaskId}>
-                    <SelectTrigger><SelectValue placeholder={t("noTask")} /></SelectTrigger>
+                    <SelectTrigger aria-label={t("relatedTask")} id="rtl018-projects--id--time-page-tsx-7" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue placeholder={t("noTask")} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t("noTask")}</SelectItem>
                       {tasks.map(t => (
-                        <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}><BidiText className="min-w-0 max-w-full">{t.title}</BidiText></SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -844,18 +846,18 @@ export default function TimePage() {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("duration")}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>{t("hours")}</Label>
-                  <Input type="number" step="0.25" min={0} value={entryHours} onChange={e => { setEntryHours(e.target.value); setEntryMinutes(""); }} placeholder={t("hoursExample")} />
+                  <Label htmlFor="rtl018-projects--id--time-page-tsx-8">{t("hours")}</Label>
+                  <Input aria-label={t("hours")} id="rtl018-projects--id--time-page-tsx-8" dir="ltr" type="number" step="0.25" min={0} value={entryHours} onChange={e => { setEntryHours(e.target.value); setEntryMinutes(""); }} placeholder={t("hoursExample")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("orMinutes")}</Label>
-                  <Input type="number" min={1} value={entryMinutes} onChange={e => { setEntryMinutes(e.target.value); setEntryHours(""); }} placeholder={t("minutesExample")} />
+                  <Label htmlFor="rtl018-projects--id--time-page-tsx-9">{t("orMinutes")}</Label>
+                  <Input aria-label={t("orMinutes")} id="rtl018-projects--id--time-page-tsx-9" dir="ltr" type="number" min={1} value={entryMinutes} onChange={e => { setEntryMinutes(e.target.value); setEntryHours(""); }} placeholder={t("minutesExample")} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>{t("billable")}</Label>
+                <Label htmlFor="rtl018-projects--id--time-page-tsx-10">{t("billable")}</Label>
                 <Select value={entryBillable} onValueChange={setEntryBillable}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger aria-label={t("billable")} id="rtl018-projects--id--time-page-tsx-10" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="true">{t("yesBillable")}</SelectItem>
                     <SelectItem value="false">{t("noNonBillable")}</SelectItem>
@@ -870,20 +872,20 @@ export default function TimePage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 mr-auto h-9"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 me-auto min-h-9 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                 onClick={handleDelete}
                 disabled={deleting}
               >
-                <Trash2 className="size-3.5 mr-1.5" />
+                <Trash2 className="size-3.5 me-1.5" />
                 {deleting ? t("deleting") : t("delete")}
               </Button>
             )}
-            <div className={cn("flex items-center gap-3", drawerMode !== "edit" && "ml-auto")}>
-              <Button type="button" variant="outline" onClick={closeDrawer}>{t("cancel")}</Button>
+            <div className={cn("flex items-center gap-3", drawerMode !== "edit" && "ms-auto")}>
+              <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" type="button" variant="outline" onClick={closeDrawer}>{t("cancel")}</Button>
               <Button
                 onClick={drawerMode === "edit" ? handleUpdate : handleAdd}
                 disabled={saving}
-                className={drawerMode === "edit" ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700"}
+                className={(drawerMode === "edit" ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700") + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}
               >
                 {saving ? t("saving") : drawerMode === "edit" ? t("updateEntry") : t("addEntry")}
               </Button>
@@ -922,15 +924,15 @@ function StatCard({ label, value, sub, icon, accent }: {
         )}>
           {icon}
         </span>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground"><BidiText className="min-w-0 max-w-full">{label}</BidiText></p>
       </div>
       <p className={cn(
         "text-lg font-bold font-mono tabular-nums mt-0.5",
         accent === "emerald" && "text-emerald-600",
         accent === "amber" && "text-amber-600",
         accent === "blue" && "text-blue-600",
-      )}>{value}</p>
-      <p className="text-[10px] text-muted-foreground">{sub}</p>
+      )}><IdentifierText className="min-w-0 max-w-full">{value}</IdentifierText></p>
+      <p className="text-[10px] text-muted-foreground"><BidiText className="min-w-0 max-w-full">{sub}</BidiText></p>
     </div>
   );
 }

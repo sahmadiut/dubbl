@@ -121,13 +121,13 @@ export default function SettingsPage() {
       <Section title={t("general")} description={t("generalDescription")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs">{t("projectNameRequired")}</Label>
-            <Input name="name" required defaultValue={proj.name} />
+            <Label htmlFor="rtl018-projects--id--settings-page-tsx-1" className="text-xs">{t("projectNameRequired")}</Label>
+            <Input aria-label={t("projectNameRequired")} id="rtl018-projects--id--settings-page-tsx-1" dir="auto" name="name" required defaultValue={proj.name} />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("status")}</Label>
+            <Label htmlFor="rtl018-projects--id--settings-page-tsx-2" className="text-xs">{t("status")}</Label>
             <Select name="status" defaultValue={proj.status}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("status")} id="rtl018-projects--id--settings-page-tsx-2" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">{t("active")}</SelectItem>
                 <SelectItem value="completed">{t("completed")}</SelectItem>
@@ -138,9 +138,9 @@ export default function SettingsPage() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("priority")}</Label>
+            <Label htmlFor="rtl018-projects--id--settings-page-tsx-3" className="text-xs">{t("priority")}</Label>
             <Select name="priority" defaultValue={proj.priority}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("priority")} id="rtl018-projects--id--settings-page-tsx-3" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="low">{t("low")}</SelectItem>
                 <SelectItem value="medium">{t("medium")}</SelectItem>
@@ -154,8 +154,8 @@ export default function SettingsPage() {
             <ContactPicker value={contactId} onChange={setContactId} type="customer" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("category")}</Label>
-            <Input name="category" defaultValue={proj.category || ""} placeholder={t("categoryExample")} />
+            <Label htmlFor="rtl018-projects--id--settings-page-tsx-4" className="text-xs">{t("category")}</Label>
+            <Input aria-label={t("category")} id="rtl018-projects--id--settings-page-tsx-4" dir="auto" name="category" defaultValue={proj.category || ""} placeholder={t("categoryExample")} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">{t("color")}</Label>
@@ -169,13 +169,13 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("tags")}</Label>
-            <Input name="tags" defaultValue={proj.tags.join(", ")} placeholder={t("commaSeparated")} />
+            <Label htmlFor="rtl018-projects--id--settings-page-tsx-5" className="text-xs">{t("tags")}</Label>
+            <Input aria-label={t("tags")} id="rtl018-projects--id--settings-page-tsx-5" dir="auto" name="tags" defaultValue={proj.tags.join(", ")} placeholder={t("commaSeparated")} />
           </div>
         </div>
         <div className="space-y-1.5 mt-4">
-          <Label className="text-xs">{t("description")}</Label>
-          <Textarea name="description" defaultValue={proj.description || ""} rows={3} />
+          <Label htmlFor="rtl018-projects--id--settings-page-tsx-6" className="text-xs">{t("description")}</Label>
+          <Textarea aria-label={t("description")} id="rtl018-projects--id--settings-page-tsx-6" dir="auto" name="description" defaultValue={proj.description || ""} rows={3} />
         </div>
       </Section>
 
@@ -184,9 +184,9 @@ export default function SettingsPage() {
       <Section title={t("financial")} description={t("financialDescription")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("billingType")}</Label>
+            <Label htmlFor="rtl018-projects--id--settings-page-tsx-7" className="text-xs">{t("billingType")}</Label>
             <Select name="billingType" defaultValue={proj.billingType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("billingType")} id="rtl018-projects--id--settings-page-tsx-7" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="hourly">{t("hourly")}</SelectItem>
                 <SelectItem value="fixed">{t("fixedPrice")}</SelectItem>
@@ -195,9 +195,9 @@ export default function SettingsPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("budget")}</Label><CurrencyInput prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projBudget} onChange={setProjBudget} /></div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("hourlyRate")}</Label><CurrencyInput prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projHourlyRate} onChange={setProjHourlyRate} /></div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("fixedPrice")}</Label><CurrencyInput prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projFixedPrice} onChange={setProjFixedPrice} /></div>
+          <div className="space-y-1.5"><Label htmlFor="rtl018-projects--id--settings-page-tsx-8" className="text-xs">{t("budget")}</Label><CurrencyInput aria-label={t("budget")} id="rtl018-projects--id--settings-page-tsx-8" prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projBudget} onChange={setProjBudget} /></div>
+          <div className="space-y-1.5"><Label htmlFor="rtl018-projects--id--settings-page-tsx-9" className="text-xs">{t("hourlyRate")}</Label><CurrencyInput aria-label={t("hourlyRate")} id="rtl018-projects--id--settings-page-tsx-9" prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projHourlyRate} onChange={setProjHourlyRate} /></div>
+          <div className="space-y-1.5"><Label htmlFor="rtl018-projects--id--settings-page-tsx-10" className="text-xs">{t("fixedPrice")}</Label><CurrencyInput aria-label={t("fixedPrice")} id="rtl018-projects--id--settings-page-tsx-10" prefix={proj.currency === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : proj.currency} value={projFixedPrice} onChange={setProjFixedPrice} /></div>
         </div>
       </Section>
 
@@ -205,9 +205,9 @@ export default function SettingsPage() {
 
       <Section title={t("timeline")} description={t("timelineDescription")}>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-          <div className="space-y-1.5"><Label className="text-xs">{t("startDate")}</Label><DatePicker value={projStartDate} onChange={setProjStartDate} placeholder={t("selectStart")} /></div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("endDate")}</Label><DatePicker value={projEndDate} onChange={setProjEndDate} placeholder={t("selectEnd")} /></div>
-          <div className="space-y-1.5"><Label className="text-xs">{t("estimatedHours")}</Label><Input name="estimatedHours" type="number" step="any" min={0} defaultValue={proj.estimatedHours > 0 ? projectHoursDecimal(proj.estimatedHours) : ""} /></div>
+          <div className="space-y-1.5"><Label className="text-xs">{t("startDate")}</Label><div role="group" aria-label={t("startDate")}><DatePicker className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={projStartDate} onChange={setProjStartDate} placeholder={t("selectStart")} /></div></div>
+          <div className="space-y-1.5"><Label className="text-xs">{t("endDate")}</Label><div role="group" aria-label={t("endDate")}><DatePicker className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={projEndDate} onChange={setProjEndDate} placeholder={t("selectEnd")} /></div></div>
+          <div className="space-y-1.5"><Label htmlFor="rtl018-projects--id--settings-page-tsx-11" className="text-xs">{t("estimatedHours")}</Label><Input aria-label={t("estimatedHours")} id="rtl018-projects--id--settings-page-tsx-11" dir="ltr" name="estimatedHours" type="number" step="any" min={0} defaultValue={proj.estimatedHours > 0 ? projectHoursDecimal(proj.estimatedHours) : ""} /></div>
         </div>
       </Section>
 
@@ -236,7 +236,7 @@ export default function SettingsPage() {
       <div className="h-px bg-border" />
 
       <div className="flex justify-end">
-        <Button type="submit" disabled={saving} size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+        <Button type="submit" disabled={saving} size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">
           {saving ? t("saving") : t("saveChanges")}
         </Button>
       </div>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
             <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteProject")}</p>
             <p className="text-[12px] text-muted-foreground">{t("deleteDescription")}</p>
           </div>
-          <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+          <Button className="h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]" type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
             {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}{deleting ? t("deleting") : t("delete")}
           </Button>
         </div>

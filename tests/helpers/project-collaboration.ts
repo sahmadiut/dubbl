@@ -1,3 +1,4 @@
+import { catalogText } from "./catalog-text";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
@@ -21,7 +22,7 @@ export const member = { id: "membership-a", memberId: "member-a", role: "manager
 export const note = { id: "note-a", content: caller, isPinned: true, createdAt: "2026-10-21T21:15:00Z", author: { name: caller, email: "a@example.test" } };
 export const assignment = { id: "assignment-a", teamId: "team-a", defaultRole: "contributor", team: { id: "team-a", name: caller, color: "#10b981", members: [{ id: "team-member-a", member: member.member }] } };
 export const project = { id: "project-a", currency: "KWD", members: [member], notes: [note, { ...note, id: "note-b", content: "Second note", isPinned: false, createdAt: "2026-10-20T10:00:00Z", author: { name: null, email: "b@example.test" } }] };
-export const translate = (locale: Locale, namespace: "ProjectMembers" | "ProjectNotes") => intl.createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace });
+export const translate = (locale: Locale, namespace: "ProjectMembers" | "ProjectNotes") => intl.createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace });
 type Capture = { kind: string; props: Record<string, unknown> };
 
 /** Real production JSX with real next-intl; control hook state, IO, and sheet portals. */

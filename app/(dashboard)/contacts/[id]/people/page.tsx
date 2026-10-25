@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState } from "react";
@@ -77,7 +79,7 @@ export default function ContactPeoplePage() {
       <div className="space-y-10">
         <Section title={t("title")} description={t("description")}>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between">
               {(contact.people?.length ?? 0) > 0 ? (
                 <p className="text-[12px] text-muted-foreground">
                   {t("count", { count: contact.people?.length ?? 0 })}
@@ -85,19 +87,19 @@ export default function ContactPeoplePage() {
               ) : (
                 <div />
               )}
-              <Button
+              <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddPerson(!showAddPerson)}
               >
                 {showAddPerson ? (
                   <>
-                    <X className="mr-2 size-3.5" />
+                    <X className="me-2 size-3.5" />
                     {t("cancel")}
                   </>
                 ) : (
                   <>
-                    <UserPlus className="mr-2 size-3.5" />
+                    <UserPlus className="me-2 size-3.5" />
                     {t("addPerson")}
                   </>
                 )}
@@ -111,8 +113,8 @@ export default function ContactPeoplePage() {
               >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{t("nameRequired")}</Label>
-                    <Input
+                    <Label htmlFor="rtl018-contacts--id--people-page-tsx-1" className="text-xs">{t("nameRequired")}</Label>
+                    <Input aria-label={t("nameRequired")} id="rtl018-contacts--id--people-page-tsx-1" dir="auto"
                       placeholder={t("fullName")}
                       value={newPerson.name}
                       onChange={(e) =>
@@ -122,8 +124,8 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{t("email")}</Label>
-                    <Input
+                    <Label htmlFor="rtl018-contacts--id--people-page-tsx-2" className="text-xs">{t("email")}</Label>
+                    <Input aria-label={t("email")} id="rtl018-contacts--id--people-page-tsx-2" dir="ltr"
                       type="email"
                       placeholder={t("emailAddress")}
                       value={newPerson.email}
@@ -133,8 +135,8 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{t("phone")}</Label>
-                    <Input
+                    <Label htmlFor="rtl018-contacts--id--people-page-tsx-3" className="text-xs">{t("phone")}</Label>
+                    <Input aria-label={t("phone")} id="rtl018-contacts--id--people-page-tsx-3" dir="auto"
                       placeholder={t("phoneNumber")}
                       value={newPerson.phone}
                       onChange={(e) =>
@@ -143,8 +145,8 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">{t("jobTitle")}</Label>
-                    <Input
+                    <Label htmlFor="rtl018-contacts--id--people-page-tsx-4" className="text-xs">{t("jobTitle")}</Label>
+                    <Input aria-label={t("jobTitle")} id="rtl018-contacts--id--people-page-tsx-4" dir="auto"
                       placeholder={t("jobTitle")}
                       value={newPerson.jobTitle}
                       onChange={(e) =>
@@ -153,7 +155,7 @@ export default function ContactPeoplePage() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="personPrimary"
@@ -173,9 +175,9 @@ export default function ContactPeoplePage() {
                     type="submit"
                     size="sm"
                     loading={addingPerson}
-                    className="bg-emerald-600 hover:bg-emerald-700"
+                    className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                   >
-                    <UserPlus className="mr-2 size-3.5" />
+                    <UserPlus className="me-2 size-3.5" />
                     {t("add")}
                   </Button>
                 </div>
@@ -210,14 +212,14 @@ export default function ContactPeoplePage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">
-                          {person.name}
+                          <BidiText className="min-w-0 max-w-full">{person.name}</BidiText>
                         </span>
                         {person.isPrimary && (
                           <Badge
                             variant="outline"
-                            className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px]"
+                            className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[11px] h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                           >
-                            <Star className="mr-1 size-3" />
+                            <Star className="me-1 size-3" />
                             {t("primary")}
                           </Badge>
                         )}
@@ -232,13 +234,13 @@ export default function ContactPeoplePage() {
                         {person.email && (
                           <span className="flex items-center gap-1">
                             <Mail className="size-3" />
-                            {person.email}
+                            <IdentifierText className="min-w-0 max-w-full">{person.email}</IdentifierText>
                           </span>
                         )}
                         {person.phone && (
                           <span className="flex items-center gap-1">
                             <Phone className="size-3" />
-                            {person.phone}
+                            <IdentifierText className="min-w-0 max-w-full">{person.phone}</IdentifierText>
                           </span>
                         )}
                       </div>

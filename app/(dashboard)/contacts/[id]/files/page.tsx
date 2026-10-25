@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -143,10 +145,10 @@ export default function ContactFilesPage() {
       <div className="space-y-6">
         <Section title={t("title")} description={t("description")}>
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Select value={fileVisibility} onValueChange={(v: "organization" | "private") => setFileVisibility(v)}>
-                  <SelectTrigger className="h-8 w-[130px] text-xs">
+                  <SelectTrigger aria-label={t("visibility")} className="h-auto min-h-8 w-[130px] text-xs whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -154,16 +156,16 @@ export default function ContactFilesPage() {
                     <SelectItem value="private">{t("private")}</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button
+                <Button className="h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
                   {uploading ? (
-                    <Loader2 className="mr-2 size-3.5 animate-spin" />
+                    <Loader2 className="me-2 size-3.5 animate-spin" />
                   ) : (
-                    <Upload className="mr-2 size-3.5" />
+                    <Upload className="me-2 size-3.5" />
                   )}
                   {uploading ? t("uploading") : t("upload")}
                 </Button>
@@ -210,11 +212,11 @@ export default function ContactFilesPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/40">
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("name")}</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("size")}</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("visibility")}</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{t("uploaded")}</th>
-                        <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground" />
+                        <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("name")}</th>
+                        <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("size")}</th>
+                        <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("visibility")}</th>
+                        <th className="px-3 py-2 text-start text-xs font-medium text-muted-foreground">{t("uploaded")}</th>
+                        <th className="px-3 py-2 text-end text-xs font-medium text-muted-foreground" />
                       </tr>
                     </thead>
                     <tbody>
@@ -223,30 +225,30 @@ export default function ContactFilesPage() {
                           <td className="px-3 py-2">
                             <button
                               onClick={() => handleDownloadFile(file.id)}
-                              className="text-sm font-medium text-foreground hover:underline text-left"
+                              className="text-sm font-medium text-foreground hover:underline text-start h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
                             >
-                              {file.fileName}
+                              <IdentifierText className="min-w-0 max-w-full">{file.fileName}</IdentifierText>
                             </button>
                           </td>
                           <td className="px-3 py-2 text-xs text-muted-foreground">
-                            {formatFileSize(file.fileSize)}
+                            <IdentifierText className="min-w-0 max-w-full">{formatFileSize(file.fileSize)}</IdentifierText>
                           </td>
                           <td className="px-3 py-2">
                             {file.visibility === "private" ? (
-                              <Badge variant="outline" className="text-[11px] gap-1">
+                              <Badge variant="outline" className="text-[11px] gap-1 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                                 <Lock className="size-3" />
                                 {t("private")}
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-[11px]">
+                              <Badge variant="secondary" className="text-[11px] h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                                 {t("shared")}
                               </Badge>
                             )}
                           </td>
                           <td className="px-3 py-2 text-xs text-muted-foreground">
-                            {new Date(file.createdAt).toLocaleDateString()}
+                            <IdentifierText className="min-w-0 max-w-full">{new Date(file.createdAt).toLocaleDateString()}</IdentifierText>
                           </td>
-                          <td className="px-3 py-2 text-right">
+                          <td className="px-3 py-2 text-end">
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost"

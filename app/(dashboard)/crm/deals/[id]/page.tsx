@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useRouter } from "next/navigation";
@@ -62,9 +64,9 @@ export default function DealOverviewPage() {
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("contact")}</p>
                 {deal.contact ? (
                   <div>
-                    <p className="text-sm font-medium">{deal.contact.name}</p>
+                    <p className="text-sm font-medium"><BidiText className="min-w-0 max-w-full">{deal.contact.name}</BidiText></p>
                     {deal.contact.email && (
-                      <p className="text-xs text-muted-foreground">{deal.contact.email}</p>
+                      <p className="text-xs text-muted-foreground"><IdentifierText className="min-w-0 max-w-full">{deal.contact.email}</IdentifierText></p>
                     )}
                   </div>
                 ) : (
@@ -73,7 +75,7 @@ export default function DealOverviewPage() {
               </div>
               <div>
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("assignedTo")}</p>
-                <p className="text-sm">{deal.assignedUser?.name || "-"}</p>
+                <p className="text-sm"><BidiText className="min-w-0 max-w-full">{deal.assignedUser?.name || "-"}</BidiText></p>
               </div>
             </div>
             <div className="space-y-3">
@@ -84,9 +86,9 @@ export default function DealOverviewPage() {
               <div>
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">{t("expectedClose")}</p>
                 <p className="text-sm">
-                  {deal.expectedCloseDate
+                  <IdentifierText className="min-w-0 max-w-full">{deal.expectedCloseDate
                     ? formatDate(deal.expectedCloseDate)
-                    : "-"}
+                    : "-"}</IdentifierText>
                 </p>
               </div>
             </div>
@@ -96,7 +98,7 @@ export default function DealOverviewPage() {
               <div className="h-px bg-border" />
               <div>
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t("notes")}</p>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{deal.notes}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap"><BidiText className="min-w-0 max-w-full">{deal.notes}</BidiText></p>
               </div>
             </>
           )}
@@ -105,7 +107,7 @@ export default function DealOverviewPage() {
               <div className="h-px bg-border" />
               <div>
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{t("lostReason")}</p>
-                <p className="text-sm text-red-600 dark:text-red-400">{deal.lostReason}</p>
+                <p className="text-sm text-red-600 dark:text-red-400"><BidiText className="min-w-0 max-w-full">{deal.lostReason}</BidiText></p>
               </div>
             </>
           )}
@@ -113,12 +115,12 @@ export default function DealOverviewPage() {
 
         {/* Recent activity preview */}
         <div className="rounded-xl border bg-card p-5 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between">
             <h3 className="text-sm font-semibold">{t("recentActivity")}</h3>
             {deal.activities.length > 0 && (
               <button
                 onClick={() => router.push(`/crm/deals/${id}/activity`)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               >
                 {t("viewAll", { count: deal.activities.length })}
               </button>
@@ -130,7 +132,7 @@ export default function DealOverviewPage() {
               <p className="text-xs text-muted-foreground">{t("noActivity")}</p>
               <button
                 onClick={() => router.push(`/crm/deals/${id}/activity`)}
-                className="text-xs text-emerald-600 hover:underline mt-1 font-medium"
+                className="text-xs text-emerald-600 hover:underline mt-1 font-medium h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               >
                 {t("logFirst")}
               </button>
@@ -146,12 +148,12 @@ export default function DealOverviewPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium">{activity.user?.name || t("system")}</span>
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 capitalize h-3.5">{activityLabel(activity.type)}</Badge>
-                        <span className="text-[10px] text-muted-foreground ml-auto shrink-0">{timeAgo(activity.createdAt)}</span>
+                        <span className="text-xs font-medium"><BidiText className="min-w-0 max-w-full">{activity.user?.name || t("system")}</BidiText></span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 capitalize min-h-3 h-auto.5 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">{activityLabel(activity.type)}</Badge>
+                        <span className="text-[10px] text-muted-foreground ms-auto shrink-0">{timeAgo(activity.createdAt)}</span>
                       </div>
                       {activity.content && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{activity.content}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{activity.content}</BidiText></p>
                       )}
                     </div>
                   </div>
@@ -173,7 +175,7 @@ export default function DealOverviewPage() {
                 <DollarSign className="size-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm font-bold font-mono tabular-nums">{formatMoney(deal.valueCents, deal.currency, unitPresentation)}</p>
+                <p className="text-sm font-bold font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(deal.valueCents, deal.currency, unitPresentation)}</IdentifierText></p>
                 <p className="text-[10px] text-muted-foreground">{t("dealValue")}</p>
               </div>
             </div>
@@ -183,10 +185,10 @@ export default function DealOverviewPage() {
                   <Target className="size-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold tabular-nums">{deal.probability}%</p>
+                  <div className="flex flex-wrap items-center justify-between">
+                    <p className="text-sm font-bold tabular-nums"><IdentifierText>{deal.probability}%</IdentifierText></p>
                     <p className="text-[10px] text-muted-foreground font-mono tabular-nums">
-                      {formatMoney(((BigInt(deal.valueCents) * BigInt(deal.probability) * 2n + 100n) / 200n), deal.currency, unitPresentation)}
+                      <IdentifierText className="min-w-0 max-w-full">{formatMoney(((BigInt(deal.valueCents) * BigInt(deal.probability) * 2n + 100n) / 200n), deal.currency, unitPresentation)}</IdentifierText>
                     </p>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1">
@@ -219,7 +221,7 @@ export default function DealOverviewPage() {
                     disabled={isClosed || stageChanging}
                     onClick={() => !isClosed && changeStage(stage.id)}
                     className={cn(
-                      "flex items-center gap-2 w-full rounded-lg px-2.5 py-1.5 text-left transition-colors",
+                      "flex items-center gap-2 w-full rounded-lg px-2.5 py-1.5 text-start transition-colors",
                       isCurrent && "bg-muted",
                       !isClosed && !isCurrent && "hover:bg-muted/50 cursor-pointer",
                       isClosed && "cursor-default"
@@ -241,7 +243,7 @@ export default function DealOverviewPage() {
                       )}
                     </div>
                     <span className={cn("text-xs", isCurrent ? "font-medium" : "text-muted-foreground")}>
-                      {stage.name}
+                      <BidiText className="min-w-0 max-w-full">{stage.name}</BidiText>
                     </span>
                   </button>
                 );
@@ -253,16 +255,16 @@ export default function DealOverviewPage() {
         {/* Created date */}
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] text-muted-foreground">
-            {t("createdOn", { date: formatTime(deal.createdAt) })}
+            {t.rich("createdOn", { date: formatTime(deal.createdAt) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
           </p>
           {deal.wonAt && (
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
-              {t("wonOn", { date: formatTime(deal.wonAt) })}
+              {t.rich("wonOn", { date: formatTime(deal.wonAt) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
             </p>
           )}
           {deal.lostAt && (
             <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">
-              {t("lostOn", { date: formatTime(deal.lostAt) })}
+              {t.rich("lostOn", { date: formatTime(deal.lostAt) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}
             </p>
           )}
         </div>

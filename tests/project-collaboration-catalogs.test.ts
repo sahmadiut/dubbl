@@ -1,3 +1,4 @@
+import { visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -17,7 +18,7 @@ test("members, teams, role descriptions, count forms and exact hourly rates rend
   for (const locale of locales) {
     const t = translate(locale, "ProjectMembers"), h = render("members", locale, memberForm);
     for (const key of ["teams", "assignTeam", "addMember", "addMemberTitle", "managerHint", "contributorHint", "viewerHint", "hourlyRate", "compensation", "manager", "contributor", "viewer"] as const) assert.ok(h.html.includes(esc(t(key))), key);
-    assert.ok(h.html.includes(esc(t("ratePerHour", { amount: projectMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })) }))));
+    assert.ok(visibleText(h.html).includes(esc(t("ratePerHour", { amount: projectMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(h.html.includes(esc(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes(esc(t("memberCount", { count: 1 }))));
     const opts = h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value);

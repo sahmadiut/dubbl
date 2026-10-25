@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -30,7 +31,7 @@ const task = {
   createdBy: person, checklist: [{ id: "item-a", title: caller, isCompleted: false, sortOrder: 0 }], comments: [{ id: "comment-a", content: caller, author: person, createdAt: "2026-10-20T10:00:00Z" }],
 };
 const project = { id: "project-a", color: "#10b981", tasks: [task], teams: [task.team], labels: [{ id: "label-a", name: caller, color: "#123456" }], members: [{ id: "link-a", role: "manager", member: task.assignee }] };
-const tFor = (locale: Locale) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ProjectTasks" });
+const tFor = (locale: Locale) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "ProjectTasks" });
 const esc = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 type Capture = { kind: string; props: Record<string, unknown> };
 const stateNames = ["addOpen", "viewTask", "saving", "statusFilter", "viewMode", "title", "desc", "priority", "taskStatus", "assigneeId", "teamId", "dueDate", "startDate", "estimatedMinutes", "selectedLabels", "editStatus", "editPriority", "editAssigneeId", "editTeamId", "newCheckItem", "newComment", "commentSaving", "togglingId", "deletingId", "checkItemSaving", "deletingCheckId", "deletingCommentId"];
@@ -70,7 +71,7 @@ test("task list, board, creation and detail render paired catalogs and escaped c
     const t = tFor(locale), h = render(locale, form);
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["newTask", "newTaskDescription", "details", "classification", "assignment", "schedule", "titleRequired", "description", "priority", "status", "assignee", "team", "startDate", "dueDate", "estimatedTime", "labels", "cancel", "createTask", "checklist", "postComment", "close", "markDone"]) assert.ok(h.html.includes(esc(t(key as "newTask"))), key);
-    assert.ok(h.html.includes(esc(t("comments", { count: 1 }))) && h.html.includes(esc(t("createdBy", { name: caller }))));
+    assert.ok(h.html.includes(esc(t("comments", { count: 1 }))) && visibleText(h.html).includes(esc(t("createdBy", { name: caller }))));
     assert.ok(h.html.includes(esc(caller)) && !h.html.includes("<script>"));
     const pref = resolvePresentation({ user: { language: locale } });
     assert.ok(h.html.includes(esc(formatDateOnly(task.dueDate, pref))));

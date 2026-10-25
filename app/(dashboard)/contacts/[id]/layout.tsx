@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
@@ -368,7 +370,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
         <p className="text-sm text-muted-foreground">
           {t("missing")}
         </p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/contacts")}>
+        <Button className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full" variant="outline" size="sm" onClick={() => router.push("/contacts")}>
           {t("backMissing")}
         </Button>
       </div>
@@ -406,19 +408,19 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
       }}
     >
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between mb-6">
           <button
             onClick={() => router.push("/contacts")}
-            className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
           >
-            <ArrowLeft className="size-3.5" />
+            <ArrowLeft className="size-3.5 rtl:rotate-180" />
             {t("back")}
           </button>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs gap-1.5"
+              className="h-auto text-xs gap-1.5 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => setMergeOpen(true)}
               title={t("mergeHint")}
             >
@@ -428,7 +430,7 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs gap-1.5"
+              className="h-auto text-xs gap-1.5 min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => openDrawer("deal", { contactId: contact.id, contactName: contact.name })}
               title={t("opportunityHint")}
             >
@@ -446,19 +448,20 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
               <DialogDescription>
                 {t.rich("mergeDescription", {
                   ...richTextTags,
+                  strong: chunks => <strong><BidiText className="min-w-0 max-w-full">{chunks}</BidiText></strong>,
                   name: contact.name,
                 })}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input aria-label={t("mergeSearch")} dir="auto"
                   autoFocus
                   placeholder={t("mergeSearch")}
                   value={mergeSearch}
                   onChange={(e) => setMergeSearch(e.target.value)}
-                  className="pl-9"
+                  className="ps-9"
                 />
               </div>
               <div className="max-h-72 space-y-1 overflow-y-auto">
@@ -473,15 +476,15 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
                       type="button"
                       disabled={merging}
                       onClick={() => handleMerge(c.id, c.name)}
-                      className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                      className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-start transition-colors hover:bg-muted disabled:opacity-50 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">
-                          {c.name}
+                        <span className="block min-w-0 whitespace-normal [overflow-wrap:anywhere] text-sm font-medium">
+                          <BidiText className="min-w-0 max-w-full">{c.name}</BidiText>
                         </span>
                         {c.email && (
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {c.email}
+                          <span className="block min-w-0 whitespace-normal [overflow-wrap:anywhere] text-xs text-muted-foreground">
+                            <IdentifierText className="min-w-0 max-w-full">{c.email}</IdentifierText>
                           </span>
                         )}
                       </span>
@@ -506,17 +509,17 @@ export default function ContactDetailLayout({ children }: { children: React.Reac
               <button
                 key={tab.value}
                 onClick={() => router.push(tabHref)}
-                className={cn(
+                className={(cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors",
                   active
                     ? "border-foreground text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
+                )) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}
               >
                 <Icon className="size-3.5" />
                 {t(tab.labelKey)}
                 {tab.value === "people" && peopleCount > 0 && (
-                  <span className="ml-1 text-[11px] tabular-nums text-muted-foreground">
+                  <span className="ms-1 text-[11px] tabular-nums text-muted-foreground">
                     {peopleCount}
                   </span>
                 )}

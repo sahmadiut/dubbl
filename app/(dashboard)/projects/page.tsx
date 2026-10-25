@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -53,8 +55,8 @@ function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/n
       <div className="flex items-center gap-2.5">
         <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
         <div className="min-w-0">
-          <span className="text-sm font-medium block truncate">{r.name}</span>
-          {r.contact && <span className="text-[11px] text-muted-foreground">{r.contact.name}</span>}
+          <span className="text-sm font-medium block min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{r.name}</BidiText></span>
+          {r.contact && <span className="text-[11px] text-muted-foreground"><BidiText className="min-w-0 max-w-full">{r.contact.name}</BidiText></span>}
         </div>
       </div>
     ),
@@ -64,7 +66,7 @@ function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/n
     header: t("status"),
     className: "w-28",
     render: (r) => (
-      <Badge variant="outline" className={cn("text-[10px]", statusColors[r.status])}>
+      <Badge variant="outline" className={(cn("text-[10px]", statusColors[r.status])) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
         {t(projectStatusKeys[r.status as keyof typeof projectStatusKeys] ?? "unknownStatus")}
       </Badge>
     ),
@@ -74,7 +76,7 @@ function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/n
     header: t("priority"),
     className: "w-24",
     render: (r) => (
-      <Badge variant="outline" className={cn("text-[10px]", priorityColors[r.priority])}>
+      <Badge variant="outline" className={(cn("text-[10px]", priorityColors[r.priority])) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>
         {t(projectPriorityKeys[r.priority as keyof typeof projectPriorityKeys] ?? "unknownPriority")}
       </Badge>
     ),
@@ -87,13 +89,13 @@ function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/n
       const pct = r.estimatedHours > 0 ? Math.round((r.totalHours / r.estimatedHours) * 100) : 0;
       return (
         <div className="space-y-1">
-          <span className="text-xs font-mono tabular-nums">{formatHours(t, r.totalHours)}</span>
+          <span className="text-xs font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatHours(t, r.totalHours)}</IdentifierText></span>
           {r.estimatedHours > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="h-1 w-16 rounded-full bg-muted">
                 <div className={cn("h-full rounded-full", pct > 100 ? "bg-red-500" : "bg-emerald-500")} style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>
-              <span className="text-[10px] text-muted-foreground">{pct}%</span>
+              <span className="text-[10px] text-muted-foreground"><IdentifierText className="min-w-0 max-w-full">{pct}%</IdentifierText></span>
             </div>
           )}
         </div>
@@ -103,19 +105,19 @@ function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/n
   {
     key: "budget",
     header: t("budget"),
-    className: "w-28 text-right",
+    className: "w-28 text-end",
     render: (r) => (
       <span className="font-mono text-xs tabular-nums">
-        {r.budget > 0 ? formatMoney(r.budget, r.currency, unitPresentation) : "-"}
+        <IdentifierText className="min-w-0 max-w-full">{r.budget > 0 ? formatMoney(r.budget, r.currency, unitPresentation) : "-"}</IdentifierText>
       </span>
     ),
   },
   {
     key: "billed",
     header: t("billed"),
-    className: "w-28 text-right",
+    className: "w-28 text-end",
     render: (r) => (
-      <span className="font-mono text-xs tabular-nums">{formatMoney(r.totalBilled, r.currency, unitPresentation)}</span>
+      <span className="font-mono text-xs tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(r.totalBilled, r.currency, unitPresentation)}</IdentifierText></span>
     ),
   },
   {
@@ -128,7 +130,7 @@ function projectColumns(t: ProjectTranslator, unitPresentation: import("@/i18n/n
         <div className="flex -space-x-1.5">
           {r.members.slice(0, 3).map((m) => (
             <div key={m.id} className="size-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] font-medium ring-2 ring-white" title={m.member.user.name || m.member.user.email}>
-              {(m.member.user.name || m.member.user.email)[0].toUpperCase()}
+              <BidiText className="min-w-0 max-w-full">{(m.member.user.name || m.member.user.email)[0].toUpperCase()}</BidiText>
             </div>
           ))}
           {r.members.length > 3 && (
@@ -203,9 +205,9 @@ export default function ProjectsPage() {
           >
             <Button
               onClick={() => openDrawer("project")}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newProject")}
             </Button>
           </EmptyState>
@@ -232,9 +234,9 @@ export default function ProjectsPage() {
             <Button
               size="sm"
               onClick={() => openDrawer("project")}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newProject")}
             </Button>
           </div>
@@ -247,12 +249,12 @@ export default function ProjectsPage() {
         <div className="space-y-4">
           <div className="overflow-x-auto -mx-1 px-1">
             <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-              <TabsList>
-                <TabsTrigger value="all">{t("all")}</TabsTrigger>
-                <TabsTrigger value="active">{t("active")}</TabsTrigger>
-                <TabsTrigger value="completed">{t("completed")}</TabsTrigger>
-                <TabsTrigger value="on_hold">{t("onHold")}</TabsTrigger>
-                <TabsTrigger value="archived">{t("archived")}</TabsTrigger>
+              <TabsList className="h-auto flex-wrap">
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="all">{t("all")}</TabsTrigger>
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="active">{t("active")}</TabsTrigger>
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="completed">{t("completed")}</TabsTrigger>
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="on_hold">{t("onHold")}</TabsTrigger>
+                <TabsTrigger className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value="archived">{t("archived")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

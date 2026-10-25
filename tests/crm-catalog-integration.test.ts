@@ -106,7 +106,7 @@ test("combined CRM inventory pairs all four namespaces and 224 Persian messages"
     count += Object.keys(en[namespace]).length;
     for (const [key, value] of Object.entries(fa[namespace])) assert.match(value, /[\u0600-\u06ff]/u, `${namespace}.${key}`);
   }
-  assert.equal(count, 224);
+  assert.equal(count, 226);
 });
 
 test("one checked deal composes actual shared context, navigation, overview/activity/settings in both locales", async () => {

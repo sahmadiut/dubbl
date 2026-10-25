@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useMemo, useState } from "react";
@@ -83,9 +85,9 @@ export default function ProjectOverviewPage() {
     stats.push({ icon: Zap, label: t("tasks"), value: totalTasks > 0 ? `${doneTasks}/${totalTasks}` : "0", sub: totalTasks > 0 ? t("completePercent", { percent: progressPct }) : t("noTasksYet"), progress: totalTasks > 0 ? progressPct : 0, color: "#10b981" });
   }
   if (proj.enableBilling) {
-    stats.push({ icon: DollarSign, label: t("revenue"), value: formatMoney(totalAmount), sub: unbilledAmount > 0 ? t("amountUnbilled", { amount: formatMoney(unbilledAmount) }) : t("allInvoiced") });
+    stats.push({ icon: DollarSign, label: t("revenue"), value: formatMoney(totalAmount), sub: unbilledAmount > 0 ? t.rich("amountUnbilled", { amount: formatMoney(unbilledAmount) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> }) : t("allInvoiced") });
     if (proj.budget > 0) {
-      stats.push({ icon: DollarSign, label: t("budget"), value: formatMoney(proj.totalBilled), sub: t("ofAmount", { amount: formatMoney(proj.budget) }), progress: budgetPct, color: budgetPct > 90 ? "#ef4444" : "#f59e0b" });
+      stats.push({ icon: DollarSign, label: t("budget"), value: formatMoney(proj.totalBilled), sub: t.rich("ofAmount", { amount: formatMoney(proj.budget) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> }), progress: budgetPct, color: budgetPct > 90 ? "#ef4444" : "#f59e0b" });
     }
   }
   stats.push({ icon: Users, label: t("team"), value: String(proj.members.length), sub: t("managers", { count: proj.members.filter(m => m.role === "manager").length }) });
@@ -132,21 +134,21 @@ export default function ProjectOverviewPage() {
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("details")}</span>
             </div>
             {proj.description && (
-              <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-3 mb-2">{proj.description}</p>
+              <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] mb-2"><BidiText className="min-w-0 max-w-full">{proj.description}</BidiText></p>
             )}
             <div className="space-y-1.5">
               <Row label={t("billing")} value={<span className="text-[13px] capitalize">{billingLabel(proj.billingType)}</span>} />
-              {proj.contact && <Row label={t("client")} value={<span className="text-[13px] font-medium">{proj.contact.name}</span>} />}
-              {proj.category && <Row label={t("category")} value={<span className="text-[13px]">{proj.category}</span>} />}
-              {proj.hourlyRate > 0 && <Row label={t("rate")} value={<span className="text-[13px] font-mono tabular-nums">{t("perHour", { amount: formatMoney(proj.hourlyRate) })}</span>} />}
-              {proj.fixedPrice > 0 && <Row label={t("fixed")} value={<span className="text-[13px] font-mono tabular-nums">{formatMoney(proj.fixedPrice)}</span>} />}
-              {proj.startDate && <Row label={t("start")} value={<span className="text-[13px]">{formatDate(proj.startDate)}</span>} />}
-              {proj.endDate && <Row label={t("end")} value={<span className={cn("text-[13px]", daysLeft !== null && daysLeft < 0 ? "text-red-600 font-medium" : "")}>{formatDate(proj.endDate)}</span>} />}
+              {proj.contact && <Row label={t("client")} value={<span className="text-[13px] font-medium"><BidiText className="min-w-0 max-w-full">{proj.contact.name}</BidiText></span>} />}
+              {proj.category && <Row label={t("category")} value={<span className="text-[13px]"><BidiText className="min-w-0 max-w-full">{proj.category}</BidiText></span>} />}
+              {proj.hourlyRate > 0 && <Row label={t("rate")} value={<span className="text-[13px] font-mono tabular-nums">{t.rich("perHour", { amount: formatMoney(proj.hourlyRate) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</span>} />}
+              {proj.fixedPrice > 0 && <Row label={t("fixed")} value={<span className="text-[13px] font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(proj.fixedPrice)}</IdentifierText></span>} />}
+              {proj.startDate && <Row label={t("start")} value={<span className="text-[13px]"><IdentifierText className="min-w-0 max-w-full">{formatDate(proj.startDate)}</IdentifierText></span>} />}
+              {proj.endDate && <Row label={t("end")} value={<span className={cn("text-[13px]", daysLeft !== null && daysLeft < 0 ? "text-red-600 font-medium" : "")}><IdentifierText className="min-w-0 max-w-full">{formatDate(proj.endDate)}</IdentifierText></span>} />}
             </div>
             {proj.startDate && proj.endDate && <TimelineBar startDate={proj.startDate} endDate={proj.endDate} color={proj.color} />}
             {proj.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
-                {proj.tags.map(t => <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{t}</span>)}
+                {proj.tags.map(t => <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"><BidiText className="min-w-0 max-w-full">{t}</BidiText></span>)}
               </div>
             )}
           </div>
@@ -159,21 +161,21 @@ export default function ProjectOverviewPage() {
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("financials")}</span>
               </div>
               <div className="space-y-1.5 text-[13px]">
-                <Row label={t("totalBilled")} value={<span className="font-mono tabular-nums font-medium">{formatMoney(proj.totalBilled)}</span>} />
-                <Row label={t("revenue")} value={<span className="font-mono tabular-nums">{formatMoney(totalAmount)}</span>} />
-                {unbilledAmount > 0 && <Row label={t("unbilled")} value={<span className="font-mono tabular-nums text-amber-600">{formatMoney(unbilledAmount)}</span>} />}
+                <Row label={t("totalBilled")} value={<span className="font-mono tabular-nums font-medium"><IdentifierText className="min-w-0 max-w-full">{formatMoney(proj.totalBilled)}</IdentifierText></span>} />
+                <Row label={t("revenue")} value={<span className="font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(totalAmount)}</IdentifierText></span>} />
+                {unbilledAmount > 0 && <Row label={t("unbilled")} value={<span className="font-mono tabular-nums text-amber-600"><IdentifierText className="min-w-0 max-w-full">{formatMoney(unbilledAmount)}</IdentifierText></span>} />}
                 {proj.budget > 0 && (
                   <>
                     <div className="h-px bg-border my-1" />
-                    <Row label={t("budget")} value={<span className="font-mono tabular-nums">{formatMoney(proj.budget)}</span>} />
-                    <Row label={t("remaining")} value={<span className={cn("font-mono tabular-nums font-semibold", (BigInt(proj.budget) - BigInt(proj.totalBilled)) < 0 ? "text-red-600" : "text-emerald-600")}>{formatMoney((BigInt(proj.budget) - BigInt(proj.totalBilled)))}</span>} />
+                    <Row label={t("budget")} value={<span className="font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(proj.budget)}</IdentifierText></span>} />
+                    <Row label={t("remaining")} value={<span className={cn("font-mono tabular-nums font-semibold", (BigInt(proj.budget) - BigInt(proj.totalBilled)) < 0 ? "text-red-600" : "text-emerald-600")}><IdentifierText className="min-w-0 max-w-full">{formatMoney((BigInt(proj.budget) - BigInt(proj.totalBilled)))}</IdentifierText></span>} />
                   </>
                 )}
                 {proj.enableTimeTracking && (
                   <>
                     <div className="h-px bg-border my-1" />
-                    <Row label={t("billableTime")} value={<span className="font-mono tabular-nums">{formatHours(billableMinutes)}</span>} />
-                    <Row label={t("avgRate")} value={<span className="font-mono tabular-nums">{t("perHour", { amount: billableMinutes > 0 ? formatMoney((totalAmount * 60n + BigInt(billableMinutes) / 2n) / BigInt(billableMinutes)) : "-" })}</span>} />
+                    <Row label={t("billableTime")} value={<span className="font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatHours(billableMinutes)}</IdentifierText></span>} />
+                    <Row label={t("avgRate")} value={<span className="font-mono tabular-nums">{t.rich("perHour", { amount: billableMinutes > 0 ? formatMoney((totalAmount * 60n + BigInt(billableMinutes) / 2n) / BigInt(billableMinutes)) : "-" , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</span>} />
                   </>
                 )}
               </div>
@@ -185,10 +187,10 @@ export default function ProjectOverviewPage() {
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("summary")}</span>
               </div>
               <div className="space-y-1.5 text-[13px]">
-                {proj.enableTimeTracking && <Row label={t("totalTime")} value={<span className="font-mono tabular-nums font-medium">{formatHours(proj.totalHours)}</span>} />}
+                {proj.enableTimeTracking && <Row label={t("totalTime")} value={<span className="font-mono tabular-nums font-medium"><IdentifierText className="min-w-0 max-w-full">{formatHours(proj.totalHours)}</IdentifierText></span>} />}
                 {proj.enableTasks && <Row label={t("openTasks")} value={<span className="font-mono tabular-nums">{totalTasks - doneTasks}</span>} />}
                 {proj.enableMilestones && <Row label={t("milestones")} value={<span className="font-mono tabular-nums">{proj.milestones.filter(m => m.status === "completed").length}/{proj.milestones.length}</span>} />}
-                <Row label={t("notes")} value={<span className="font-mono tabular-nums">{proj.notes.length}</span>} />
+                <Row label={t("notes")} value={<span className="font-mono tabular-nums"><BidiText className="min-w-0 max-w-full">{proj.notes.length}</BidiText></span>} />
               </div>
             </div>
           )}
@@ -209,14 +211,14 @@ export default function ProjectOverviewPage() {
               <ProgressBar label={t("tasks")} value={0} color="#10b981" sub={t("noTasks")} />
             )}
             {proj.enableTimeTracking && proj.estimatedHours > 0 ? (
-              <ProgressBar label={t("time")} value={hoursProgressPct} color="#3b82f6" sub={t("ofTotal", { value: formatHours(proj.totalHours), total: formatHours(proj.estimatedHours) })} />
+              <ProgressBar label={t("time")} value={hoursProgressPct} color="#3b82f6" sub={t.rich("ofTotal", { value: formatHours(proj.totalHours), total: formatHours(proj.estimatedHours) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })} />
             ) : (
-              <ProgressBar label={t("time")} value={0} color="#3b82f6" sub={proj.enableTimeTracking ? t("timeLogged", { time: formatHours(proj.totalHours) }) : t("notTracked")} />
+              <ProgressBar label={t("time")} value={0} color="#3b82f6" sub={proj.enableTimeTracking ? t.rich("timeLogged", { time: formatHours(proj.totalHours) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> }) : t("notTracked")} />
             )}
             {proj.enableBilling && proj.budget > 0 ? (
-              <ProgressBar label={t("budget")} value={budgetPct} color={budgetPct > 90 ? "#ef4444" : "#f59e0b"} sub={t("ofTotal", { value: formatMoney(proj.totalBilled), total: formatMoney(proj.budget) })} />
+              <ProgressBar label={t("budget")} value={budgetPct} color={budgetPct > 90 ? "#ef4444" : "#f59e0b"} sub={t.rich("ofTotal", { value: formatMoney(proj.totalBilled), total: formatMoney(proj.budget) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })} />
             ) : (
-              <ProgressBar label={t("budget")} value={0} color="#f59e0b" sub={proj.enableBilling ? t("amountBilled", { amount: formatMoney(proj.totalBilled) }) : t("notTracked")} />
+              <ProgressBar label={t("budget")} value={0} color="#f59e0b" sub={proj.enableBilling ? t.rich("amountBilled", { amount: formatMoney(proj.totalBilled) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> }) : t("notTracked")} />
             )}
           </div>
 
@@ -258,10 +260,10 @@ export default function ProjectOverviewPage() {
               return (
                 <div key={task.id} className="flex items-center gap-2.5 px-4 py-2 hover:bg-muted/20 transition-colors">
                   <span className={cn("size-1.5 rounded-full shrink-0", tsc?.bar)} />
-                  <span className="text-[13px] truncate flex-1">{task.title}</span>
-                  <Badge variant="outline" className={cn("text-[9px] h-4 shrink-0", priorityConfig[task.priority]?.color)}>{priorityConfig[task.priority]?.label ?? t("unknown")}</Badge>
+                  <span className="text-[13px] min-w-0 whitespace-normal [overflow-wrap:anywhere] flex-1"><BidiText className="min-w-0 max-w-full">{task.title}</BidiText></span>
+                  <Badge variant="outline" className={(cn("text-[9px] min-h-4 h-auto shrink-0", priorityConfig[task.priority]?.color)) + " h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]"}>{priorityConfig[task.priority]?.label ?? t("unknown")}</Badge>
                   {task.dueDate && (
-                    <span className={cn("text-[10px] shrink-0 tabular-nums", overdue ? "text-red-600 font-medium" : "text-muted-foreground")}>{formatDateShort(task.dueDate)}</span>
+                    <span className={cn("text-[10px] shrink-0 tabular-nums", overdue ? "text-red-600 font-medium" : "text-muted-foreground")}><IdentifierText className="min-w-0 max-w-full">{formatDateShort(task.dueDate)}</IdentifierText></span>
                   )}
                 </div>
               );
@@ -277,9 +279,9 @@ export default function ProjectOverviewPage() {
                 return (
                   <div key={ms.id} className="flex items-center gap-2.5 px-4 py-2.5">
                     <Target className="size-3.5 text-muted-foreground/40 shrink-0" />
-                    <span className="text-[13px] font-medium flex-1 min-w-0 truncate">{ms.title}</span>
-                    {ms.dueDate && <span className={cn("text-[10px] shrink-0 tabular-nums", overdue ? "text-red-600" : "text-muted-foreground")}>{formatDateShort(ms.dueDate)}</span>}
-                    {ms.amount > 0 && <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatMoney(ms.amount)}</span>}
+                    <span className="text-[13px] font-medium flex-1 min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{ms.title}</BidiText></span>
+                    {ms.dueDate && <span className={cn("text-[10px] shrink-0 tabular-nums", overdue ? "text-red-600" : "text-muted-foreground")}><IdentifierText className="min-w-0 max-w-full">{formatDateShort(ms.dueDate)}</IdentifierText></span>}
+                    {ms.amount > 0 && <span className="font-mono text-xs text-muted-foreground tabular-nums"><IdentifierText className="min-w-0 max-w-full">{formatMoney(ms.amount)}</IdentifierText></span>}
                   </div>
                 );
               }) : (
@@ -294,11 +296,11 @@ export default function ProjectOverviewPage() {
           <ListCard icon={Clock} label={t("recentTime")} href={`/projects/${proj.id}/time`} count={proj.timeEntries.length}>
             {recentTime.length > 0 ? recentTime.map((e) => (
               <div key={e.id} className="flex items-center gap-2.5 px-4 py-2 text-[13px]">
-                <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 w-14">{formatDateShort(e.date)}</span>
-                <span className="text-[11px] text-muted-foreground/60 shrink-0 w-14 truncate">{e.user?.name?.split(" ")[0] || "-"}</span>
-                <span className="truncate flex-1 text-muted-foreground">{e.description || "-"}</span>
-                <span className="font-mono text-xs tabular-nums shrink-0 font-medium">{formatHours(e.minutes)}</span>
-                <span className="font-mono text-[11px] tabular-nums shrink-0 text-muted-foreground">{formatMoney(projectTimeCents(e.minutes, e.hourlyRate))}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 w-14"><IdentifierText className="min-w-0 max-w-full">{formatDateShort(e.date)}</IdentifierText></span>
+                <span className="text-[11px] text-muted-foreground/60 shrink-0 w-14 min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText className="min-w-0 max-w-full">{e.user?.name?.split(" ")[0] || "-"}</BidiText></span>
+                <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] flex-1 text-muted-foreground"><BidiText className="min-w-0 max-w-full">{e.description || "-"}</BidiText></span>
+                <span className="font-mono text-xs tabular-nums shrink-0 font-medium"><IdentifierText className="min-w-0 max-w-full">{formatHours(e.minutes)}</IdentifierText></span>
+                <span className="font-mono text-[11px] tabular-nums shrink-0 text-muted-foreground"><IdentifierText className="min-w-0 max-w-full">{formatMoney(projectTimeCents(e.minutes, e.hourlyRate))}</IdentifierText></span>
               </div>
             )) : (
               <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">{t("noTime")}</div>
@@ -307,7 +309,7 @@ export default function ProjectOverviewPage() {
 
           {/* Team */}
           <div className="rounded-lg border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
+            <div className="flex flex-wrap items-center justify-between px-4 py-2.5 border-b bg-muted/30">
               <div className="flex items-center gap-1.5">
                 <Users className="size-3.5 text-muted-foreground/60" />
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("team")}</span>
@@ -319,9 +321,9 @@ export default function ProjectOverviewPage() {
               {proj.members.length > 0 ? proj.members.slice(0, 5).map((m) => (
                 <div key={m.id} className="flex items-center gap-2.5 px-4 py-2">
                   <div className="size-6 rounded-full flex items-center justify-center text-[10px] font-semibold text-white shrink-0" style={{ backgroundColor: proj.color }}>
-                    {(m.member.user.name || m.member.user.email)[0].toUpperCase()}
+                    <BidiText className="min-w-0 max-w-full">{(m.member.user.name || m.member.user.email)[0].toUpperCase()}</BidiText>
                   </div>
-                  <span className="text-[12px] truncate flex-1">{m.member.user.name || m.member.user.email}</span>
+                  <span className="text-[12px] min-w-0 whitespace-normal [overflow-wrap:anywhere] flex-1"><BidiText className="min-w-0 max-w-full">{m.member.user.name || m.member.user.email}</BidiText></span>
                   <span className="text-[9px] text-muted-foreground capitalize bg-muted px-1.5 py-0.5 rounded">{m.role === "manager" ? t("manager") : m.role === "contributor" ? t("contributor") : m.role === "viewer" ? t("viewer") : t("unknown")}</span>
                 </div>
               )) : (
@@ -339,7 +341,7 @@ export default function ProjectOverviewPage() {
               </div>
               <div className="space-y-2">
                 {pinnedNotes.slice(0, 3).map((n) => (
-                  <p key={n.id} className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed">{n.content}</p>
+                  <p key={n.id} className="text-[12px] text-muted-foreground [overflow-wrap:anywhere] leading-relaxed"><BidiText className="min-w-0 max-w-full">{n.content}</BidiText></p>
                 ))}
               </div>
             </div>
@@ -355,7 +357,7 @@ interface StatCardProps {
   icon: typeof Timer;
   label: string;
   value: string;
-  sub?: string;
+  sub?: React.ReactNode;
   progress?: number;
   color?: string;
   alert?: boolean;
@@ -366,10 +368,10 @@ function StatCard({ icon: Icon, label, value, sub, progress, color, alert }: Sta
     <div className="rounded-lg border bg-card px-3.5 py-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className="size-3 text-muted-foreground/50" />
-        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground"><BidiText className="min-w-0 max-w-full">{label}</BidiText></span>
       </div>
-      <p className={cn("text-base font-bold font-mono tabular-nums tracking-tight", alert && "text-red-600")}>{value}</p>
-      {sub && <p className={cn("text-[10px] mt-0.5", alert ? "text-red-500" : "text-muted-foreground")}>{sub}</p>}
+      <p className={cn("text-base font-bold font-mono tabular-nums tracking-tight", alert && "text-red-600")}><IdentifierText className="min-w-0 max-w-full">{value}</IdentifierText></p>
+      {sub && <p className={cn("text-[10px] mt-0.5", alert ? "text-red-500" : "text-muted-foreground")}><BidiText className="min-w-0 max-w-full">{sub}</BidiText></p>}
       {progress !== undefined && (
         <div className="h-1 rounded-full bg-muted overflow-hidden mt-1.5">
           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: color || "#10b981" }} />
@@ -382,24 +384,24 @@ function StatCard({ icon: Icon, label, value, sub, progress, color, alert }: Sta
 // ── Subcomponents ──────────────────────────────────────────
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-[12px] text-muted-foreground">{label}</span>
-      {value}
+    <div className="flex flex-wrap items-center justify-between">
+      <span className="text-[12px] text-muted-foreground"><BidiText className="min-w-0 max-w-full">{label}</BidiText></span>
+      <BidiText className="min-w-0 max-w-full">{value}</BidiText>
     </div>
   );
 }
 
-function ProgressBar({ label, value, color, sub }: { label: string; value: number; color: string; sub: string }) {
+function ProgressBar({ label, value, color, sub }: { label: string; value: number; color: string; sub: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
-        <span className="text-sm font-bold font-mono tabular-nums">{value}%</span>
+      <div className="flex flex-wrap items-center justify-between">
+        <span className="text-[11px] font-medium text-muted-foreground"><BidiText className="min-w-0 max-w-full">{label}</BidiText></span>
+        <span className="text-sm font-bold font-mono tabular-nums"><IdentifierText className="min-w-0 max-w-full">{value}%</IdentifierText></span>
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${value}%`, backgroundColor: color }} />
       </div>
-      <p className="text-[10px] text-muted-foreground">{sub}</p>
+      <p className="text-[10px] text-muted-foreground"><BidiText className="min-w-0 max-w-full">{sub}</BidiText></p>
     </div>
   );
 }
@@ -414,14 +416,14 @@ function TimelineBar({ startDate, endDate, color }: { startDate: string; endDate
   const elapsed = Math.max(0, Math.min(now - start, total));
   const progressPct = Math.round((elapsed / total) * 100);
   return (
-    <div className="space-y-1 pt-1">
+    <div dir="ltr" className="space-y-1 pt-1 [unicode-bidi:isolate]">
       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, backgroundColor: color }} />
       </div>
       <div className="flex justify-between text-[10px] text-muted-foreground tabular-nums">
-        <span>{formatDateShort(startDate)}</span>
-        <span>{progressPct}%</span>
-        <span>{formatDateShort(endDate)}</span>
+        <span><IdentifierText className="min-w-0 max-w-full">{formatDateShort(startDate)}</IdentifierText></span>
+        <span><IdentifierText className="min-w-0 max-w-full">{progressPct}%</IdentifierText></span>
+        <span><IdentifierText className="min-w-0 max-w-full">{formatDateShort(endDate)}</IdentifierText></span>
       </div>
     </div>
   );
@@ -431,10 +433,10 @@ function ListCard({ icon: Icon, label, href, count, children }: { icon: typeof Z
   const { t } = useProjectPresentation();
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
+      <div className="flex flex-wrap items-center justify-between px-4 py-2.5 border-b bg-muted/30">
         <div className="flex items-center gap-1.5">
           <Icon className="size-3.5 text-muted-foreground/60" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"><BidiText className="min-w-0 max-w-full">{label}</BidiText></span>
           {count !== undefined && <span className="text-[9px] font-mono tabular-nums text-muted-foreground/60">{count}</span>}
         </div>
         <Link href={href} className="text-[11px] text-emerald-600 hover:underline font-medium flex items-center gap-0.5">
@@ -473,14 +475,14 @@ function TimeAreaChart({ entries, color }: { entries: ProjectDetail["timeEntries
 
   return (
     <div className="rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-1">
+      <div className="flex flex-wrap items-center justify-between mb-3 gap-1">
         <div className="flex items-center gap-1.5">
           <Clock className="size-3.5 text-muted-foreground/60" />
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("time14Days")}</span>
         </div>
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-          <span>{t("totalLabel")} <span className="font-mono tabular-nums font-medium text-foreground">{t("decimalHours", { hours: totalHrs.toFixed(1) })}</span></span>
-          <span>{t("avgLabel")} <span className="font-mono tabular-nums font-medium text-foreground">{t("decimalHours", { hours: (totalHrs / 14).toFixed(1) })}</span>{t("perDay")}</span>
+          <span>{t("totalLabel")} <span className="font-mono tabular-nums font-medium text-foreground">{t.rich("decimalHours", { hours: totalHrs.toFixed(1) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</span></span>
+          <span>{t("avgLabel")} <span className="font-mono tabular-nums font-medium text-foreground">{t.rich("decimalHours", { hours: (totalHrs / 14).toFixed(1) , code: chunks => <IdentifierText className="min-w-0 max-w-full">{chunks}</IdentifierText> })}</span>{t("perDay")}</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={180}>
@@ -557,14 +559,14 @@ function TaskPieChart({ tasksByStatus, totalTasks, doneTasks }: { tasksByStatus:
           </ResponsiveContainer>
           <div className="text-center -mt-2">
             <span className="text-lg font-bold font-mono tabular-nums">{totalTasks > 0 ? pct(doneTasks, totalTasks) : 0}%</span>
-            <span className="text-[9px] text-muted-foreground ml-1">{t("done")}</span>
+            <span className="text-[9px] text-muted-foreground ms-1">{t("done")}</span>
           </div>
         </div>
         <div className="flex-1 space-y-1.5">
           {data.length > 0 ? data.map(seg => (
             <div key={seg.name} className="flex items-center gap-2">
               <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
-              <span className="text-[11px] text-muted-foreground flex-1">{seg.name}</span>
+              <span className="text-[11px] text-muted-foreground flex-1"><BidiText className="min-w-0 max-w-full">{seg.name}</BidiText></span>
               <span className="text-[11px] font-mono tabular-nums font-medium">{seg.value}</span>
             </div>
           )) : (
@@ -598,9 +600,9 @@ function MiniCalendar({ proj }: { proj: ProjectDetail }) {
   }, [proj.tasks, proj.milestones, proj.timeEntries]);
   return (
     <div className="rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-wrap items-center justify-between mb-2">
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"><Calendar className="size-3.5" />{t("calendar")}</span>
-        <button onClick={() => setMonth(new Date())} className="text-[10px] text-muted-foreground hover:text-foreground px-1.5">{t("today")}</button>
+        <button onClick={() => setMonth(new Date())} className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full">{t("today")}</button>
       </div>
       <ProjectCalendar mode="single" month={month} onMonthChange={setMonth} className="w-full" showOutsideDays={false}
         modifiers={{

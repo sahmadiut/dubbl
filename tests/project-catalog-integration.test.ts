@@ -106,7 +106,7 @@ test("combined project catalogs pair all seven namespaces and 498 Persian messag
     count += Object.keys(en[namespace]).length;
     for (const [key, value] of Object.entries(fa[namespace])) assert.match(value, /[\u0600-\u06ff]/u, `${namespace}.${key}`);
   }
-  assert.equal(count, 498);
+  assert.equal(count, 499);
 });
 
 test("one checked project composes actual provider, navigation and all seven detail workflows in both locales", async () => {

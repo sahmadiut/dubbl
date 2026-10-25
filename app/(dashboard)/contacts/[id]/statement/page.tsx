@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText, BidiText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
@@ -154,7 +156,7 @@ export default function ContactStatementPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <Select onValueChange={applyStatementPreset}>
-            <SelectTrigger className="w-44 h-8 text-sm">
+            <SelectTrigger aria-label={t("period")} className="w-44 h-auto min-h-8 text-sm whitespace-normal [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal min-w-0 max-w-full">
               <SelectValue placeholder={t("period")} />
             </SelectTrigger>
             <SelectContent>
@@ -166,58 +168,58 @@ export default function ContactStatementPage() {
               <SelectItem value="last_12">{t("last12")}</SelectItem>
             </SelectContent>
           </Select>
-          <DatePicker
+          <div role="group" aria-label={t("from")}><DatePicker
             value={statementStartDate}
             onChange={setStatementStartDate}
             placeholder={t("from")}
-            className="w-36 h-8 text-sm"
-          />
-          <DatePicker
+            className="w-36 h-auto min-h-8 text-sm whitespace-normal [overflow-wrap:anywhere]"
+          /></div>
+          <div role="group" aria-label={t("to")}><DatePicker
             value={statementEndDate}
             onChange={setStatementEndDate}
             placeholder={t("to")}
-            className="w-36 h-8 text-sm"
-          />
-          <CurrencySelect value={statementCurrency} onValueChange={setStatementCurrency} compact />
+            className="w-36 h-auto min-h-8 text-sm whitespace-normal [overflow-wrap:anywhere]"
+          /></div>
+          <CurrencySelect className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" value={statementCurrency} onValueChange={setStatementCurrency} compact />
           {(statementStartDate || statementEndDate || statementCurrency) && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2 text-xs text-muted-foreground"
+              className="h-auto min-h-8 px-2 text-xs text-muted-foreground whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={() => {
                 setStatementStartDate("");
                 setStatementEndDate("");
                 setStatementCurrency("");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clear")}
             </Button>
           )}
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ms-auto flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-8"
+              className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={handleDownloadPdf}
               disabled={statementLoading || !statementData}
             >
-              <Download className="mr-1.5 size-3.5" />
+              <Download className="me-1.5 size-3.5" />
               {t("pdf")}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8"
+              className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] min-w-0 max-w-full"
               onClick={handleEmailStatement}
               disabled={statementLoading || !statementData || sendingStatement || !contact.email}
               title={!contact.email ? t("noEmail") : undefined}
             >
               {sendingStatement ? (
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                <Loader2 className="me-1.5 size-3.5 animate-spin" />
               ) : (
-                <Send className="mr-1.5 size-3.5" />
+                <Send className="me-1.5 size-3.5" />
               )}
               {t("email")}
             </Button>
@@ -241,25 +243,25 @@ export default function ContactStatementPage() {
                 <div className="rounded-lg border p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("openingHint")}>{t("opening")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
-                    {formatMoney(statementData.openingBalance)}
+                    <IdentifierText className="min-w-0 max-w-full">{formatMoney(statementData.openingBalance)}</IdentifierText>
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("chargedHint")}>{t("charged")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
-                    {formatMoney(statementData.totalDebit)}
+                    <IdentifierText className="min-w-0 max-w-full">{formatMoney(statementData.totalDebit)}</IdentifierText>
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("paidHint")}>{t("paid")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
-                    {formatMoney(statementData.totalCredit)}
+                    <IdentifierText className="min-w-0 max-w-full">{formatMoney(statementData.totalCredit)}</IdentifierText>
                   </p>
                 </div>
                 <div className="rounded-lg border p-3">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground" title={t("closingHint")}>{t("closing")}</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums font-mono">
-                    {formatMoney(statementData.closingBalance)}
+                    <IdentifierText className="min-w-0 max-w-full">{formatMoney(statementData.closingBalance)}</IdentifierText>
                   </p>
                 </div>
               </div>
@@ -268,14 +270,14 @@ export default function ContactStatementPage() {
               <div className="overflow-x-auto rounded-lg border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left text-xs text-muted-foreground">
+                    <tr className="border-b text-start text-xs text-muted-foreground">
                       <th className="px-3 py-2 font-medium">{t("date")}</th>
                       <th className="px-3 py-2 font-medium">{t("type")}</th>
                       <th className="px-3 py-2 font-medium">{t("reference")}</th>
                       <th className="px-3 py-2 font-medium">{t("description")}</th>
-                      <th className="px-3 py-2 text-right font-medium" title={t("chargesHint")}>{t("charges")}</th>
-                      <th className="px-3 py-2 text-right font-medium" title={t("paymentsHint")}>{t("payments")}</th>
-                      <th className="px-3 py-2 text-right font-medium" title={t("balanceHint")}>{t("balance")}</th>
+                      <th className="px-3 py-2 text-end font-medium" title={t("chargesHint")}>{t("charges")}</th>
+                      <th className="px-3 py-2 text-end font-medium" title={t("paymentsHint")}>{t("payments")}</th>
+                      <th className="px-3 py-2 text-end font-medium" title={t("balanceHint")}>{t("balance")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -284,8 +286,8 @@ export default function ContactStatementPage() {
                       <td colSpan={6} className="px-3 py-2 text-sm font-medium">
                         {t("opening")}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono text-sm font-medium tabular-nums">
-                        {formatMoney(statementData.openingBalance)}
+                      <td className="px-3 py-2 text-end font-mono text-sm font-medium tabular-nums">
+                        <IdentifierText className="min-w-0 max-w-full">{formatMoney(statementData.openingBalance)}</IdentifierText>
                       </td>
                     </tr>
 
@@ -298,28 +300,28 @@ export default function ContactStatementPage() {
                     ) : (
                       statementData.transactions.map((tx, i) => (
                         <tr key={i} className="border-b last:border-b-0 hover:bg-muted/20 transition-colors">
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            {new Date(tx.date + "T00:00:00").toLocaleDateString("en-US", {
+                          <td className="px-3 py-2 whitespace-normal">
+                            <IdentifierText className="min-w-0 max-w-full">{new Date(tx.date + "T00:00:00").toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
-                            })}
+                            })}</IdentifierText>
                           </td>
                           <td className="px-3 py-2">
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-auto min-w-0 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                               {t(statementTypeKey(tx.type))}
                             </Badge>
                           </td>
-                          <td className="px-3 py-2 font-mono text-xs">{tx.documentNumber}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{tx.description}</td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums">
-                            {tx.debit ? formatMoney(tx.debit) : "-"}
+                          <td className="px-3 py-2 font-mono text-xs"><IdentifierText className="min-w-0 max-w-full">{tx.documentNumber}</IdentifierText></td>
+                          <td className="px-3 py-2 text-muted-foreground"><BidiText className="min-w-0 max-w-full">{tx.description}</BidiText></td>
+                          <td className="px-3 py-2 text-end font-mono tabular-nums">
+                            <IdentifierText className="min-w-0 max-w-full">{tx.debit ? formatMoney(tx.debit) : "-"}</IdentifierText>
                           </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums">
-                            {tx.credit ? formatMoney(tx.credit) : "-"}
+                          <td className="px-3 py-2 text-end font-mono tabular-nums">
+                            <IdentifierText className="min-w-0 max-w-full">{tx.credit ? formatMoney(tx.credit) : "-"}</IdentifierText>
                           </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums">
-                            {formatMoney(tx.balance)}
+                          <td className="px-3 py-2 text-end font-mono tabular-nums">
+                            <IdentifierText className="min-w-0 max-w-full">{formatMoney(tx.balance)}</IdentifierText>
                           </td>
                         </tr>
                       ))
@@ -330,8 +332,8 @@ export default function ContactStatementPage() {
                       <td colSpan={6} className="px-3 py-2 text-sm font-medium">
                         {t("closing")}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono text-sm font-medium tabular-nums">
-                        {formatMoney(statementData.closingBalance)}
+                      <td className="px-3 py-2 text-end font-mono text-sm font-medium tabular-nums">
+                        <IdentifierText className="min-w-0 max-w-full">{formatMoney(statementData.closingBalance)}</IdentifierText>
                       </td>
                     </tr>
                   </tbody>

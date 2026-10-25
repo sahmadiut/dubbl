@@ -132,7 +132,10 @@ test("tax navigation preserves every country eligibility branch, canonical href 
     if (country === "US") links.push(["salesTax", "/tax/sales-tax"], ["scheduleC", "/tax/schedule-c"]);
     for (const [key, href] of links) assert.ok(html.includes(escape(t(key))) && html.includes(`href="${href}"`));
     assert.equal((html.match(/href="\/tax/g) || []).length, links.length);
-    assert.ok(html.includes(">2</span>"));
+    const periodsLink = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)]
+      .find(([, attrs]) => attrs.includes('href="/tax/periods"'));
+    assert.ok(periodsLink, "open-period count belongs to the periods destination");
+    assert.match(periodsLink[2], /<span\b[^>]*><bdi\b(?=[^>]*data-slot="bidi-text")(?=[^>]*dir="auto")[^>]*>2<\/bdi><\/span>/);
   }
 });
 

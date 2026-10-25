@@ -38,7 +38,7 @@ test("purchasing tabs render both catalogs with unchanged routes, order, icons a
       const [, attrs, content] = anchors[i];
       assert.ok(attrs.includes(`href="${tab.href}"`), tab.href);
       assert.ok(content.includes(escaped(messages[tab.key])), tab.key);
-      const icon = renderWithPresentation(createElement(tab.icon, { className: "size-3.5" }), locale);
+      const icon = renderWithPresentation(createElement(tab.icon, { className: "size-3.5 shrink-0" }), locale);
       assert.ok(content.includes(icon), tab.key);
       if ("hint" in tab) assert.ok(attrs.includes(`title="${escaped(messages[tab.hint])}"`));
       else assert.ok(!attrs.includes("title="));

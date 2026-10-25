@@ -8,6 +8,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollTimeJson } from "../i18n/payroll-time-presentation";
@@ -20,7 +21,7 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollTimeLeave" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollTimeLeave" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -107,7 +108,7 @@ test("time/leave production templates render both locales, finite statuses, hour
     for (const key of ["activeTimesheets", "pendingApprovals", "approvedThisMonth", "leaveHoursUsed", "timesheets", "leaveRequests", "employee", "policy", "periodStart", "periodEnd", "startDate", "endDate", "reason", "cancel", "createTimesheet", "submitRequest"] as const)
       assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
-    assert.ok(h.html.includes(escape(t("hoursValue", { hours: "7.5" }))));
+    assert.ok(visibleText(h.html).includes(escape(t("hoursValue", { hours: "7.5" }))));
     assert.ok(h.html.includes("2026-10-01"));
     const filters = h.captured.filter(c => c.kind === "TabsTrigger").map(c => c.props.value);
     assert.deepEqual(filters, view === "timesheets" ? ["all", "draft", "submitted", "approved", "rejected"] : ["all", "pending", "approved", "rejected"]);

@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -228,7 +230,7 @@ export default function TaxLiabilitiesPage() {
         header: t("periodCovered"),
         render: (r) => (
           <span className="text-sm">
-            {t("periodRange", { start: r.periodStart, end: r.periodEnd })}
+            {t.rich("periodRange", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: r.periodStart, end: r.periodEnd  })}
           </span>
         ),
       },
@@ -251,7 +253,7 @@ export default function TaxLiabilitiesPage() {
         render: (r) => (
           <Badge variant="outline">
             {t(r.jurisdictionLevel)}
-            {r.jurisdiction ? ` · ${r.jurisdiction}` : ""}
+            <BidiText>{r.jurisdiction ? ` · ${r.jurisdiction}` : ""}</BidiText>
           </Badge>
         ),
       },
@@ -261,7 +263,7 @@ export default function TaxLiabilitiesPage() {
         className: "w-40",
         render: (r) => (
           <span className="font-mono text-xs text-muted-foreground">
-            {r.reference || "-"}
+            <IdentifierText>{r.reference || "-"}</IdentifierText>
           </span>
         ),
       },
@@ -271,17 +273,17 @@ export default function TaxLiabilitiesPage() {
         className: "w-28",
         render: (r) => (
           <span className="text-sm">
-            {r.paidAt ? r.paidAt.split("T")[0] : "-"}
+            <IdentifierText>{r.paidAt ? r.paidAt.split("T")[0] : "-"}</IdentifierText>
           </span>
         ),
       },
       {
         key: "amount",
         header: t("amount"),
-        className: "w-28 text-right",
+        className: "w-28 text-end",
         render: (r) => (
           <span className="font-mono text-sm tabular-nums">
-            {formatMoney(r.amount, r.currency || "USD", unitPresentation)}
+            <IdentifierText>{formatMoney(r.amount, r.currency || "USD", unitPresentation)}</IdentifierText>
           </span>
         ),
       },
@@ -305,15 +307,15 @@ export default function TaxLiabilitiesPage() {
         </div>
         <Button
           onClick={() => openRecordPayment()}
-          className="bg-emerald-600 shrink-0 hover:bg-emerald-700"
+          className="bg-emerald-600 shrink-0 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("record")}
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3 [&>*]:min-w-0">
         <StatCard
           title={t("owed")}
           value={totalsError ? t("unavailable") : formatMoney(accruedTax, reportCurrency, unitPresentation)}
@@ -337,11 +339,11 @@ export default function TaxLiabilitiesPage() {
 
       {/* Who you owe — by agency / type */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Landmark className="size-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold">{t("whoYouPay")}</h3>
         </div>
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid gap-3 lg:grid-cols-3 [&>*]:min-w-0">
           {AGENCY_BUCKETS.map((b) => {
             const paid = paidByBucket[b.bucket] || 0n;
             return (
@@ -353,18 +355,17 @@ export default function TaxLiabilitiesPage() {
                   <p className="text-sm font-medium">{t(b.agency)}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{t(b.what)}</p>
                 </div>
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 flex items-center justify-between flex-wrap">
                   <div className="text-xs text-muted-foreground">
                     {t("paidToDate")}
-                    <span className="ml-1.5 font-mono tabular-nums text-foreground">
-                      {totalsError ? t("unavailable") : formatMoney(paid, reportCurrency, unitPresentation)}
+                    <span className="ms-1.5 font-mono tabular-nums text-foreground">
+                      <IdentifierText>{totalsError ? t("unavailable") : formatMoney(paid, reportCurrency, unitPresentation)}</IdentifierText>
                     </span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => openRecordPayment(b.bucket)}
-                  >
+                    onClick={() => openRecordPayment(b.bucket)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                     {t("record")}
                   </Button>
                 </div>
@@ -376,7 +377,7 @@ export default function TaxLiabilitiesPage() {
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
             <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
             <span>
-              {t("outstandingNotice", { amount: formatMoney(outstanding, reportCurrency, unitPresentation) })}
+              {t.rich("outstandingNotice", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  amount: formatMoney(outstanding, reportCurrency, unitPresentation)  })}
             </span>
           </div>
         )}
@@ -407,9 +408,9 @@ export default function TaxLiabilitiesPage() {
 
           <div className="flex-1 space-y-4 overflow-y-auto px-4">
             <div className="space-y-1.5">
-              <Label>{t("payee")}</Label>
+              <Label htmlFor="payroll-tax-liabilities-1" >{t("payee")}</Label>
               <Select value={formBucket} onValueChange={setFormBucket}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-tax-liabilities-1" aria-label={t("payee")} >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -423,16 +424,15 @@ export default function TaxLiabilitiesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t("amountPaid")}</Label>
+              <Label htmlFor="payroll-tax-liabilities-2" >{t("amountPaid")}</Label>
               <CurrencyInput
                 value={formAmount}
                 onChange={setFormAmount}
-                prefix={reportCurrency}
-              />
+                prefix={reportCurrency} id="payroll-tax-liabilities-2" aria-label={t("amountPaid")} />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
+              <div className="space-y-1.5" role="group" aria-label={t("periodFrom")}>
                 <Label>{t("periodFrom")}</Label>
                 <DatePicker
                   value={formPeriodStart}
@@ -440,7 +440,7 @@ export default function TaxLiabilitiesPage() {
                   placeholder={t("start")}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" role="group" aria-label={t("periodTo")}>
                 <Label>{t("periodTo")}</Label>
                 <DatePicker
                   value={formPeriodEnd}
@@ -450,16 +450,16 @@ export default function TaxLiabilitiesPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
               <div className="space-y-1.5">
-                <Label>{t("level")}</Label>
+                <Label htmlFor="payroll-tax-liabilities-3" >{t("level")}</Label>
                 <Select
                   value={formJurisdiction}
                   onValueChange={(v) =>
                     setFormJurisdiction(v as "federal" | "state" | "local")
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-tax-liabilities-3" aria-label={t("level")} >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -469,7 +469,7 @@ export default function TaxLiabilitiesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" role="group" aria-label={t("paidOn")}>
                 <Label>{t("paidOn")}</Label>
                 <DatePicker
                   value={formPaymentDate}
@@ -480,22 +480,20 @@ export default function TaxLiabilitiesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t("reference")}</Label>
+              <Label htmlFor="payroll-tax-liabilities-4" >{t("reference")}</Label>
               <Input
                 value={formReference}
                 onChange={(e) => setFormReference(e.target.value)}
-                placeholder={t("referencePlaceholder")}
-              />
+                placeholder={t("referencePlaceholder")} dir="ltr" id="payroll-tax-liabilities-4" aria-label={t("reference")} />
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t("notes")}</Label>
+              <Label htmlFor="payroll-tax-liabilities-5" >{t("notes")}</Label>
               <Textarea
                 value={formNotes}
                 onChange={(e) => setFormNotes(e.target.value)}
                 placeholder={t("notesPlaceholder")}
-                rows={3}
-              />
+                rows={3} dir="auto" id="payroll-tax-liabilities-5" aria-label={t("notes")} />
             </div>
           </div>
 
@@ -503,15 +501,14 @@ export default function TaxLiabilitiesPage() {
             <Button
               onClick={handleSubmit}
               disabled={submitting}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             >
               {submitting ? t("recording") : t("record")}
             </Button>
             <Button
               variant="outline"
               onClick={() => setSheetOpen(false)}
-              disabled={submitting}
-            >
+              disabled={submitting} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
               {t("cancel")}
             </Button>
           </SheetFooter>

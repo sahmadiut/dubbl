@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 
@@ -81,19 +83,19 @@ export function OffCycleDialog({ type, onClose, start, end }: { type: OffCycleTy
       <DialogDescription>{t("approvalHelp")}</DialogDescription></DialogHeader>
       <form onSubmit={e => { e.preventDefault(); void submit(); }} className="space-y-4">
         {type === "correction" ? <div className="space-y-2"><Label htmlFor="payroll-parent">{t("completedPayroll")}</Label>
-          <Select value={parentRunId} onValueChange={v => { setParentRunId(v); setEmployeeId(""); }}><SelectTrigger id="payroll-parent"><SelectValue placeholder={t("selectCompleted")} /></SelectTrigger>
-            <SelectContent>{parents.map(p => <SelectItem key={p.id} value={p.id}>{t("parentOption", { start: p.payPeriodStart, end: p.payPeriodEnd, id: p.id.slice(0, 8) })}</SelectItem>)}</SelectContent></Select></div>
-          : <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="payroll-start">{t("periodStart")}</Label><Input id="payroll-start" type="date" required value={periodStart} onChange={e => setPeriodStart(e.target.value)} /></div>
-            <div className="space-y-2"><Label htmlFor="payroll-end">{t("periodEnd")}</Label><Input id="payroll-end" type="date" required min={periodStart} value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} /></div></div>}
+          <Select value={parentRunId} onValueChange={v => { setParentRunId(v); setEmployeeId(""); }}><SelectTrigger id="payroll-parent" className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("completedPayroll")} ><SelectValue placeholder={t("selectCompleted")} /></SelectTrigger>
+            <SelectContent>{parents.map(p => <SelectItem key={p.id} value={p.id}>{t.rich("parentOption", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: p.payPeriodStart, end: p.payPeriodEnd, id: p.id.slice(0, 8)  })}</SelectItem>)}</SelectContent></Select></div>
+          : <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0"><div className="space-y-2"><Label htmlFor="payroll-start">{t("periodStart")}</Label><Input id="payroll-start" type="date" required value={periodStart} onChange={e => setPeriodStart(e.target.value)} dir="ltr" aria-label={t("periodStart")} /></div>
+            <div className="space-y-2"><Label htmlFor="payroll-end">{t("periodEnd")}</Label><Input id="payroll-end" type="date" required min={periodStart} value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} dir="ltr" aria-label={t("periodEnd")} /></div></div>}
         <div className="space-y-2"><Label htmlFor="payroll-employee">{t("employee")}</Label><Select value={employeeId} onValueChange={setEmployeeId}>
-          <SelectTrigger id="payroll-employee"><SelectValue placeholder={loading ? t("loadingEmployees") : t("selectEmployee")} /></SelectTrigger>
-          <SelectContent>{choices.map(e => <SelectItem key={e.id} value={e.id}>{t("employeeOption", { name: e.name, currency: currencyLabel(e.currency ?? t("employeeCurrency"), unitPresentation.locale) })}</SelectItem>)}</SelectContent></Select></div>
-        {type === "termination" ? <Label className="flex items-center gap-2"><input type="checkbox" checked={pto} onChange={e => setPto(e.target.checked)} />{t("pto")}</Label>
+          <SelectTrigger id="payroll-employee" className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("employee")} ><SelectValue placeholder={loading ? t("loadingEmployees") : t("selectEmployee")} /></SelectTrigger>
+          <SelectContent>{choices.map(e => <SelectItem key={e.id} value={e.id}>{t.rich("employeeOption", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  name: e.name, currency: currencyLabel(e.currency ?? t("employeeCurrency"), unitPresentation.locale)  })}</SelectItem>)}</SelectContent></Select></div>
+        {type === "termination" ? <Label className="flex items-center gap-2"><input type="checkbox" checked={pto} onChange={e => setPto(e.target.checked)} dir="auto" />{t("pto")}</Label>
           : <div className="space-y-2"><Label htmlFor="payroll-adjustment">{t(type === "correction" ? "adjustment" : "bonusAmount", { currency: currencyLabel(currency, unitPresentation.locale) })}</Label>
-            <Input id="payroll-adjustment" inputMode="decimal" required value={amount} onChange={e => setAmount(e.target.value)} placeholder={type === "correction" ? t("signedExample") : t("amountExample")} />
+            <Input id="payroll-adjustment" inputMode="decimal" required value={amount} onChange={e => setAmount(e.target.value)} placeholder={type === "correction" ? t("signedExample") : t("amountExample")} dir="ltr" aria-label={t(type === "correction" ? "adjustment" : "bonusAmount", { currency: currencyLabel(currency, unitPresentation.locale) })} />
             {type === "correction" && <p className="text-xs text-muted-foreground">{t("adjustmentHelp")}</p>}</div>}
-        <div className="space-y-2"><Label htmlFor="payroll-notes">{t("notes")}</Label><Input id="payroll-notes" value={notes} onChange={e => setNotes(e.target.value)} /></div>
-        <DialogFooter><Button type="submit" disabled={busy || loading || !employeeId || (type === "correction" && !parentRunId)}>{busy ? t("creating") : t("createPayRun")}</Button></DialogFooter>
+        <div className="space-y-2"><Label htmlFor="payroll-notes">{t("notes")}</Label><Input id="payroll-notes" value={notes} onChange={e => setNotes(e.target.value)} dir="auto" aria-label={t("notes")} /></div>
+        <DialogFooter><Button type="submit" disabled={busy || loading || !employeeId || (type === "correction" && !parentRunId)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{busy ? t("creating") : t("createPayRun")}</Button></DialogFooter>
       </form>
     </DialogContent>
   </Dialog>;

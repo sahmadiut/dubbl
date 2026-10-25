@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollTaxPaymentJson } from "../i18n/payroll-tax-liability-presentation";
@@ -22,7 +23,7 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollTaxLiabilities" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollTaxLiabilities" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -113,8 +114,8 @@ test("tax liability production JSX renders bilingual copy, exact cents, statutor
     const t = translator(locale), h = render(page, loaded, locale);
     assert.ok(has(h, "title", t("documentTitle")));
     for (const key of ["title", "description", "owed", "paid", "outstanding", "whoYouPay", "incomeAgency", "incomeDescription", "payrollAgency", "payrollDescription", "pensionAgency", "pensionDescription", "paidToDate", "paymentsRecorded", "periodCovered", "covers", "level", "reference", "paidOn", "amount", "sheetTitle", "sheetDescription", "payee", "amountPaid", "periodFrom", "periodTo", "notes", "cancel", "referencePlaceholder", "notesPlaceholder"] as const) assert.ok(h.html.includes(escape(t(key))), key);
-    assert.ok(h.html.includes(escape(t("periodRange", { start: payment.periodStart, end: payment.periodEnd }))));
-    assert.ok(h.html.includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD", resolvePresentation({ user: { language: locale } })) }))));
+    assert.ok(visibleText(h.html).includes(escape(t("periodRange", { start: payment.periodStart, end: payment.periodEnd }))));
+    assert.ok(visibleText(h.html).includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD", resolvePresentation({ user: { language: locale } })) }))));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     const options = h.captured.filter(c => c.kind === "SelectItem");
@@ -129,7 +130,7 @@ test("tax liability production JSX renders bilingual copy, exact cents, statutor
     const max = Number.MAX_SAFE_INTEGER;
     const big = render(page, { ...loaded, payments: [payment, { ...payment, id: "payment-b", amount: max }, { ...payment, id: "payment-c", amount: max }] }, locale);
     assert.ok(big.html.includes(escape(payrollMoneyDisplay(2n * BigInt(max) + 29n, "KWD", resolvePresentation({ user: { language: locale } })))));
-    assert.ok(!big.html.includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD", resolvePresentation({ user: { language: locale } })) }))));
+    assert.ok(!visibleText(big.html).includes(escape(t("outstandingNotice", { amount: payrollMoneyDisplay(71, "KWD", resolvePresentation({ user: { language: locale } })) }))));
     const mixed = render(page, { ...loaded, payments: [{ ...payment, currency: "JPY" }] }, locale);
     assert.ok(mixed.html.includes(escape(t("multipleCurrencies")))); assert.ok(mixed.html.includes(escape(t("unavailable"))));
     const pending = render(page, { ...loaded, payments: [{ ...payment, currency: "JPY", status: "pending" }] }, locale);

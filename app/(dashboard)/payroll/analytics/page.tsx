@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -152,7 +154,7 @@ export default function AnalyticsPage() {
   useTopbarAction(
     useMemo(
       () => (
-        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={handleExport}>
+        <Button size="sm" variant="outline" className=" text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={handleExport}>
           <Download className="size-3" /> {t("exportCsv")}
         </Button>
       ),
@@ -189,7 +191,7 @@ export default function AnalyticsPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.4, delay: 0.5 }}
-                  className="absolute -top-2 -right-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
+                  className="absolute -top-2 -end-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
                 >
                   <TrendingUp className="size-4 text-blue-600 dark:text-blue-400" />
                 </motion.div>
@@ -197,7 +199,7 @@ export default function AnalyticsPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.4, delay: 0.6 }}
-                  className="absolute -bottom-1 -left-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
+                  className="absolute -bottom-1 -start-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
                 >
                   <DollarSign className="size-3.5 text-amber-600 dark:text-amber-400" />
                 </motion.div>
@@ -217,7 +219,7 @@ export default function AnalyticsPage() {
                 <Button
                   onClick={() => router.push("/payroll/runs")}
                   size="lg"
-                  className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                  className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
                   {t("goToRuns")}
                 </Button>
@@ -251,11 +253,11 @@ export default function AnalyticsPage() {
               {GHOST_ROWS.slice(0, 4).map((i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 px-4 py-3"
+                  className="flex items-center gap-4 px-4 py-3 flex-wrap"
                   style={{ opacity: 1 - i * 0.2 }}
                 >
                   <div className="h-3 w-20 rounded bg-muted/40" />
-                  <div className="ml-auto h-3 w-16 rounded bg-muted/30" />
+                  <div className="ms-auto h-3 w-16 rounded bg-muted/30" />
                   <div className="h-3 w-16 rounded bg-muted/30" />
                 </div>
               ))}
@@ -266,30 +268,30 @@ export default function AnalyticsPage() {
 
       {/* Summary stat cards */}
       {hasData && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
           <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalRuns")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{summary.totalRuns}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums"><IdentifierText>{summary.totalRuns}</IdentifierText></p>
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalGross")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency, unitPresentation)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums"><IdentifierText>{formatMoney(summary.totalGross, summary.currency, unitPresentation)}</IdentifierText></p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalNet")}</p>
             <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-              {formatMoney(summary.totalNet, summary.currency, unitPresentation)}
+              <IdentifierText>{formatMoney(summary.totalNet, summary.currency, unitPresentation)}</IdentifierText>
             </p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("activeEmployees")}</p>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                <Users className="mr-0.5 size-2.5" />
+                <Users className="me-0.5 size-2.5" />
                 {t("live")}
               </Badge>
             </div>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{summary.activeEmployees}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums"><BidiText>{summary.activeEmployees}</BidiText></p>
           </motion.div>
         </div>
       )}
@@ -298,13 +300,13 @@ export default function AnalyticsPage() {
       {hasData && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold">{t("reports")}</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
             {REPORT_TYPES.map((report, i) => (
               <motion.button
                 key={report.type}
                 {...anim(0.2 + i * 0.05)}
                 onClick={() => router.push(`/payroll/reports/${report.type}`)}
-                className="flex items-start gap-4 rounded-xl border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
+                className="flex items-start gap-4 rounded-xl border bg-card p-4 text-start hover:bg-muted/50 transition-colors"
               >
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                   <report.icon className="size-5 text-muted-foreground" />
@@ -326,19 +328,19 @@ export default function AnalyticsPage() {
 
           {projection.length > 0 ? (
             <div className="rounded-xl border bg-card divide-y">
-              <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl">
+              <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl flex-wrap">
                 <span className="text-xs font-medium text-muted-foreground">{t("month")}</span>
                 <div className="flex gap-6">
-                  <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("gross")}</span>
-                  <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("net")}</span>
+                  <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("gross")}</span>
+                  <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("net")}</span>
                 </div>
               </div>
               {projection.map((p) => (
-                <div key={p.month} className="px-4 py-2 flex items-center justify-between">
-                  <span className="text-sm font-mono">{p.month}</span>
+                <div key={p.month} className="px-4 py-2 flex items-center justify-between flex-wrap">
+                  <span className="text-sm font-mono"><IdentifierText>{p.month}</IdentifierText></span>
                   <div className="flex gap-6">
-                    <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.gross, p.currency, unitPresentation)}</span>
-                    <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(p.net, p.currency, unitPresentation)}</span>
+                    <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(p.gross, p.currency, unitPresentation)}</IdentifierText></span>
+                    <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(p.net, p.currency, unitPresentation)}</IdentifierText></span>
                   </div>
                 </div>
               ))}
@@ -356,62 +358,58 @@ export default function AnalyticsPage() {
         <div className="space-y-3">
           <h2 className="text-sm font-semibold">{t("whatIf")}</h2>
           <div className="rounded-xl border bg-card p-4 space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 [&>*]:min-w-0">
               <div className="space-y-1">
-                <Label className="text-xs">{t("salaryAdjustment")}</Label>
+                <Label className="text-xs" htmlFor="payroll-analytics-1" >{t("salaryAdjustment")}</Label>
                 <Input
                   type="number"
                   step="0.1"
                   value={salaryAdj}
                   onChange={(e) => setSalaryAdj(e.target.value)}
-                  className="h-8 text-sm"
-                />
+                  className="h-8 text-sm" dir="ltr" id="payroll-analytics-1" aria-label={t("salaryAdjustment")} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("newHires")}</Label>
+                <Label className="text-xs" htmlFor="payroll-analytics-2" >{t("newHires")}</Label>
                 <Input
                   type="number"
                   value={newHires}
                   onChange={(e) => setNewHires(e.target.value)}
-                  className="h-8 text-sm"
-                />
+                  className="h-8 text-sm" dir="ltr" id="payroll-analytics-2" aria-label={t("newHires")} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("avgHireSalary")}</Label>
+                <Label className="text-xs" htmlFor="payroll-analytics-3" >{t("avgHireSalary")}</Label>
                 <CurrencyInput
                   prefix={summary?.currency ?? "USD"}
                   size="sm"
                   value={avgHireSalary}
-                  onChange={setAvgHireSalary}
-                />
+                  onChange={setAvgHireSalary} id="payroll-analytics-3" aria-label={t("avgHireSalary")} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("terminations")}</Label>
+                <Label className="text-xs" htmlFor="payroll-analytics-4" >{t("terminations")}</Label>
                 <Input
                   type="number"
                   value={terminations}
                   onChange={(e) => setTerminations(e.target.value)}
-                  className="h-8 text-sm"
-                />
+                  className="h-8 text-sm" dir="ltr" id="payroll-analytics-4" aria-label={t("terminations")} />
               </div>
             </div>
-            <Button size="sm" onClick={handleWhatIf} disabled={whatIfLoading}>
-              <Calculator className="mr-1.5 size-3" />
+            <Button size="sm" onClick={handleWhatIf} disabled={whatIfLoading} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <Calculator className="me-1.5 size-3" />
               {whatIfLoading ? t("calculating") : t("runScenario")}
             </Button>
           </div>
 
           {whatIf && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 [&>*]:min-w-0">
               <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("currentMonthly")}</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{formatMoney(whatIf.current.monthlyGross, whatIf.currency, unitPresentation)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums"><IdentifierText>{formatMoney(whatIf.current.monthlyGross, whatIf.currency, unitPresentation)}</IdentifierText></p>
                 <p className="text-xs text-muted-foreground">{t("employeesCount", { count: whatIf.current.headcount })}</p>
               </motion.div>
               <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("projectedMonthly")}</p>
                 <p className="mt-1 text-xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {formatMoney(whatIf.projected.monthlyGross, whatIf.currency, unitPresentation)}
+                  <IdentifierText>{formatMoney(whatIf.projected.monthlyGross, whatIf.currency, unitPresentation)}</IdentifierText>
                 </p>
                 <p className="text-xs text-muted-foreground">{t("employeesCount", { count: whatIf.projected.headcount })}</p>
               </motion.div>
@@ -425,8 +423,7 @@ export default function AnalyticsPage() {
                       : "text-emerald-600 dark:text-emerald-400"
                   )}
                 >
-                  {whatIf.difference.monthlyGross >= 0 ? "+" : ""}
-                  {formatMoney(whatIf.difference.monthlyGross, whatIf.currency, unitPresentation)}
+                  <IdentifierText>{whatIf.difference.monthlyGross >= 0 ? "+" : ""}{formatMoney(whatIf.difference.monthlyGross, whatIf.currency, unitPresentation)}</IdentifierText>
                 </p>
                 <p className="text-xs text-muted-foreground">{t("perMonth")}</p>
               </motion.div>

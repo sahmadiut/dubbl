@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollSelfServiceJson, selfLeaveTypes, selfSheetStatuses } from "../i18n/payroll-self-service-presentation";
@@ -23,7 +24,7 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollSelfService" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollSelfService" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -115,9 +116,9 @@ test("self-service production template renders bilingual copy, escaped data, exa
     for (const key of ["employeeNumber", "position", "ptoBalance", "payslips", "profileTitle", "profileDescription", "email", "bankAccount", "save", "payslipsTitle", "payslipsDescription", "leaveTitle", "leaveDescription", "timesheetsTitle", "timesheetsDescription"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));
-    assert.ok(h.html.includes(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })) }))));
-    assert.ok(h.html.includes(escape(t("period", { start: "2026-09-01", end: "2026-09-30" }))));
-    for (const [key, hours] of [["hours", "7.5"], ["hoursAvailable", "7.5"], ["hoursUsed", "0.25"]] as const) assert.ok(h.html.includes(escape(t(key, { hours }))));
+    assert.ok(visibleText(h.html).includes(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })) }))));
+    assert.ok(visibleText(h.html).includes(escape(t("period", { start: "2026-09-01", end: "2026-09-30" }))));
+    for (const [key, hours] of [["hours", "7.5"], ["hoursAvailable", "7.5"], ["hoursUsed", "0.25"]] as const) assert.ok(visibleText(h.html).includes(escape(t(key, { hours }))));
     for (const status of selfSheetStatuses) assert.ok(render(page, { ...loaded, timesheets: [{ ...sheet, status }] }, locale).html.includes(escape(t(`status_${status}`))));
     for (const leaveType of selfLeaveTypes) assert.ok(render(page, { ...loaded, leaveBalances: [{ ...balance, policy: { name: caller, leaveType } }] }, locale).html.includes(escape(t(`leaveType_${leaveType}`))));
     const empty = render(page, { ...loaded, payslips: [], leaveBalances: [], timesheets: [] }, locale);
@@ -133,7 +134,7 @@ test("self-service production template renders bilingual copy, escaped data, exa
     }
     assert.doesNotThrow(() => render(page, { ...loaded, profile: { ...profile, position: null }, payslips: [{ ...slip, payrollRun: null }], leaveBalances: [{ ...balance, policy: null }] }, locale));
     const many = render(page, { ...loaded, payslips: Array.from({ length: 12 }, (_, i) => ({ ...slip, id: `slip-${i}` })), timesheets: Array.from({ length: 8 }, (_, i) => ({ ...sheet, id: `sheet-${i}` })) }, locale);
-    assert.equal(many.html.split(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })) }))).length - 1, 10);
+    assert.equal(visibleText(many.html).split(escape(t("netAmount", { amount: payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })) }))).length - 1, 10);
     assert.equal(many.html.split(escape(t("status_draft"))).length - 1, 5);
   }
   for (const value of Object.values(fa.PayrollSelfService)) assert.match(value, /[\u0600-\u06ff]/);

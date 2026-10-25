@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { payrollTimeMatch, payrollTimeJson, payrollTimeOrganization, type LeaveRow } from "@/i18n/payroll-time-presentation";
 
@@ -132,21 +134,21 @@ export default function LeavePage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <TabsList className="flex-wrap">
-              <TabsTrigger value="all">{t("all")}</TabsTrigger>
-              <TabsTrigger value="pending">{t("pending")}</TabsTrigger>
-              <TabsTrigger value="approved">{t("approved")}</TabsTrigger>
-              <TabsTrigger value="rejected">{t("rejected")}</TabsTrigger>
+            <TabsList className="flex-wrap h-auto min-h-9 max-w-full flex-wrap">
+              <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("all")}</TabsTrigger>
+              <TabsTrigger value="pending" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("pending")}</TabsTrigger>
+              <TabsTrigger value="approved" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("approved")}</TabsTrigger>
+              <TabsTrigger value="rejected" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("rejected")}</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" className=" text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setDialogOpen(true)}>
             <Plus className="size-3" /> {t("newRequest")}
           </Button>
         </div>
 
         <div className="relative sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t("employeeSearch")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder={t("employeeSearch")} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9 h-8 text-sm" dir="auto" aria-label={t("employeeSearch")} />
         </div>
       </div>
 
@@ -160,22 +162,22 @@ export default function LeavePage() {
       ) : (
         <div className="rounded-xl border bg-card divide-y">
           {filtered.map((r) => (
-            <div key={r.id} className="flex items-center justify-between gap-4 px-4 py-3">
+            <div key={r.id} className="flex items-center justify-between gap-4 px-4 py-3 flex-wrap">
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{r.employee?.name || t("unknown")}</p>
+                <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{r.employee?.name || t("unknown")}</BidiText></p>
                 <p className="text-xs text-muted-foreground">
-                  {t("leaveSummary", { policy: r.policy?.name || "-", start: r.startDate, end: r.endDate, hours: String(r.hours) })}
+                  {t.rich("leaveSummary", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  policy: r.policy?.name || "-", start: r.startDate, end: r.endDate, hours: String(r.hours)  })}
                 </p>
-                {r.reason && <p className="text-xs text-muted-foreground mt-0.5">{r.reason}</p>}
+                {r.reason && <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{r.reason}</BidiText></p>}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <Badge variant="outline" className={cn("text-[10px]", statusColors[r.status] || "")}>
                   {t(r.status)}
                 </Badge>
                 {r.status === "pending" && (
                   <>
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleApprove(r.id)}>{t("approve")}</Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs text-red-600" onClick={() => handleReject(r.id)}>{t("reject")}</Button>
+                    <Button size="sm" variant="outline" className=" text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => handleApprove(r.id)}>{t("approve")}</Button>
+                    <Button size="sm" variant="outline" className=" text-xs text-red-600 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => handleReject(r.id)}>{t("reject")}</Button>
                   </>
                 )}
               </div>
@@ -187,41 +189,41 @@ export default function LeavePage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t("newLeave")}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             <div className="space-y-2">
-              <Label>{t("employee")}</Label>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })}>
+              <Label htmlFor="payroll-leave-1" >{t("employee")}</Label>
+              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} id="payroll-leave-1" aria-label={t("employee")} >
                 <option value="">{t("select")}</option>
                 {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <Label>{t("policy")}</Label>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={form.policyId} onChange={(e) => setForm({ ...form, policyId: e.target.value })}>
+              <Label htmlFor="payroll-leave-2" >{t("policy")}</Label>
+              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={form.policyId} onChange={(e) => setForm({ ...form, policyId: e.target.value })} id="payroll-leave-2" aria-label={t("policy")} >
                 <option value="">{t("select")}</option>
                 {policies.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <Label>{t("startDate")}</Label>
-              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+              <Label htmlFor="payroll-leave-3" >{t("startDate")}</Label>
+              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} dir="ltr" id="payroll-leave-3" aria-label={t("startDate")} />
             </div>
             <div className="space-y-2">
-              <Label>{t("endDate")}</Label>
-              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+              <Label htmlFor="payroll-leave-4" >{t("endDate")}</Label>
+              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} dir="ltr" id="payroll-leave-4" aria-label={t("endDate")} />
             </div>
             <div className="space-y-2">
-              <Label>{t("hours")}</Label>
-              <Input type="number" step="0.5" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} />
+              <Label htmlFor="payroll-leave-5" >{t("hours")}</Label>
+              <Input type="number" step="0.5" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} dir="ltr" id="payroll-leave-5" aria-label={t("hours")} />
             </div>
             <div className="space-y-2">
-              <Label>{t("reason")}</Label>
-              <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+              <Label htmlFor="payroll-leave-6" >{t("reason")}</Label>
+              <Input value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} dir="auto" id="payroll-leave-6" aria-label={t("reason")} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleCreate} disabled={creating} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button onClick={handleCreate} disabled={creating} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {creating ? t("creating") : t("submitRequest")}
             </Button>
           </DialogFooter>

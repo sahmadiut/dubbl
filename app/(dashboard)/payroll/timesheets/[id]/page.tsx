@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { payrollTimeJson, payrollTimeMatch, payrollTimeOrganization, type TimeSheetDetail } from "@/i18n/payroll-time-presentation";
 
@@ -157,7 +159,7 @@ export default function TimesheetDetailPage() {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/timesheets")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> {t("backSheets")}
+          <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backSheets")}
         </button>
         <p className="text-sm text-muted-foreground">{t("sheetNotFound")}</p>
       </ContentReveal>
@@ -167,36 +169,36 @@ export default function TimesheetDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/timesheets")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("backSheets")}
+        <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backSheets")}
       </button>
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
             <Clock className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">{ts.employee?.name || t("unknown")}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-semibold"><BidiText>{ts.employee?.name || t("unknown")}</BidiText></h1>
               <Badge variant="outline" className={statusColors[ts.status] || ""}>{t(ts.status)}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{t("sheetSummary", { start: ts.periodStart, end: ts.periodEnd, hours: String(ts.totalHours) })}</p>
+            <p className="text-sm text-muted-foreground">{t.rich("sheetSummary", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: ts.periodStart, end: ts.periodEnd, hours: String(ts.totalHours)  })}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {ts.status === "draft" && (
-            <Button size="sm" onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">
-              <Send className="mr-1.5 size-3.5" /> {t("submit")}
+            <Button size="sm" onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+              <Send className="me-1.5 size-3.5" /> {t("submit")}
             </Button>
           )}
           {ts.status === "submitted" && (
             <>
-              <Button size="sm" onClick={handleApprove} disabled={approving} className="bg-emerald-600 hover:bg-emerald-700">
-                <CheckCircle className="mr-1.5 size-3.5" /> {t("approve")}
+              <Button size="sm" onClick={handleApprove} disabled={approving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+                <CheckCircle className="me-1.5 size-3.5" /> {t("approve")}
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => setRejectOpen(true)}>
-                <XCircle className="mr-1.5 size-3.5" /> {t("reject")}
+              <Button size="sm" variant="destructive" onClick={() => setRejectOpen(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                <XCircle className="me-1.5 size-3.5" /> {t("reject")}
               </Button>
             </>
           )}
@@ -205,7 +207,7 @@ export default function TimesheetDetailPage() {
 
       {ts.rejectionReason && (
         <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20 px-4 py-3">
-          <p className="text-sm text-red-600 dark:text-red-400">{t("rejectedReason", { reason: ts.rejectionReason })}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{t.rich("rejectedReason", { em: (chunks) => <BidiText>{chunks}</BidiText>,  reason: ts.rejectionReason  })}</p>
         </div>
       )}
 
@@ -215,19 +217,19 @@ export default function TimesheetDetailPage() {
 
         {ts.status === "draft" && (
           <motion.div {...anim(0)} className="rounded-lg border p-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 [&>*]:min-w-0">
               <div className="space-y-1">
-                <Label className="text-xs">{t("date")}</Label>
-                <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="h-8 text-sm" />
+                <Label className="text-xs" htmlFor="payroll-timesheets-id-1" >{t("date")}</Label>
+                <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="h-8 text-sm" dir="ltr" id="payroll-timesheets-id-1" aria-label={t("date")} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("hours")}</Label>
-                <Input type="number" step="0.25" value={newHours} onChange={(e) => setNewHours(e.target.value)} className="h-8 text-sm" />
+                <Label className="text-xs" htmlFor="payroll-timesheets-id-2" >{t("hours")}</Label>
+                <Input type="number" step="0.25" value={newHours} onChange={(e) => setNewHours(e.target.value)} className="h-8 text-sm" dir="ltr" id="payroll-timesheets-id-2" aria-label={t("hours")} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("type")}</Label>
+                <Label className="text-xs" htmlFor="payroll-timesheets-id-3" >{t("type")}</Label>
                 <Select value={newShiftType} onValueChange={setNewShiftType}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className=" text-sm h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-timesheets-id-3" aria-label={t("type")} ><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="regular">{t("regular")}</SelectItem>
                     <SelectItem value="overtime">{t("overtime")}</SelectItem>
@@ -238,12 +240,12 @@ export default function TimesheetDetailPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("description")}</Label>
-                <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} className="h-8 text-sm" placeholder={t("optional")} />
+                <Label className="text-xs" htmlFor="payroll-timesheets-id-4" >{t("description")}</Label>
+                <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} className="h-8 text-sm" placeholder={t("optional")} dir="auto" id="payroll-timesheets-id-4" aria-label={t("description")} />
               </div>
             </div>
-            <Button size="sm" onClick={handleAddEntry} disabled={!newDate || !newHours}>
-              <Plus className="mr-1.5 size-3" /> {t("addEntry")}
+            <Button size="sm" onClick={handleAddEntry} disabled={!newDate || !newHours} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <Plus className="me-1.5 size-3" /> {t("addEntry")}
             </Button>
           </motion.div>
         )}
@@ -253,16 +255,16 @@ export default function TimesheetDetailPage() {
         ) : (
           <div className="rounded-xl border bg-card divide-y">
             {(ts.entries || []).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between px-4 py-2.5">
+              <div key={entry.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                 <div>
-                  <p className="text-sm font-medium">{entry.date}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-sm font-medium"><IdentifierText>{entry.date}</IdentifierText></p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <Badge variant="outline" className="text-[10px]">{t(entry.shiftType)}</Badge>
-                    {entry.description && <span className="text-xs text-muted-foreground">{entry.description}</span>}
+                    {entry.description && <span className="text-xs text-muted-foreground"><BidiText>{entry.description}</BidiText></span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono tabular-nums">{t("hoursValue", { hours: String(entry.hours) })}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-mono tabular-nums">{t.rich("hoursValue", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(entry.hours)  })}</span>
                   {ts.status === "draft" && (
                     <Button size="icon" variant="ghost" className="size-7" aria-label={t("delete")} onClick={() => handleDeleteEntry(entry.id)}>
                       <Trash2 className="size-3.5 text-muted-foreground" />
@@ -282,19 +284,18 @@ export default function TimesheetDetailPage() {
             <DialogDescription>{t("rejectSheetDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("reason")}</Label>
+            <Label className="text-xs" htmlFor="payroll-timesheets-id-5" >{t("reason")}</Label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder={t("rejectSheetExample")}
               rows={4}
-              autoFocus
-            />
+              autoFocus dir="auto" id="payroll-timesheets-id-5" aria-label={t("reason")} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={rejecting}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
-              <XCircle className="mr-1.5 size-3.5" /> {t("rejectSheet")}
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={rejecting} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={rejecting} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <XCircle className="me-1.5 size-3.5" /> {t("rejectSheet")}
             </Button>
           </DialogFooter>
         </DialogContent>

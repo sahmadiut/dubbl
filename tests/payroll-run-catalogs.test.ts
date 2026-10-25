@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollRunJson } from "../i18n/payroll-run-presentation";
@@ -23,7 +24,7 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollRuns" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollRuns" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -111,7 +112,7 @@ test("payroll run list, states, badges, sort/filter controls and new dialog rend
     const h = render(page, { loading: false, runs, search: "" }, locale);
     for (const key of ["all", "draft", "processing", "completed", "pendingApproval", "void", "regular", "termination", "bonus", "correction", "offCycle", "date", "gross", "net", "deductions", "newRun", "oneOff", "fixPast"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(run.totalGross, "KWD", resolvePresentation({ user: { language: locale } })))));
-    assert.ok(h.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
+    assert.ok(visibleText(h.html).includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(has(h, "title", t("documentTitle")));
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["date", "gross", "net"]);
     assert.deepEqual(h.captured.filter(c => c.kind === "TabsTrigger").map(c => c.props.value), ["all", "draft", "completed", "pending_approval", "void", "all", "regular", "termination", "bonus_only", "correction", "off_cycle"]);
@@ -274,7 +275,7 @@ test("source copy and paired Persian leaves have explicit machine/data exception
   }
   assert.deepEqual(Object.keys(en.PayrollRuns), Object.keys(fa.PayrollRuns));
   for (const [key, text] of Object.entries(fa.PayrollRuns)) {
-    if (key === "employeeOption") assert.equal(text, "{name} · {currency}"); // Data-only separator; no authored prose.
+    if (key === "employeeOption") assert.equal(catalogText(text), "{name} · {currency}"); // Data-only separator; no authored prose.
     else assert.match(text, /[\u0600-\u06ff]/);
   }
 });

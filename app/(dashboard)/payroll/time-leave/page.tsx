@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { payrollTimeJson, payrollTimeOrganization } from "@/i18n/payroll-time-presentation";
 
@@ -198,7 +200,7 @@ export default function TimeLeavePage() {
         view === "timesheets" ? (
           <Button
             size="sm"
-            className="h-7 text-xs gap-1"
+            className=" text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             onClick={() => setTsDrawerOpen(true)}
           >
             <Plus className="size-3" /> {t("newTimesheet")}
@@ -206,7 +208,7 @@ export default function TimeLeavePage() {
         ) : (
           <Button
             size="sm"
-            className="h-7 text-xs gap-1"
+            className=" text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             onClick={() => setLeaveDrawerOpen(true)}
           >
             <Plus className="size-3" /> {t("newRequest")}
@@ -652,7 +654,7 @@ export default function TimeLeavePage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Stat cards - always visible */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
         {[
           {
             icon: Clock,
@@ -672,7 +674,7 @@ export default function TimeLeavePage() {
           {
             icon: Timer,
             label: t("leaveHoursUsed"),
-            value: t("hoursValue", { hours: String(leaveHoursUsed) }),
+            value: t.rich("hoursValue", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(leaveHoursUsed)  }),
             highlight: true,
           },
         ].map((card, i) => (
@@ -681,7 +683,7 @@ export default function TimeLeavePage() {
             {...anim(i * 0.05)}
             className="rounded-xl border bg-card p-4"
           >
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
               <card.icon className="size-4" />
               <span className="text-[11px] font-medium uppercase tracking-wide">
                 {card.label}
@@ -689,11 +691,11 @@ export default function TimeLeavePage() {
             </div>
             <p
               className={cn(
-                "mt-2 text-2xl font-bold font-mono tabular-nums truncate",
+                "mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]",
                 card.highlight && "text-emerald-600 dark:text-emerald-400",
               )}
             >
-              {card.value}
+              <BidiText>{card.value}</BidiText>
             </p>
           </motion.div>
         ))}
@@ -703,7 +705,7 @@ export default function TimeLeavePage() {
 
       {/* View tabs */}
       <div className="space-y-4">
-        <div className="inline-flex h-10 items-center gap-1 rounded-lg bg-muted p-[3px]">
+        <div className="inline-flex h-10 items-center gap-1 rounded-lg bg-muted p-[3px] flex-wrap">
           {([
             { value: "timesheets" as const, icon: Clock, label: t("timesheets") },
             { value: "leave" as const, icon: CalendarDays, label: t("leaveRequests") },
@@ -715,7 +717,7 @@ export default function TimeLeavePage() {
                 setView(tab.value);
               }}
               className={cn(
-                "relative inline-flex h-[calc(100%-1px)] items-center gap-1.5 rounded-md px-5 text-sm font-medium whitespace-nowrap transition-colors",
+                "relative inline-flex h-auto min-h-8 max-w-full items-center gap-1.5 rounded-md px-5 py-1 text-sm font-medium whitespace-normal [overflow-wrap:anywhere] transition-colors",
                 view === tab.value
                   ? "text-foreground"
                   : "text-foreground/60 hover:text-foreground"
@@ -762,21 +764,21 @@ export default function TimeLeavePage() {
                 value={tsFilter}
                 onValueChange={(v) => setTsFilter(v as TsFilter)}
               >
-                <TabsList className="overflow-x-auto">
-                  <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
-                  <TabsTrigger value="draft" className="whitespace-nowrap">{t("draft")}</TabsTrigger>
-                  <TabsTrigger value="submitted" className="whitespace-nowrap">{t("submitted")}</TabsTrigger>
-                  <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")}</TabsTrigger>
-                  <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")}</TabsTrigger>
+                <TabsList className="overflow-x-auto h-auto min-h-9 max-w-full flex-wrap">
+                  <TabsTrigger value="all" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("all")}</TabsTrigger>
+                  <TabsTrigger value="draft" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("draft")}</TabsTrigger>
+                  <TabsTrigger value="submitted" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("submitted")}</TabsTrigger>
+                  <TabsTrigger value="approved" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("approved")}</TabsTrigger>
+                  <TabsTrigger value="rejected" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("rejected")}</TabsTrigger>
                 </TabsList>
               </Tabs>
 
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 onClick={() => setTsDrawerOpen(true)}
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newTimesheet")}
               </Button>
             </div>
@@ -784,18 +786,17 @@ export default function TimeLeavePage() {
             {/* Search + sort */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                 <Input
                   placeholder={t("searchEmployee")}
                   value={tsSearch}
                   onChange={(e) => setTsSearch(e.target.value)}
-                  className="h-8 w-56 pl-8 pr-7 text-xs"
-                />
+                  className="h-8 w-56 ps-8 pe-7 text-xs" dir="auto" aria-label={t("searchEmployee")} />
                 {tsSearch && (
                   <button
                     aria-label={t("clear")}
                     onClick={() => setTsSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="size-3" />
                   </button>
@@ -810,7 +811,7 @@ export default function TimeLeavePage() {
                   setTsSortOrder(order as "asc" | "desc");
                 }}
               >
-                <SelectTrigger className="h-8 w-44 text-xs">
+                <SelectTrigger className=" w-44 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("sortBy")} >
                   <SelectValue placeholder={t("sortBy")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -829,11 +830,11 @@ export default function TimeLeavePage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 text-xs text-muted-foreground"
+                  className=" text-xs text-muted-foreground h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                   aria-label={t("clear")}
                     onClick={() => setTsSearch("")}
                 >
-                  <X className="mr-1 size-3" />
+                  <X className="me-1 size-3" />
                   {t("clear")}
                 </Button>
               )}
@@ -863,24 +864,24 @@ export default function TimeLeavePage() {
                       onClick={() =>
                         router.push(`/payroll/timesheets/${ts.id}`)
                       }
-                      className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                      className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
                           <Clock className="size-3.5 text-muted-foreground" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {ts.employee?.name || "-"}
+                          <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                            <BidiText>{ts.employee?.name || "-"}</BidiText>
                           </p>
                           <p className="text-[11px] text-muted-foreground">
-                            {t("dateRange", { start: ts.periodStart, end: ts.periodEnd })}
+                            {t.rich("dateRange", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: ts.periodStart, end: ts.periodEnd  })}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <span className="text-xs font-mono tabular-nums">
-                          {t("hoursValue", { hours: String(ts.totalHours) })}
+                          {t.rich("hoursValue", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(ts.totalHours)  })}
                         </span>
                         <Badge
                           variant="outline"
@@ -901,7 +902,7 @@ export default function TimeLeavePage() {
             {/* Infinite scroll sentinel & count */}
             {!tsRefetching && !pendingTsSearch && sortedTs.length > 0 && (
               <>
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-1 flex-wrap">
                   <p className="text-xs text-muted-foreground">
                     {t("showingTimesheets", { loaded: timesheets.length, total: tsTotalCount })}
                   </p>
@@ -942,20 +943,20 @@ export default function TimeLeavePage() {
                 value={leaveFilter}
                 onValueChange={(v) => setLeaveFilter(v as LeaveFilter)}
               >
-                <TabsList className="overflow-x-auto">
-                  <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
-                  <TabsTrigger value="pending" className="whitespace-nowrap">{t("pending")}</TabsTrigger>
-                  <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")}</TabsTrigger>
-                  <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")}</TabsTrigger>
+                <TabsList className="overflow-x-auto h-auto min-h-9 max-w-full flex-wrap">
+                  <TabsTrigger value="all" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("all")}</TabsTrigger>
+                  <TabsTrigger value="pending" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("pending")}</TabsTrigger>
+                  <TabsTrigger value="approved" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("approved")}</TabsTrigger>
+                  <TabsTrigger value="rejected" className=" h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]">{t("rejected")}</TabsTrigger>
                 </TabsList>
               </Tabs>
 
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 onClick={() => setLeaveDrawerOpen(true)}
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newRequest")}
               </Button>
             </div>
@@ -963,18 +964,17 @@ export default function TimeLeavePage() {
             {/* Search + sort */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                 <Input
                   placeholder={t("searchPolicy")}
                   value={leaveSearch}
                   onChange={(e) => setLeaveSearch(e.target.value)}
-                  className="h-8 w-56 pl-8 pr-7 text-xs"
-                />
+                  className="h-8 w-56 ps-8 pe-7 text-xs" dir="auto" aria-label={t("searchPolicy")} />
                 {leaveSearch && (
                   <button
                     aria-label={t("clear")}
                     onClick={() => setLeaveSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="size-3" />
                   </button>
@@ -989,7 +989,7 @@ export default function TimeLeavePage() {
                   setLeaveSortOrder(order as "asc" | "desc");
                 }}
               >
-                <SelectTrigger className="h-8 w-44 text-xs">
+                <SelectTrigger className=" w-44 text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("sortBy")} >
                   <SelectValue placeholder={t("sortBy")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -1008,11 +1008,11 @@ export default function TimeLeavePage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 text-xs text-muted-foreground"
+                  className=" text-xs text-muted-foreground h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                   aria-label={t("clear")}
                     onClick={() => setLeaveSearch("")}
                 >
-                  <X className="mr-1 size-3" />
+                  <X className="me-1 size-3" />
                   {t("clear")}
                 </Button>
               )}
@@ -1039,22 +1039,22 @@ export default function TimeLeavePage() {
                   {sortedLeave.map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5"
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 flex-wrap"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {r.employee?.name || "-"}
+                        <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                          <BidiText>{r.employee?.name || "-"}</BidiText>
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          {t("leaveSummary", { policy: r.policy?.name || "-", start: r.startDate, end: r.endDate, hours: String(r.hours) })}
+                          {t.rich("leaveSummary", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  policy: r.policy?.name || "-", start: r.startDate, end: r.endDate, hours: String(r.hours)  })}
                         </p>
                         {r.reason && (
-                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[200px]">
-                            {r.reason}
+                          <p className="text-[11px] text-muted-foreground mt-0.5 [overflow-wrap:anywhere] max-w-[200px]">
+                            <BidiText>{r.reason}</BidiText>
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                         <Badge
                           variant="outline"
                           className={cn(
@@ -1069,7 +1069,7 @@ export default function TimeLeavePage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 text-[10px] px-2"
+                              className=" text-[10px] px-2 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                               onClick={() => handleApprove(r.id)}
                             >
                               {t("approve")}
@@ -1077,7 +1077,7 @@ export default function TimeLeavePage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 text-[10px] px-2 text-red-600"
+                              className=" text-[10px] px-2 text-red-600 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                               onClick={() => handleReject(r.id)}
                             >
                               {t("reject")}
@@ -1094,7 +1094,7 @@ export default function TimeLeavePage() {
             {/* Infinite scroll sentinel & count */}
             {!leaveRefetching && !pendingLeaveSearch && sortedLeave.length > 0 && (
               <>
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-1 flex-wrap">
                   <p className="text-xs text-muted-foreground">
                     {t("showingLeave", { loaded: leaveRequests.length, total: leaveTotalCount })}
                   </p>
@@ -1123,7 +1123,7 @@ export default function TimeLeavePage() {
       <Sheet open={tsDrawerOpen} onOpenChange={setTsDrawerOpen}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <Clock className="size-5" />
               </div>
@@ -1138,14 +1138,13 @@ export default function TimeLeavePage() {
           <form onSubmit={handleCreateTs} className="flex flex-col flex-1">
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>{t("employee")}</Label>
+                <Label htmlFor="payroll-time-leave-1" >{t("employee")}</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                   value={newTs.employeeId}
                   onChange={(e) =>
                     setNewTs({ ...newTs, employeeId: e.target.value })
-                  }
-                >
+                  } id="payroll-time-leave-1" aria-label={t("employee")} >
                   <option value="">{t("selectEmployee")}</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -1155,38 +1154,35 @@ export default function TimeLeavePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>{t("periodStart")}</Label>
+                <Label htmlFor="payroll-time-leave-2" >{t("periodStart")}</Label>
                 <Input
                   type="date"
                   value={newTs.periodStart}
                   onChange={(e) =>
                     setNewTs({ ...newTs, periodStart: e.target.value })
-                  }
-                />
+                  } dir="ltr" id="payroll-time-leave-2" aria-label={t("periodStart")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("periodEnd")}</Label>
+                <Label htmlFor="payroll-time-leave-3" >{t("periodEnd")}</Label>
                 <Input
                   type="date"
                   value={newTs.periodEnd}
                   onChange={(e) =>
                     setNewTs({ ...newTs, periodEnd: e.target.value })
-                  }
-                />
+                  } dir="ltr" id="payroll-time-leave-3" aria-label={t("periodEnd")} />
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setTsDrawerOpen(false)}
-              >
+                onClick={() => setTsDrawerOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                 {t("cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={savingTs}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
                 {savingTs ? t("creating") : t("createTimesheet")}
               </Button>
@@ -1201,7 +1197,7 @@ export default function TimeLeavePage() {
       <Sheet open={leaveDrawerOpen} onOpenChange={setLeaveDrawerOpen}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <CalendarDays className="size-5" />
               </div>
@@ -1216,7 +1212,7 @@ export default function TimeLeavePage() {
           <form onSubmit={handleCreateLeave} className="flex flex-col flex-1">
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>{t("employee")}</Label>
+                <Label htmlFor="payroll-time-leave-4" >{t("employee")}</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                   value={leaveForm.employeeId}
@@ -1225,8 +1221,7 @@ export default function TimeLeavePage() {
                       ...leaveForm,
                       employeeId: e.target.value,
                     })
-                  }
-                >
+                  } id="payroll-time-leave-4" aria-label={t("employee")} >
                   <option value="">{t("selectEmployee")}</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -1236,7 +1231,7 @@ export default function TimeLeavePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>{t("policy")}</Label>
+                <Label htmlFor="payroll-time-leave-5" >{t("policy")}</Label>
                 <select
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                   value={leaveForm.policyId}
@@ -1245,8 +1240,7 @@ export default function TimeLeavePage() {
                       ...leaveForm,
                       policyId: e.target.value,
                     })
-                  }
-                >
+                  } id="payroll-time-leave-5" aria-label={t("policy")} >
                   <option value="">{t("selectPolicy")}</option>
                   {policies.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -1256,7 +1250,7 @@ export default function TimeLeavePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>{t("startDate")}</Label>
+                <Label htmlFor="payroll-time-leave-6" >{t("startDate")}</Label>
                 <Input
                   type="date"
                   value={leaveForm.startDate}
@@ -1265,11 +1259,10 @@ export default function TimeLeavePage() {
                       ...leaveForm,
                       startDate: e.target.value,
                     })
-                  }
-                />
+                  } dir="ltr" id="payroll-time-leave-6" aria-label={t("startDate")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("endDate")}</Label>
+                <Label htmlFor="payroll-time-leave-7" >{t("endDate")}</Label>
                 <Input
                   type="date"
                   value={leaveForm.endDate}
@@ -1278,43 +1271,39 @@ export default function TimeLeavePage() {
                       ...leaveForm,
                       endDate: e.target.value,
                     })
-                  }
-                />
+                  } dir="ltr" id="payroll-time-leave-7" aria-label={t("endDate")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("hours")}</Label>
+                <Label htmlFor="payroll-time-leave-8" >{t("hours")}</Label>
                 <Input
                   type="number"
                   step="0.5"
                   value={leaveForm.hours}
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, hours: e.target.value })
-                  }
-                />
+                  } dir="ltr" id="payroll-time-leave-8" aria-label={t("hours")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("reason")}</Label>
+                <Label htmlFor="payroll-time-leave-9" >{t("reason")}</Label>
                 <Input
                   value={leaveForm.reason}
                   onChange={(e) =>
                     setLeaveForm({ ...leaveForm, reason: e.target.value })
                   }
-                  placeholder={t("reasonPlaceholder")}
-                />
+                  placeholder={t("reasonPlaceholder")} dir="auto" id="payroll-time-leave-9" aria-label={t("reason")} />
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setLeaveDrawerOpen(false)}
-              >
+                onClick={() => setLeaveDrawerOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                 {t("cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={savingLeave}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
                 {savingLeave ? t("submitting") : t("submitRequest")}
               </Button>

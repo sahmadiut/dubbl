@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollRunDetailJson, payrollItemTypes, payrollBonusTypes, payrollApprovalStatuses } from "../i18n/payroll-run-detail-presentation";
@@ -21,7 +22,7 @@ const page = "app/(dashboard)/payroll/runs/[id]/page.tsx";
 const locales = ["en-US", "fa-IR"] as const;
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollRunDetail" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollRunDetail" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -117,7 +118,7 @@ test("run detail renders bilingual copy, finite enums, exact cents, escaped data
     for (const type of payrollItemTypes) assert.ok(h.html.includes(escape(t(`itemType_${type}`))));
     for (const type of payrollBonusTypes) assert.ok(h.html.includes(escape(t(`bonusType_${type}`))));
     assert.ok(has(h, "title", t("documentTitle")));
-    assert.ok(h.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
+    assert.ok(visibleText(h.html).includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(item.grossAmount, "JPY", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(18014398509481982n, "JPY", resolvePresentation({ user: { language: locale } })))));
@@ -127,7 +128,7 @@ test("run detail renders bilingual copy, finite enums, exact cents, escaped data
     for (const runType of ["termination", "bonus_only", "correction", "off_cycle"] as const) assert.ok(view({ run: { ...run, runType } }, locale).html.includes(escape(t(`runType_${runType}`))));
     const completed = view({ run: { ...run, status: "completed", journalEntryId: "journal-a", processedAt: "2024-01-08T00:00:00Z" } }, locale);
     for (const key of ["viewEntry", "generate", "viewPayslips"] as const) assert.ok(completed.html.includes(escape(t(key))));
-    assert.ok(completed.html.includes(escape(t("processedAt", { date: "2024-01-08T00:00:00Z" }))));
+    assert.ok(visibleText(completed.html).includes(escape(t("processedAt", { date: "2024-01-08T00:00:00Z" }))));
     for (const [states, key] of [[{ run: null }, "notFound"], [{ moneyError: "readFailed" }, "readFailed"], [{ run: { ...run, items: [] } }, "noEmployees"], [{ search: "unmatched" }, "noMatch"], [{ bonuses: [] }, "noBonuses"], [{ run: { ...run, status: "completed" } }, "noEntryHelp"]] as const)
       assert.ok(view(states, locale).html.includes(escape(t(key))), key);
     assert.ok(view({ loading: true }, locale).html.includes(escape((locale === "en-US" ? en : fa).SharedUI.loading2)));

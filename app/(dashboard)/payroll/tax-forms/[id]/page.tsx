@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -80,7 +82,7 @@ export default function TaxFormDetailPage() {
   if (moneyError) return <p role="alert">{t(moneyError as "organizationRequired" | "taxReadFailed")}</p>;
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[50vh] flex-wrap">
         <p className="text-sm text-muted-foreground">{t("loading")}</p>
       </div>
     );
@@ -90,7 +92,7 @@ export default function TaxFormDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <p className="text-sm text-muted-foreground">{t("formNotFound")}</p>
-        <Button variant="ghost" size="sm" asChild className="mt-2">
+        <Button variant="ghost" size="sm" asChild className="mt-2 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
           <Link href="/payroll/tax-forms">{t("backToTaxForms")}</Link>
         </Button>
       </div>
@@ -104,21 +106,21 @@ export default function TaxFormDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Button variant="ghost" size="sm" asChild className="size-8 p-0">
             <Link href="/payroll/tax-forms" aria-label={t("backToTaxForms")}>
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-4 rtl:rotate-180" />
             </Link>
           </Button>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-lg font-semibold tracking-tight">
                 {t("formHeading", { type: formTypeLabel, year: String(form.taxYear) })}
               </h1>
               {statusBadge(form.status)}
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {t("recipientHeading", { name: form.recipientName, type: t(`recipientType_${form.recipientType}`) })}
+              {t.rich("recipientHeading", { em: (chunks) => <BidiText>{chunks}</BidiText>,  name: form.recipientName, type: t(`recipientType_${form.recipientType}`)  })}
             </p>
           </div>
         </div>
@@ -127,9 +129,8 @@ export default function TaxFormDetailPage() {
           size="sm"
           onClick={() =>
             void download(form.id)
-          }
-        >
-          <Download className="mr-2 size-3.5" />
+          } className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+          <Download className="me-2 size-3.5" />
           {t("download")}
         </Button>
       </div>
@@ -137,7 +138,7 @@ export default function TaxFormDetailPage() {
       <div className="h-px bg-gradient-to-r from-blue-500/20 via-border to-transparent" />
 
       {/* Summary cards */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4 [&>*]:min-w-0">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("formType")}</p>
           <p className="mt-1 text-lg font-bold">{formTypeLabel}</p>
@@ -145,21 +146,21 @@ export default function TaxFormDetailPage() {
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("taxYear")}</p>
           <p className="mt-1 text-lg font-bold font-mono tabular-nums">
-            {form.taxYear}
+            <IdentifierText>{form.taxYear}</IdentifierText>
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("recipient")}</p>
-          <p className="mt-1 text-lg font-bold truncate">
-            {form.recipientName}
+          <p className="mt-1 text-lg font-bold [overflow-wrap:anywhere]">
+            <BidiText>{form.recipientName}</BidiText>
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("taxId")}</p>
           <p className="mt-1 text-lg font-bold font-mono">
-            {form.recipientTaxId
+            <IdentifierText>{form.recipientTaxId
               ? `***-${form.recipientTaxId.slice(-4)}`
-              : "-"}
+              : "-"}</IdentifierText>
           </p>
         </div>
       </div>
@@ -169,14 +170,14 @@ export default function TaxFormDetailPage() {
         <h2 className="text-sm font-semibold">{t("formData")}</h2>
         <div className="rounded-lg border divide-y">
           {form.formType === "1099_nec" && (
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center justify-between px-4 py-3 flex-wrap">
               <span className="text-sm text-muted-foreground">
                 {t("box1_nonemployee_compensation")}
               </span>
               <span className="text-sm font-mono font-bold tabular-nums">
-                {typeof data.box1_nonemployee_compensation === "number"
+                <IdentifierText>{typeof data.box1_nonemployee_compensation === "number"
                   ? formatMoney(data.box1_nonemployee_compensation, "USD", unitPresentation)
-                  : "-"}
+                  : "-"}</IdentifierText>
               </span>
             </div>
           )}
@@ -185,13 +186,13 @@ export default function TaxFormDetailPage() {
             w2Fields.map(key => (
               <div
                 key={key}
-                className="flex items-center justify-between px-4 py-3"
+                className="flex items-center justify-between px-4 py-3 flex-wrap"
               >
                 <span className="text-sm text-muted-foreground">{t(key)}</span>
                 <span className="text-sm font-mono font-bold tabular-nums">
-                  {typeof data[key] === "number"
+                  <IdentifierText>{typeof data[key] === "number"
                     ? formatMoney(data[key] as number, "USD", unitPresentation)
-                    : "-"}
+                    : "-"}</IdentifierText>
                 </span>
               </div>
             ))}
@@ -201,7 +202,7 @@ export default function TaxFormDetailPage() {
             .map(([key, value]) => (
               <div
                 key={key}
-                className="flex items-center justify-between px-4 py-3"
+                className="flex items-center justify-between px-4 py-3 flex-wrap"
               >
                 <span className="text-sm text-muted-foreground">
                   {t(`metadata_${key}`)}

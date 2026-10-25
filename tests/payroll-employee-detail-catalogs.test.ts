@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollEmployeeDetailJson } from "../i18n/payroll-employee-detail-presentation";
@@ -23,7 +24,7 @@ const caller = "<script>caller & name</script>";
 const employee = { id: "employee-a", name: caller, employeeNumber: "EMP-001", position: "Engineer", salary: 9007199254740991,
   salaryMinor: "9007199254740991", payFrequency: "monthly", currency: "USD", isActive: true };
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollEmployeeDetail" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollEmployeeDetail" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[] };
 
@@ -105,7 +106,7 @@ test("employee detail renders real bilingual sections, escaped data, exact money
     assert.ok(h.html.includes(escape(caller)) && !h.html.includes("<script>"));
     if (compensationType === "salary") assert.ok(h.html.includes(escape(payrollMoneyDisplay(detail.salary, "KWD", resolvePresentation({ user: { language: locale } })))));
     if (compensationType === "hourly") assert.ok(h.html.includes(escape(payrollMoneyDisplay(29, "KWD", resolvePresentation({ user: { language: locale } })))));
-    assert.ok(h.html.includes(escape(t("hours", { value: "2.5" }))));
+    assert.ok(visibleText(h.html).includes(escape(t("hours", { value: "2.5" }))));
     assert.ok(hasEvent(h, "title", t("documentTitle")));
     assert.deepEqual(h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), ["salary", "hourly", "milestone", "commission", "weekly", "biweekly", "monthly", "single", "married_joint", "married_separate", "head_of_household"]);
     const dates = h.captured.filter(c => c.kind === "Input" && c.props.type === "date");

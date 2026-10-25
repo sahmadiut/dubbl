@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -129,7 +131,7 @@ export default function TaxFormsPage() {
   if (moneyError) return <p role="alert">{t(moneyError as "organizationRequired" | "taxReadFailed")}</p>;
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[50vh] flex-wrap">
         <p className="text-sm text-muted-foreground">{t("loading")}</p>
       </div>
     );
@@ -146,7 +148,7 @@ export default function TaxFormsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={taxYear} onValueChange={setTaxYear}>
-            <SelectTrigger className="w-28" aria-label={t("taxYear")}>
+            <SelectTrigger className="w-28 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("taxYear")}>
               <SelectValue placeholder={t("taxYear")} />
             </SelectTrigger>
             <SelectContent>
@@ -161,15 +163,14 @@ export default function TaxFormsPage() {
             size="sm"
             variant="outline"
             disabled={generating}
-            onClick={() => handleGenerate("1099_nec")}
-          >
+            onClick={() => handleGenerate("1099_nec")} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
             {t(generating ? "generating" : "generateNec")}
           </Button>
           <Button
             size="sm"
             disabled={generating}
             onClick={() => handleGenerate("w2")}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
           >
             {t(generating ? "generating" : "generateW2")}
           </Button>
@@ -184,7 +185,7 @@ export default function TaxFormsPage() {
               <TableHead>{t("taxYear")}</TableHead>
               <TableHead>{t("formType")}</TableHead>
               <TableHead>{t("status")}</TableHead>
-              <TableHead className="text-right">{t("formsCount")}</TableHead>
+              <TableHead className="text-end">{t("formsCount")}</TableHead>
               <TableHead>{t("generated")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -209,19 +210,19 @@ export default function TaxFormsPage() {
                     }
                   >
                     <TableCell className="font-mono text-sm">
-                      {gen.taxYear}
+                      <IdentifierText>{gen.taxYear}</IdentifierText>
                     </TableCell>
                     <TableCell className="text-sm">
                       {t(`formType_${gen.formType}`)}
                     </TableCell>
                     <TableCell>{statusBadge(gen.status)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {gen.forms?.length || 0}
+                    <TableCell className="text-end font-mono text-sm tabular-nums">
+                      <IdentifierText>{gen.forms?.length || 0}</IdentifierText>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {gen.generatedAt
+                      <IdentifierText>{gen.generatedAt
                         ? gen.generatedAt.slice(0, 10)
-                        : "-"}
+                        : "-"}</IdentifierText>
                     </TableCell>
                   </TableRow>
 
@@ -237,11 +238,11 @@ export default function TaxFormsPage() {
                                 <TableRow>
                                   <TableHead>{t("recipient")}</TableHead>
                                   <TableHead>{t("taxId")}</TableHead>
-                                  <TableHead className="text-right">
+                                  <TableHead className="text-end">
                                     {t("keyAmount")}
                                   </TableHead>
                                   <TableHead>{t("status")}</TableHead>
-                                  <TableHead className="text-right">
+                                  <TableHead className="text-end">
                                     {t("actions")}
                                   </TableHead>
                                 </TableRow>
@@ -259,18 +260,18 @@ export default function TaxFormsPage() {
                                     }}
                                   >
                                     <TableCell className="font-medium">
-                                      {form.recipientName}
+                                      <BidiText>{form.recipientName}</BidiText>
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground font-mono">
-                                      {maskTaxId(form.recipientTaxId)}
+                                      <IdentifierText>{maskTaxId(form.recipientTaxId)}</IdentifierText>
                                     </TableCell>
-                                    <TableCell className="text-right font-mono text-sm tabular-nums">
+                                    <TableCell className="text-end font-mono text-sm tabular-nums">
                                       {getKeyAmount(form)}
                                     </TableCell>
                                     <TableCell>
                                       {statusBadge(form.status)}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-end">
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -278,8 +279,7 @@ export default function TaxFormsPage() {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           void download(form.id);
-                                        }}
-                                      >
+                                        }} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                                         <Download className="size-3.5" />
                                       </Button>
                                     </TableCell>

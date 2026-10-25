@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollSettingsJson } from "../i18n/payroll-settings-presentation";
@@ -23,7 +24,7 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollSettings" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollSettings" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -131,8 +132,8 @@ test("production settings JSX renders paired sections, drawers, enums, exact cen
   for (const locale of locales) {
     const t = translator(locale), h = render(page, loaded, locale);
     for (const key of ["general", "generalDescription", "taxRate", "overtimeThreshold", "overtimeMultiplier", "currency", "salaryAccount", "taxAccount", "bankAccount", "autoApprove", "save", "deductions", "deductionsDescription", "brackets", "bracketsDescription", "shifts", "shiftsDescription", "policies", "policiesDescription", "chains", "chainsDescription", "bands", "bandsDescription", "portal", "portalDescription", "openPortal", "deductionTitle", "deductionDescription", "bracketTitle", "bracketDescription", "shiftDescription", "leaveTitle", "leaveDescription", "bandTitle", "bandDescription", "name", "category", "defaultAmount", "defaultPercent", "jurisdiction", "rate", "minIncome", "maxIncome", "unlimited", "type", "premium", "startTime", "endTime", "leaveType", "accrual", "hoursEarned", "maxBalance", "level", "levelPlaceholder", "minSalary", "midSalary", "maxSalary", "create", "cancel"] as const) assert.ok(h.html.includes(escape(t(key))), key);
-    assert.ok(h.html.includes(escape(t("bracketSummary", { level: t("federal"), jurisdiction: ` · ${caller}`, min: "0.29", ceiling: t("bracketCeiling", { amount: "12.50" }), rate: "0.29" }))));
-    assert.ok(h.html.includes(escape(t("shiftSummary", { start: "22:00", end: "06:00", type: t("night") }))));
+    assert.ok(visibleText(h.html).includes(escape(t("bracketSummary", { level: t("federal"), jurisdiction: ` · ${caller}`, min: "0.29", ceiling: t("bracketCeiling", { amount: "12.50" }), rate: "0.29" }))));
+    assert.ok(visibleText(h.html).includes(escape(t("shiftSummary", { start: "22:00", end: "06:00", type: t("night") }))));
     assert.ok(h.html.includes(escape(t("leaveSummary", { type: t("sick"), hours: "7.5", method: t("monthly") }))));
     assert.ok(h.html.includes(escape(t("steps", { count: 1 }))));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));

@@ -1,3 +1,4 @@
+import { catalogText } from "./helpers/catalog-text";
 import { resolvePresentation } from "../i18n/locale";
 import { displayNumberFixture } from "./helpers/localized-fixtures";
 import assert from "node:assert/strict";
@@ -94,7 +95,7 @@ function composition(pathname: string, states: States = {}) {
   return { load, actions };
 }
 
-test("combined payroll pairs all 1,043 messages and names every Persian exception", () => {
+test("combined payroll pairs all 1,045 messages and names every Persian exception", () => {
   const exceptions = new Map([
     ["PayrollRuns.employeeOption", "{name} · {currency}"],
     ["PayrollRunDetail.employeeOption", "{name} ({number})"],
@@ -110,11 +111,11 @@ test("combined payroll pairs all 1,043 messages and names every Persian exceptio
     count += Object.keys(en[namespace]).length;
     for (const [key, value] of Object.entries(fa[namespace])) {
       const exception = exceptions.get(`${namespace}.${key}`);
-      if (exception) assert.equal(value, exception);
+      if (exception) assert.equal(catalogText(value), exception);
       else assert.match(value, /[\u0600-\u06ff]/u, `${namespace}.${key}`);
     }
   }
-  assert.equal(count, 1043);
+  assert.equal(count, 1045);
 });
 
 test("one checked employee composes payroll overview, employee list and self-service with exact salary", async () => {

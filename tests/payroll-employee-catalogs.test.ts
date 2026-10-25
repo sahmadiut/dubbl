@@ -10,6 +10,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollEmployeeCreatedJson } from "../i18n/payroll-employee-presentation";
@@ -28,7 +29,7 @@ const employee = { id: "employee-a", name: caller, employeeNumber: "EMP-001", po
 const inactive = { ...employee, id: "employee-b", name: "Zed", employeeNumber: "EMP-002", position: null,
   salary: 29, salaryMinor: "29", payFrequency: "weekly", isActive: false };
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollEmployees" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollEmployees" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[] };
 

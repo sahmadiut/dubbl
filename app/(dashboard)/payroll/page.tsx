@@ -1,4 +1,6 @@
 "use client";
+
+import { IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollGroupedDisplay, payrollShare } from "@/lib/money/payroll-ui";
@@ -82,7 +84,7 @@ export default function PayrollPage() {
     return (
       <ContentReveal className="space-y-6">
         {/* Ghost stat cards */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
           {[
             { icon: Users, label: t("activeEmployees") },
             { icon: DollarSign, label: t("monthlyCost") },
@@ -94,7 +96,7 @@ export default function PayrollPage() {
               {...anim(i * 0.05)}
               className="rounded-xl border border-dashed border-muted-foreground/20 bg-card p-4"
             >
-              <div className="flex items-center gap-2 text-muted-foreground/40">
+              <div className="flex items-center gap-2 text-muted-foreground/40 flex-wrap">
                 <card.icon className="size-4" />
                 <span className="text-[11px] font-medium uppercase tracking-wide">{card.label}</span>
               </div>
@@ -123,7 +125,7 @@ export default function PayrollPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
-                className="absolute -top-2 -right-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
+                className="absolute -top-2 -end-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
               >
                 <Users className="size-4 text-blue-600 dark:text-blue-400" />
               </motion.div>
@@ -131,7 +133,7 @@ export default function PayrollPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
-                className="absolute -bottom-1 -left-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
+                className="absolute -bottom-1 -start-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
               >
                 <CalendarDays className="size-3.5 text-amber-600 dark:text-amber-400" />
               </motion.div>
@@ -155,19 +157,19 @@ export default function PayrollPage() {
               {...anim(0.5)}
               className="mt-8 flex flex-col sm:flex-row items-center gap-3 sm:gap-6"
             >
-              <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm">
+              <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm flex-wrap">
                 <div className="flex size-6 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-xs font-bold text-emerald-700 dark:text-emerald-300">1</div>
                 <span className="text-sm font-medium">{t("addEmployees")}</span>
               </div>
               <div className="hidden sm:block h-px w-6 bg-muted-foreground/20" />
               <div className="sm:hidden w-px h-4 bg-muted-foreground/20" />
-              <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm opacity-60">
+              <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm opacity-60 flex-wrap">
                 <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">2</div>
                 <span className="text-sm font-medium text-muted-foreground">{t("runPayroll")}</span>
               </div>
               <div className="hidden sm:block h-px w-6 bg-muted-foreground/20" />
               <div className="sm:hidden w-px h-4 bg-muted-foreground/20" />
-              <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm opacity-40">
+              <div className="flex items-center gap-2.5 rounded-lg border bg-card px-4 py-2.5 shadow-sm opacity-40 flex-wrap">
                 <div className="flex size-6 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">3</div>
                 <span className="text-sm font-medium text-muted-foreground">{t("trackPayments")}</span>
               </div>
@@ -177,9 +179,9 @@ export default function PayrollPage() {
               <Button
                 onClick={() => openDrawer("employee")}
                 size="lg"
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("addFirstEmployee")}
               </Button>
             </motion.div>
@@ -191,7 +193,7 @@ export default function PayrollPage() {
           <h3 className="text-sm font-semibold text-muted-foreground/50">{t("recentRuns")}</h3>
           <div className="rounded-xl border border-dashed border-muted-foreground/15 divide-y divide-dashed divide-muted-foreground/10">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5" style={{ opacity: 1 - i * 0.25 }}>
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5 flex-wrap" style={{ opacity: 1 - i * 0.25 }}>
                 <div className="size-9 rounded-lg bg-muted/40" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 w-36 rounded bg-muted/40" />
@@ -218,53 +220,53 @@ export default function PayrollPage() {
       </motion.div>
 
       {/* Stat cards - 4 columns */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Users className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("activeEmployees")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {activeEmployees.length}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{activeEmployees.length}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <DollarSign className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("monthlyPayrollCost")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {monthlyCost}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{monthlyCost}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <CalendarDays className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("paidThisYear")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">
-            {ytdPaid}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400">
+            <IdentifierText>{ytdPaid}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.15)} className={`rounded-xl border bg-card p-4 ${draftRuns.length > 0 ? "border-amber-300/50 dark:border-amber-700/50" : ""}`}>
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <FileText className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("unfinished")}</span>
           </div>
-          <p className={`mt-2 text-2xl font-bold font-mono tabular-nums truncate ${draftRuns.length > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
-            {draftRuns.length}
+          <p className={`mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere] ${draftRuns.length > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
+            <IdentifierText>{draftRuns.length}</IdentifierText>
           </p>
         </motion.div>
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 [&>*]:min-w-0">
         {/* Left column - Recent Runs (~60%) */}
         <motion.div {...anim(0.2)} className="lg:col-span-3 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap">
             <h3 className="text-sm font-semibold">{t("recentRuns")}</h3>
             {runs.length > 0 && (
               <button
@@ -272,7 +274,7 @@ export default function PayrollPage() {
                 className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {t("viewAll")}
-                <ArrowRight className="size-3" />
+                <ArrowRight className="size-3 rtl:rotate-180" />
               </button>
             )}
           </div>
@@ -292,27 +294,27 @@ export default function PayrollPage() {
                 <button
                   key={run.id}
                   onClick={() => router.push(`/payroll/runs/${run.id}`)}
-                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                       <FileText className="size-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
+                      <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                        {t.rich("period", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: run.payPeriodStart, end: run.payPeriodEnd  })}
                       </p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <Badge variant="outline" className={statusColors[run.status] || ""}>
                           {t(run.status === "pending_approval" ? "pendingApproval" : run.status)}
                         </Badge>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-end shrink-0">
                     <p className="text-xs text-muted-foreground">{t("beforeAndTakeHome")}</p>
                     <p className="text-sm font-mono tabular-nums">
-                      {formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)} / {formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}
+                      <IdentifierText>{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText> / <IdentifierText>{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText>
                     </p>
                   </div>
                 </button>
@@ -347,29 +349,29 @@ export default function PayrollPage() {
 
                   {/* Legend */}
                   <div className="space-y-2.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between text-sm flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="size-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                         <span className="text-muted-foreground">{t("takeHome")}</span>
                       </div>
                       <span className="font-mono tabular-nums font-medium">
-                        {formatMoney(breakdownRun.totalNet, breakdownRun.baseCurrency ?? "USD", unitPresentation)}
+                        <IdentifierText>{formatMoney(breakdownRun.totalNet, breakdownRun.baseCurrency ?? "USD", unitPresentation)}</IdentifierText>
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between text-sm flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="size-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                         <span className="text-muted-foreground">{t("taxesDeductions")}</span>
                       </div>
                       <span className="font-mono tabular-nums font-medium">
-                        {formatMoney(breakdownRun.totalDeductions, breakdownRun.baseCurrency ?? "USD", unitPresentation)}
+                        <IdentifierText>{formatMoney(breakdownRun.totalDeductions, breakdownRun.baseCurrency ?? "USD", unitPresentation)}</IdentifierText>
                       </span>
                     </div>
                     <div className="h-px bg-border" />
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-sm flex-wrap">
                       <span className="text-muted-foreground font-medium">{t("totalBefore")}</span>
                       <span className="font-mono tabular-nums font-semibold">
-                        {formatMoney(breakdownRun.totalGross, breakdownRun.baseCurrency ?? "USD", unitPresentation)}
+                        <IdentifierText>{formatMoney(breakdownRun.totalGross, breakdownRun.baseCurrency ?? "USD", unitPresentation)}</IdentifierText>
                       </span>
                     </div>
                   </div>
@@ -390,18 +392,18 @@ export default function PayrollPage() {
             <h3 className="text-sm font-semibold">{t("quickActions")}</h3>
             <div className="rounded-xl border bg-card p-4 flex flex-col gap-2">
               <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 shadow-sm h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 onClick={() => router.push("/payroll/runs")}
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newRun")}
               </Button>
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 onClick={() => openDrawer("employee")}
               >
-                <Users className="mr-2 size-4" />
+                <Users className="me-2 size-4" />
                 {t("addEmployee")}
               </Button>
             </div>

@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollOutputJson, payslipStatuses, taxStatuses, w2Fields } from "../i18n/payroll-output-presentation";
@@ -24,7 +25,7 @@ const pages = [slipsPage, formsPage, detailPage];
 const locales = ["en-US", "fa-IR"] as const;
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollOutputs" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollOutputs" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -111,7 +112,7 @@ test("payslips render bilingual detail, statuses, escaped data, maximal cents an
     const t = translator(locale), h = slipView({}, locale);
     for (const key of ["backToRun", "payslips", "beforeDeductions", "taxesDeductions", "takeHome", "taxWithheld", "otherDeductions", "deductions", "yearSoFar", "earned", "tax", "hide"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(has(h, "title", t("payslipsDocumentTitle")));
-    assert.ok(h.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
+    assert.ok(visibleText(h.html).includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(18014398509481982n, "JPY", resolvePresentation({ user: { language: locale } })))));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "JPY", resolvePresentation({ user: { language: locale } })))));
@@ -133,7 +134,7 @@ test("tax list/detail render bilingual statutory labels, metadata, masking and u
     for (const key of ["formType", "taxYear", "recipient", "taxId", "formData", "download", ...w2Fields, "metadata_currency", "metadata_employee_email", "metadata_employee_number"] as const) assert.ok(detail.html.includes(escape(t(key))), key);
     assert.ok(has(list, "title", t("taxDocumentTitle"))); assert.ok(has(detail, "title", t("taxDetailDocumentTitle")));
     for (const h of [list, detail]) { assert.ok(h.html.includes("***-1234")); assert.ok(!h.html.includes("private1234")); assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>")); assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "USD", resolvePresentation({ user: { language: locale } }))))); }
-    assert.ok(detail.html.includes(escape(t("recipientHeading", { name: caller, type: t("recipientType_employee") }))));
+    assert.ok(visibleText(detail.html).includes(escape(t("recipientHeading", { name: caller, type: t("recipientType_employee") }))));
     assert.ok(detail.html.includes(escape(t("formHeading", { type: "W-2", year: "2025" }))));
     assert.deepEqual(list.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value), Array.from({ length: 7 }, (_, i) => String(2020 + i)));
     assert.ok(list.html.includes("2025-01-08"));

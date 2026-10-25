@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -59,10 +61,10 @@ export default function ReportDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/reports")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("backToReports")}
+        <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backToReports")}
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
           <BarChart3 className="size-5 text-muted-foreground" />
         </div>
@@ -72,12 +74,12 @@ export default function ReportDetailPage() {
 
       <div className="flex flex-wrap gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">{t("startDate")}</Label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-sm w-40" />
+          <Label className="text-xs" htmlFor="payroll-reports-type-1" >{t("startDate")}</Label>
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-sm w-40" dir="ltr" id="payroll-reports-type-1" aria-label={t("startDate")} />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">{t("endDate")}</Label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 text-sm w-40" />
+          <Label className="text-xs" htmlFor="payroll-reports-type-2" >{t("endDate")}</Label>
+          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 text-sm w-40" dir="ltr" id="payroll-reports-type-2" aria-label={t("endDate")} />
         </div>
       </div>
 
@@ -86,26 +88,26 @@ export default function ReportDetailPage() {
       {/* Render data based on type */}
       {!moneyError && type === "tax-liability" && data?.data && (
         <div className="rounded-xl border bg-card divide-y">
-          <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl">
+          <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl flex-wrap">
             <span className="text-xs font-medium text-muted-foreground">{t("employee")}</span>
             <div className="flex gap-8">
-              <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("gross")}</span>
-              <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("tax")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("gross")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("tax")}</span>
             </div>
           </div>
           {data.data.map((row: { employeeId: string; employeeName: string; currency: string; totalGross: number; totalTax: number }) => (
-            <div key={row.employeeId} className="px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm">{row.employeeName}</span>
+            <div key={row.employeeId} className="px-4 py-2.5 flex items-center justify-between flex-wrap">
+              <span className="text-sm"><BidiText>{row.employeeName}</BidiText></span>
               <div className="flex gap-8">
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency, unitPresentation)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right text-red-600 dark:text-red-400">{formatMoney(row.totalTax, row.currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(row.totalGross, row.currency, unitPresentation)}</IdentifierText></span>
+                <span className="text-sm font-mono tabular-nums w-24 text-end text-red-600 dark:text-red-400"><IdentifierText>{formatMoney(row.totalTax, row.currency, unitPresentation)}</IdentifierText></span>
               </div>
             </div>
           ))}
           {data.totalTax !== undefined && (
-            <div className="px-4 py-2.5 flex items-center justify-between font-medium">
+            <div className="px-4 py-2.5 flex items-center justify-between font-medium flex-wrap">
               <span className="text-sm">{t("total")}</span>
-              <span className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(data.totalTax, data.currency, unitPresentation)}</span>
+              <span className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400"><IdentifierText>{formatMoney(data.totalTax, data.currency, unitPresentation)}</IdentifierText></span>
             </div>
           )}
         </div>
@@ -113,21 +115,21 @@ export default function ReportDetailPage() {
 
       {!moneyError && type === "labor-cost" && data?.data && (
         <div className="rounded-xl border bg-card divide-y">
-          <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl">
+          <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl flex-wrap">
             <span className="text-xs font-medium text-muted-foreground">{t("department")}</span>
             <div className="flex gap-8">
-              <span className="text-xs font-medium text-muted-foreground w-16 text-right">{t("employees")}</span>
-              <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("gross")}</span>
-              <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("net")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-16 text-end">{t("employees")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("gross")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("net")}</span>
             </div>
           </div>
           {data.data.map((row: { department: string; employeeCount: number; currency: string; totalGross: number; totalNet: number }, i: number) => (
-            <div key={i} className="px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm">{row.department}</span>
+            <div key={i} className="px-4 py-2.5 flex items-center justify-between flex-wrap">
+              <span className="text-sm"><BidiText>{row.department}</BidiText></span>
               <div className="flex gap-8">
-                <span className="text-sm font-mono tabular-nums w-16 text-right">{row.employeeCount}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency, unitPresentation)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-16 text-end"><IdentifierText>{row.employeeCount}</IdentifierText></span>
+                <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(row.totalGross, row.currency, unitPresentation)}</IdentifierText></span>
+                <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(row.totalNet, row.currency, unitPresentation)}</IdentifierText></span>
               </div>
             </div>
           ))}
@@ -136,21 +138,21 @@ export default function ReportDetailPage() {
 
       {!moneyError && type === "yoy" && data?.data && (
         <div className="rounded-xl border bg-card divide-y">
-          <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl">
+          <div className="px-4 py-2.5 flex items-center justify-between bg-muted/50 rounded-t-xl flex-wrap">
             <span className="text-xs font-medium text-muted-foreground">{t("month")}</span>
             <div className="flex gap-8">
-              <span className="text-xs font-medium text-muted-foreground w-16 text-right">{t("runs")}</span>
-              <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("gross")}</span>
-              <span className="text-xs font-medium text-muted-foreground w-24 text-right">{t("net")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-16 text-end">{t("runs")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("gross")}</span>
+              <span className="text-xs font-medium text-muted-foreground w-24 text-end">{t("net")}</span>
             </div>
           </div>
           {data.data.map((row: { month: string; runCount: number; currency: string; totalGross: number; totalNet: number }) => (
-            <div key={row.month} className="px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm font-mono">{row.month}</span>
+            <div key={row.month} className="px-4 py-2.5 flex items-center justify-between flex-wrap">
+              <span className="text-sm font-mono"><IdentifierText>{row.month}</IdentifierText></span>
               <div className="flex gap-8">
-                <span className="text-sm font-mono tabular-nums w-16 text-right">{row.runCount}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalGross, row.currency, unitPresentation)}</span>
-                <span className="text-sm font-mono tabular-nums w-24 text-right">{formatMoney(row.totalNet, row.currency, unitPresentation)}</span>
+                <span className="text-sm font-mono tabular-nums w-16 text-end"><IdentifierText>{row.runCount}</IdentifierText></span>
+                <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(row.totalGross, row.currency, unitPresentation)}</IdentifierText></span>
+                <span className="text-sm font-mono tabular-nums w-24 text-end"><IdentifierText>{formatMoney(row.totalNet, row.currency, unitPresentation)}</IdentifierText></span>
               </div>
             </div>
           ))}
@@ -158,14 +160,14 @@ export default function ReportDetailPage() {
       )}
 
       {!moneyError && type === "summary" && data?.summary && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
           {summaryFields.map((key) => (
             <div key={key} className="rounded-xl border bg-card p-4">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t(key)}</p>
               <p className="mt-1 text-xl font-bold font-mono tabular-nums">
-                {key !== "totalRuns" && key !== "activeEmployees"
+                <IdentifierText>{key !== "totalRuns" && key !== "activeEmployees"
                   ? formatMoney(data.summary[key], data.summary.currency, unitPresentation)
-                  : String(data.summary[key])}
+                  : String(data.summary[key])}</IdentifierText>
               </p>
             </div>
           ))}

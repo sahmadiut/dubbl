@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -113,41 +115,41 @@ export default function SelfServicePage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Quick stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 [&>*]:min-w-0">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("employeeNumber")}</p>
-          <p className="mt-1 text-lg font-bold font-mono">{profile.employeeNumber}</p>
+          <p className="mt-1 text-lg font-bold font-mono"><IdentifierText>{profile.employeeNumber}</IdentifierText></p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("position")}</p>
-          <p className="mt-1 text-lg font-bold truncate">{profile.position || "-"}</p>
+          <p className="mt-1 text-lg font-bold [overflow-wrap:anywhere]"><BidiText>{profile.position || "-"}</BidiText></p>
         </motion.div>
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("ptoBalance")}</p>
-          <p className="mt-1 text-lg font-bold font-mono tabular-nums">{t("hours", { hours: String(profile.ptoBalanceHours) })}</p>
+          <p className="mt-1 text-lg font-bold font-mono tabular-nums">{t.rich("hours", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(profile.ptoBalanceHours)  })}</p>
         </motion.div>
         <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("payslips")}</p>
-          <p className="mt-1 text-lg font-bold font-mono tabular-nums">{payslips.length}</p>
+          <p className="mt-1 text-lg font-bold font-mono tabular-nums"><IdentifierText>{payslips.length}</IdentifierText></p>
         </motion.div>
       </div>
 
       <div className="max-w-4xl space-y-6">
         {/* Profile edit */}
         <Section title={t("profileTitle")} description={t("profileDescription")}>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("email")}</Label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-self-service-1" >{t("email")}</Label>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} dir="auto" id="payroll-self-service-1" aria-label={t("email")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("bankAccount")}</Label>
-              <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-self-service-2" >{t("bankAccount")}</Label>
+              <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} dir="ltr" id="payroll-self-service-2" aria-label={t("bankAccount")} />
             </div>
           </div>
-          <div className="mt-3 flex justify-end">
-            <Button size="sm" onClick={handleSaveProfile} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-              <Save className="mr-1.5 size-3.5" /> {saving ? t("saving") : t("save")}
+          <div className="mt-3 flex justify-end flex-wrap">
+            <Button size="sm" onClick={handleSaveProfile} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+              <Save className="me-1.5 size-3.5" /> {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </Section>
@@ -161,14 +163,14 @@ export default function SelfServicePage() {
           ) : (
             <div className="rounded-lg border divide-y">
               {payslips.slice(0, 10).map((ps) => (
-                <div key={ps.id} className="flex items-center justify-between px-4 py-2.5">
+                <div key={ps.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                   <div>
-                    <p className="text-sm">{t("period", { start: ps.payrollRun?.payPeriodStart ?? "", end: ps.payrollRun?.payPeriodEnd ?? "" })}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(ps.generatedAt).toLocaleDateString()}</p>
+                    <p className="text-sm">{t.rich("period", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: ps.payrollRun?.payPeriodStart ?? "", end: ps.payrollRun?.payPeriodEnd ?? ""  })}</p>
+                    <p className="text-xs text-muted-foreground"><IdentifierText>{new Date(ps.generatedAt).toLocaleDateString()}</IdentifierText></p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(ps.grossAmount, ps.currency, unitPresentation)}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{t("netAmount", { amount: formatMoney(ps.netAmount, ps.currency, unitPresentation) })}</p>
+                  <div className="text-end">
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(ps.grossAmount, ps.currency, unitPresentation)}</IdentifierText></p>
+                    <p className="text-xs text-muted-foreground font-mono">{t.rich("netAmount", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  amount: formatMoney(ps.netAmount, ps.currency, unitPresentation)  })}</p>
                   </div>
                 </div>
               ))}
@@ -185,14 +187,14 @@ export default function SelfServicePage() {
           ) : (
             <div className="rounded-lg border divide-y">
               {leaveBalances.map((lb) => (
-                <div key={lb.id} className="flex items-center justify-between px-4 py-2.5">
+                <div key={lb.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                   <div>
-                    <p className="text-sm font-medium">{lb.policy?.name || "-"}</p>
+                    <p className="text-sm font-medium"><BidiText>{lb.policy?.name || "-"}</BidiText></p>
                     <p className="text-xs text-muted-foreground">{lb.policy ? t(`leaveType_${lb.policy.leaveType}`) : null}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-mono tabular-nums">{t("hoursAvailable", { hours: String(lb.balance) })}</p>
-                    <p className="text-xs text-muted-foreground">{t("hoursUsed", { hours: String(lb.usedHours) })}</p>
+                  <div className="text-end">
+                    <p className="text-sm font-mono tabular-nums">{t.rich("hoursAvailable", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(lb.balance)  })}</p>
+                    <p className="text-xs text-muted-foreground">{t.rich("hoursUsed", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(lb.usedHours)  })}</p>
                   </div>
                 </div>
               ))}
@@ -209,10 +211,10 @@ export default function SelfServicePage() {
           ) : (
             <div className="rounded-lg border divide-y">
               {timesheets.slice(0, 5).map((ts) => (
-                <div key={ts.id} className="flex items-center justify-between px-4 py-2.5">
+                <div key={ts.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                   <div>
-                    <p className="text-sm">{t("period", { start: ts.periodStart, end: ts.periodEnd })}</p>
-                    <p className="text-xs text-muted-foreground">{t("hours", { hours: String(ts.totalHours) })}</p>
+                    <p className="text-sm">{t.rich("period", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: ts.periodStart, end: ts.periodEnd  })}</p>
+                    <p className="text-xs text-muted-foreground">{t.rich("hours", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(ts.totalHours)  })}</p>
                   </div>
                   <Badge variant="outline" className="text-[10px]">{t(`status_${ts.status}`)}</Badge>
                 </div>

@@ -1,4 +1,6 @@
 "use client";
+
+import { IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -78,41 +80,41 @@ export default function ReportsPage() {
   return (
     <ContentReveal className="space-y-6">
       <PageHeader title={t("reportsTitle")} description={t("reportsDescription")}>
-        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleExport}>
-          <Download className="mr-1.5 size-3" /> {t("exportCsv")}
+        <Button size="sm" variant="outline" className=" text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={handleExport}>
+          <Download className="me-1.5 size-3" /> {t("exportCsv")}
         </Button>
       </PageHeader>
 
       {/* Summary cards */}
       {summary && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
           <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalRuns")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{summary.totalRuns}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums"><IdentifierText>{summary.totalRuns}</IdentifierText></p>
           </motion.div>
           <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalGross")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.totalGross, summary.currency, unitPresentation)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums"><IdentifierText>{formatMoney(summary.totalGross, summary.currency, unitPresentation)}</IdentifierText></p>
           </motion.div>
           <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalNet")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totalNet, summary.currency, unitPresentation)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400"><IdentifierText>{formatMoney(summary.totalNet, summary.currency, unitPresentation)}</IdentifierText></p>
           </motion.div>
           <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("avgCostPerRun")}</p>
-            <p className="mt-1 text-2xl font-bold font-mono tabular-nums">{formatMoney(summary.avgCostPerRun, summary.currency, unitPresentation)}</p>
+            <p className="mt-1 text-2xl font-bold font-mono tabular-nums"><IdentifierText>{formatMoney(summary.avgCostPerRun, summary.currency, unitPresentation)}</IdentifierText></p>
           </motion.div>
         </div>
       )}
 
       {/* Report type cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 [&>*]:min-w-0">
         {REPORT_TYPES.map((report, i) => (
           <motion.button
             key={report.type}
             {...anim(0.2 + i * 0.05)}
             onClick={() => router.push(`/payroll/reports/${report.type}`)}
-            className="flex items-start gap-4 rounded-xl border bg-card p-4 text-left hover:bg-muted/50 transition-colors"
+            className="flex items-start gap-4 rounded-xl border bg-card p-4 text-start hover:bg-muted/50 transition-colors"
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
               <report.icon className="size-5 text-muted-foreground" />

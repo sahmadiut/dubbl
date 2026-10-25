@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollCompensationJson, compensationStatuses } from "../i18n/payroll-compensation-presentation";
@@ -24,7 +25,7 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = "<script>caller & name</script>";
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollCompensation" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollCompensation" });
 type Capture = { kind: string; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[]; refs: Record<string, { current: unknown }> };
 
@@ -128,7 +129,7 @@ test("compensation production JSX renders both catalogs, exact cents, escaped da
     for (const key of ["totalBands", "activeReviews", "avgWidth", "totalEntries", "bandsTitle", "reviewsTitle", "bandSheetTitle", "reviewSheetTitle", "searchBands", "searchReviews", "namePlaceholder", "levelPlaceholder", "reviewPlaceholder", "optional", "minSalary", "midSalary", "maxSalary"] as const) assert.ok(h.html.includes(escape(t(key))), key);
     assert.ok(h.html.includes(escape(caller))); assert.ok(!h.html.includes("<script>"));
     assert.ok(h.html.includes(escape(payrollMoneyDisplay(Number.MAX_SAFE_INTEGER, "KWD", resolvePresentation({ user: { language: locale } })))));
-    assert.ok(h.html.includes(escape(t("effective", { date: "2026-10-21" }))));
+    assert.ok(visibleText(h.html).includes(escape(t("effective", { date: "2026-10-21" }))));
     const sorts = h.captured.filter(c => c.kind === "SelectItem");
     assert.deepEqual(sorts.map(c => c.props.value), ["name:asc", "name:desc", "min:asc", "max:desc", "date:desc", "date:asc", "name:asc", "budget:desc", "budget:asc"]);
     assert.deepEqual(sorts.map(c => c.props.children), ["nameAsc", "nameDesc", "minSort", "maxSort", "newest", "oldest", "nameAsc", "budgetHigh", "budgetLow"].map(k => t(k as "nameAsc")));
@@ -140,7 +141,7 @@ test("compensation production JSX renders both catalogs, exact cents, escaped da
     assert.ok(has(d, "title", t("detailDocumentTitle")));
     for (const key of ["currentTotal", "proposedTotal", "totalIncrease", "current", "proposed", "backToCompensation"] as const) assert.ok(d.html.includes(escape(t(key))), key);
     assert.ok(d.html.includes(escape(payrollMoneyDisplay(-1, "KWD", resolvePresentation({ user: { language: locale } })))));
-    assert.ok(d.html.includes(escape(t("adjustment", { percent: "-0.3" }))));
+    assert.ok(visibleText(d.html).includes(escape(t("adjustment", { percent: "-0.3" }))));
     assert.ok(d.html.includes(escape(caller))); assert.ok(!d.html.includes("<script>"));
     const empty = render(page, { loading: false }, locale);
     for (const key of ["management", "managementDescription", "firstBand", "startReview"] as const) assert.ok(empty.html.includes(escape(t(key))));
@@ -303,9 +304,9 @@ test("owned JSX/attributes are cataloged with Persian prose and an explicit symb
     assert.doesNotMatch(ast.text, /toast\.error\([^\n]*(?:\.error|\.message)|\.status\.replace/);
   }
   assert.deepEqual(Object.keys(en.PayrollCompensation).sort(), Object.keys(fa.PayrollCompensation).sort());
-  assert.equal(Object.keys(en.PayrollCompensation).length, 82);
+  assert.equal(Object.keys(en.PayrollCompensation).length, 83);
   for (const [key, value] of Object.entries(fa.PayrollCompensation)) {
-    if (key === "adjustment") assert.equal(value, "+{percent}٪");
+    if (key === "adjustment") assert.equal(catalogText(value), "+{percent}٪");
     else assert.match(value, /[\u0621-\u063a\u0641-\u064a\u067e\u0686\u0698\u06a9\u06af\u06cc]/, key);
   }
 });

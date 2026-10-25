@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollOverviewJson, type PayrollOverviewEmployee } from "@/i18n/payroll-overview-presentation";
@@ -180,7 +182,7 @@ export default function EmployeesPage() {
                     height: avatar.size,
                   }}
                 >
-                  {avatar.initials}
+                  <BidiText>{avatar.initials}</BidiText>
                 </motion.div>
               ))}
               {/* Connecting dotted lines */}
@@ -216,9 +218,9 @@ export default function EmployeesPage() {
               <Button
                 size="lg"
                 onClick={() => openDrawer("employee")}
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("addEmployee")}
               </Button>
             </motion.div>
@@ -233,13 +235,13 @@ export default function EmployeesPage() {
           className="rounded-xl border border-dashed border-muted-foreground/15 divide-y divide-dashed divide-muted-foreground/10"
         >
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3" style={{ opacity: 1 - i * 0.2 }}>
+            <div key={i} className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ opacity: 1 - i * 0.2 }}>
               <div className="size-9 rounded-full bg-muted/40" />
               <div className="flex-1 space-y-1.5">
                 <div className="h-3.5 w-28 rounded bg-muted/40" />
                 <div className="h-3 w-20 rounded bg-muted/30" />
               </div>
-              <div className="hidden sm:flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-3 flex-wrap">
                 <div className="h-3.5 w-16 rounded bg-muted/30" />
                 <div className="h-5 w-14 rounded-full bg-muted/25" />
               </div>
@@ -256,16 +258,16 @@ export default function EmployeesPage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <TabsList>
-              <TabsTrigger value="all">{t("all")}</TabsTrigger>
-              <TabsTrigger value="active">{t("active")}</TabsTrigger>
-              <TabsTrigger value="inactive">{t("inactive")}</TabsTrigger>
+            <TabsList className="h-auto min-h-9 max-w-full flex-wrap" >
+              <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("active")}</TabsTrigger>
+              <TabsTrigger value="inactive" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("inactive")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
           <Button
             size="sm"
-            className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+            className=" text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             onClick={() => openDrawer("employee")}
           >
             <Plus className="size-3" />
@@ -276,18 +278,17 @@ export default function EmployeesPage() {
         {/* Search + Sort */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm" dir="auto" aria-label={t("search")} />
             {search && (
               <button
                 aria-label={t("clearSearch")}
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
@@ -295,8 +296,8 @@ export default function EmployeesPage() {
           </div>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger className=" w-full sm:w-[150px] text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("sortBy")} >
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -314,7 +315,7 @@ export default function EmployeesPage() {
 
       {/* Employee list */}
       {refetching || pendingSearch ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20 flex-wrap">
           <div className="brand-loader" aria-label={t("loading")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
@@ -346,27 +347,27 @@ export default function EmployeesPage() {
                 <button
                   key={emp.id}
                   onClick={() => router.push(`/payroll/employees/${emp.id}`)}
-                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                      {getInitials(emp.name)}
+                      <BidiText>{getInitials(emp.name)}</BidiText>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{emp.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {emp.position || emp.employeeNumber}
+                      <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{emp.name}</BidiText></p>
+                      <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                        <IdentifierText>{emp.position || emp.employeeNumber}</IdentifierText>
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="hidden sm:block text-right">
-                      <p className="text-xs text-muted-foreground font-mono">{emp.employeeNumber}</p>
+                  <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                    <div className="hidden sm:block text-end">
+                      <p className="text-xs text-muted-foreground font-mono"><IdentifierText>{emp.employeeNumber}</IdentifierText></p>
                       <p className="text-xs text-muted-foreground capitalize">{t(emp.payFrequency as "weekly" | "biweekly" | "monthly")}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-mono tabular-nums">{formatMoney(emp.salary, emp.currency ?? "USD", unitPresentation)}</p>
+                    <div className="text-end">
+                      <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(emp.salary, emp.currency ?? "USD", unitPresentation)}</IdentifierText></p>
                     </div>
                     <Badge
                       variant="outline"

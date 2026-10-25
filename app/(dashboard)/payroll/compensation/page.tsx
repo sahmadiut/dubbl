@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -258,10 +260,10 @@ export default function CompensationPage() {
     useMemo(
       (): ReactNode => (
         <>
-          <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setBandSheet(true)}>
+          <Button size="sm" className=" text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setBandSheet(true)}>
             <Plus className="size-3" /> {t("addBand")}
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setReviewSheet(true)}>
+          <Button size="sm" variant="outline" className=" text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setReviewSheet(true)}>
             <Plus className="size-3" /> {t("newReview")}
           </Button>
         </>
@@ -287,7 +289,7 @@ export default function CompensationPage() {
       <ContentReveal className="space-y-6">
 
         {/* Ghost stat cards */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
           {([
             { icon: Layers, label: "totalBands" },
             { icon: ClipboardList, label: "activeReviews" },
@@ -299,7 +301,7 @@ export default function CompensationPage() {
               {...anim(i * 0.05)}
               className="rounded-xl border border-dashed border-muted-foreground/20 bg-card p-4"
             >
-              <div className="flex items-center gap-2 text-muted-foreground/40">
+              <div className="flex items-center gap-2 text-muted-foreground/40 flex-wrap">
                 <card.icon className="size-4" />
                 <span className="text-[11px] font-medium uppercase tracking-wide">{t(card.label)}</span>
               </div>
@@ -328,7 +330,7 @@ export default function CompensationPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
-                className="absolute -top-2 -right-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
+                className="absolute -top-2 -end-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
               >
                 <TrendingUp className="size-4 text-blue-600 dark:text-blue-400" />
               </motion.div>
@@ -336,7 +338,7 @@ export default function CompensationPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
-                className="absolute -bottom-1 -left-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
+                className="absolute -bottom-1 -start-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
               >
                 <Users className="size-3.5 text-amber-600 dark:text-amber-400" />
               </motion.div>
@@ -353,17 +355,16 @@ export default function CompensationPage() {
               <Button
                 onClick={() => setBandSheet(true)}
                 size="lg"
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("firstBand")}
               </Button>
               <Button
                 onClick={() => setReviewSheet(true)}
                 size="lg"
-                variant="outline"
-              >
-                <ClipboardList className="mr-2 size-4" />
+                variant="outline" className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                <ClipboardList className="me-2 size-4" />
                 {t("startReview")}
               </Button>
             </motion.div>
@@ -375,7 +376,7 @@ export default function CompensationPage() {
           <h3 className="text-sm font-semibold text-muted-foreground/50">{t("bandsTitle")}</h3>
           <div className="rounded-xl border border-dashed border-muted-foreground/15 divide-y divide-dashed divide-muted-foreground/10">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5" style={{ opacity: 1 - i * 0.25 }}>
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5 flex-wrap" style={{ opacity: 1 - i * 0.25 }}>
                 <div className="size-9 rounded-lg bg-muted/40" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 w-36 rounded bg-muted/40" />
@@ -391,7 +392,7 @@ export default function CompensationPage() {
           <h3 className="text-sm font-semibold text-muted-foreground/50">{t("reviews")}</h3>
           <div className="rounded-xl border border-dashed border-muted-foreground/15 divide-y divide-dashed divide-muted-foreground/10">
             {[1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5" style={{ opacity: 1 - i * 0.3 }}>
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5 flex-wrap" style={{ opacity: 1 - i * 0.3 }}>
                 <div className="size-9 rounded-lg bg-muted/40" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 w-40 rounded bg-muted/40" />
@@ -414,61 +415,61 @@ export default function CompensationPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Actions */}
-      <div className="flex justify-end gap-2">
-        <Button size="sm" onClick={() => setBandSheet(true)}>
-          <Plus className="mr-1.5 size-3.5" /> {t("addBand")}
+      <div className="flex justify-end gap-2 flex-wrap">
+        <Button size="sm" onClick={() => setBandSheet(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+          <Plus className="me-1.5 size-3.5" /> {t("addBand")}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setReviewSheet(true)}>
-          <Plus className="mr-1.5 size-3.5" /> {t("newReview")}
+        <Button size="sm" variant="outline" onClick={() => setReviewSheet(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+          <Plus className="me-1.5 size-3.5" /> {t("newReview")}
         </Button>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Layers className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalBands")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {bands.length}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{bands.length}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <ClipboardList className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("activeReviews")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {activeReviews.length}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{activeReviews.length}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <TrendingUp className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("avgWidth")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {mixedBands ? t("multipleCurrencies") : formatMoney(avgBandWidth, bandCurrency, unitPresentation)}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{mixedBands ? t("multipleCurrencies") : formatMoney(avgBandWidth, bandCurrency, unitPresentation)}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.15)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <BarChart3 className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalEntries")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {totalEntries}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <BidiText>{totalEntries}</BidiText>
           </p>
         </motion.div>
       </div>
 
       {/* Bands */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap">
           <h3 className="text-sm font-semibold">{t("bandsTitle")}</h3>
           <span className="text-xs text-muted-foreground">{t("bandCount", { count: String(filteredBands.length) })}</span>
         </div>
@@ -476,23 +477,22 @@ export default function CompensationPage() {
         {/* Search + Sort */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("searchBands")}
               value={bandSearch}
               onChange={(e) => setBandSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm" dir="auto" aria-label={t("searchBands")} />
             {bandSearch && (
-              <button onClick={() => setBandSearch("")} aria-label={t("clearBandSearch")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button onClick={() => setBandSearch("")} aria-label={t("clearBandSearch")} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 <X className="size-3.5" />
               </button>
             )}
           </div>
 
           <Select value={bandSort} onValueChange={setBandSort}>
-            <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger className=" w-full sm:w-[150px] text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("sortBy")} >
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -517,11 +517,11 @@ export default function CompensationPage() {
           <ContentReveal key={`bands-${bandFetchKey}-${debouncedBandSearch}`}>
             <div className="rounded-xl border bg-card divide-y">
               {filteredBands.map((b) => (
-                <div key={b.id} className="flex items-center justify-between px-4 py-3">
+                <div key={b.id} className="flex items-center justify-between px-4 py-3 flex-wrap">
                   <div>
-                    <p className="text-sm font-medium">{b.name}</p>
+                    <p className="text-sm font-medium"><BidiText>{b.name}</BidiText></p>
                     <p className="text-xs text-muted-foreground">
-                      {b.level ? `${b.level} · ` : ""}{formatMoney(b.minSalary, b.currency, unitPresentation)} - {formatMoney(b.maxSalary, b.currency, unitPresentation)}
+                      <BidiText>{b.level ? `${b.level} · ` : ""}</BidiText><IdentifierText>{formatMoney(b.minSalary, b.currency, unitPresentation)}</IdentifierText> - <IdentifierText>{formatMoney(b.maxSalary, b.currency, unitPresentation)}</IdentifierText>
                     </p>
                   </div>
                   <p className="text-sm font-mono tabular-nums text-muted-foreground">{t("midAmount", { amount: formatMoney(b.midSalary, b.currency, unitPresentation) })}</p>
@@ -534,7 +534,7 @@ export default function CompensationPage() {
 
       {/* Reviews */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap">
           <h3 className="text-sm font-semibold">{t("reviewsTitle")}</h3>
           <span className="text-xs text-muted-foreground">{t("reviewCount", { count: String(filteredReviews.length) })}</span>
         </div>
@@ -542,33 +542,32 @@ export default function CompensationPage() {
         {/* Filter + Search + Sort */}
         <div className="space-y-2">
           <Tabs value={reviewFilter} onValueChange={(v) => setReviewFilter(v as ReviewFilter)}>
-            <TabsList>
-              <TabsTrigger value="all">{t("all")}</TabsTrigger>
-              <TabsTrigger value="draft">{t("status_draft")}</TabsTrigger>
-              <TabsTrigger value="in_progress">{t("status_in_progress")}</TabsTrigger>
-              <TabsTrigger value="completed">{t("status_completed")}</TabsTrigger>
+            <TabsList className="h-auto min-h-9 max-w-full flex-wrap" >
+              <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("status_draft")}</TabsTrigger>
+              <TabsTrigger value="in_progress" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("status_in_progress")}</TabsTrigger>
+              <TabsTrigger value="completed" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("status_completed")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1 sm:max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t("searchReviews")}
                 value={reviewSearch}
                 onChange={(e) => setReviewSearch(e.target.value)}
-                className="pl-9 pr-8 h-8 text-sm"
-              />
+                className="ps-9 pe-8 h-8 text-sm" dir="auto" aria-label={t("searchReviews")} />
               {reviewSearch && (
-                <button onClick={() => setReviewSearch("")} aria-label={t("clearReviewSearch")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <button onClick={() => setReviewSearch("")} aria-label={t("clearReviewSearch")} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   <X className="size-3.5" />
                 </button>
               )}
             </div>
 
             <Select value={reviewSort} onValueChange={setReviewSort}>
-              <SelectTrigger className="h-8 w-full sm:w-[150px] text-xs">
-                <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+              <SelectTrigger className=" w-full sm:w-[150px] text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("sortBy")} >
+                <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -597,14 +596,14 @@ export default function CompensationPage() {
                 <button
                   key={r.id}
                   onClick={() => router.push(`/payroll/compensation/reviews/${r.id}`)}
-                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                 >
                   <div>
-                    <p className="text-sm font-medium">{r.name}</p>
-                    <p className="text-xs text-muted-foreground">{t("effective", { date: r.effectiveDate })}</p>
+                    <p className="text-sm font-medium"><BidiText>{r.name}</BidiText></p>
+                    <p className="text-xs text-muted-foreground">{t.rich("effective", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  date: r.effectiveDate  })}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {r.totalBudget !== null && <span className="text-sm font-mono tabular-nums">{formatMoney(r.totalBudget, r.currency, unitPresentation)}</span>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {r.totalBudget !== null && <span className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(r.totalBudget, r.currency, unitPresentation)}</IdentifierText></span>}
                     <Badge variant="outline" className={cn("text-[10px]", statusColors[r.status] || "")}>
                       {t(`status_${r.status}`)}
                     </Badge>
@@ -647,7 +646,7 @@ function BandSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
               <DollarSign className="size-5" />
             </div>
@@ -661,38 +660,38 @@ function BandSheet({
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t("name")}</Label>
-                <Input name="name" value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} placeholder={t("namePlaceholder")} />
+                <Label htmlFor="payroll-compensation-1" >{t("name")}</Label>
+                <Input name="name" value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} placeholder={t("namePlaceholder")} dir="auto" id="payroll-compensation-1" aria-label={t("name")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("level")}</Label>
-                <Input name="level" value={newBand.level} onChange={(e) => setNewBand({ ...newBand, level: e.target.value })} placeholder={t("levelPlaceholder")} />
+                <Label htmlFor="payroll-compensation-2" >{t("level")}</Label>
+                <Input name="level" value={newBand.level} onChange={(e) => setNewBand({ ...newBand, level: e.target.value })} placeholder={t("levelPlaceholder")} dir="auto" id="payroll-compensation-2" aria-label={t("level")} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2" role="group" aria-label={t("currency")}>
                 <Label>{t("currency")}</Label>
                 <CurrencySelect value={newBand.currency} onValueChange={(v) => setNewBand({ ...newBand, currency: v })} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-3 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("minSalary")}</Label>
-                  <CurrencyInput prefix={newBand.currency} value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
+                  <Label htmlFor="payroll-compensation-3" >{t("minSalary")}</Label>
+                  <CurrencyInput prefix={newBand.currency} value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} id="payroll-compensation-3" aria-label={t("minSalary")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("midSalary")}</Label>
-                  <CurrencyInput prefix={newBand.currency} value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
+                  <Label htmlFor="payroll-compensation-4" >{t("midSalary")}</Label>
+                  <CurrencyInput prefix={newBand.currency} value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} id="payroll-compensation-4" aria-label={t("midSalary")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("maxSalary")}</Label>
-                  <CurrencyInput prefix={newBand.currency} value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
+                  <Label htmlFor="payroll-compensation-5" >{t("maxSalary")}</Label>
+                  <CurrencyInput prefix={newBand.currency} value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} id="payroll-compensation-5" aria-label={t("maxSalary")} />
                 </div>
               </div>
             </div>
           </div>
-          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm flex-wrap">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {saving ? t("adding") : t("addBand")}
             </Button>
           </div>
@@ -725,7 +724,7 @@ function ReviewSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
               <ClipboardList className="size-5" />
             </div>
@@ -739,24 +738,24 @@ function ReviewSheet({
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t("name")}</Label>
-                <Input name="name" value={newReview.name} onChange={(e) => setNewReview({ ...newReview, name: e.target.value })} placeholder={t("reviewPlaceholder")} />
+                <Label htmlFor="payroll-compensation-6" >{t("name")}</Label>
+                <Input name="name" value={newReview.name} onChange={(e) => setNewReview({ ...newReview, name: e.target.value })} placeholder={t("reviewPlaceholder")} dir="auto" id="payroll-compensation-6" aria-label={t("name")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("effectiveDate")}</Label>
-                <Input type="date" name="effectiveDate" value={newReview.effectiveDate} onChange={(e) => setNewReview({ ...newReview, effectiveDate: e.target.value })} />
+                <Label htmlFor="payroll-compensation-7" >{t("effectiveDate")}</Label>
+                <Input type="date" name="effectiveDate" value={newReview.effectiveDate} onChange={(e) => setNewReview({ ...newReview, effectiveDate: e.target.value })} dir="ltr" id="payroll-compensation-7" aria-label={t("effectiveDate")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("budget")}</Label>
-                <CurrencyInput prefix={newReview.currency} value={newReview.totalBudget} onChange={(v) => setNewReview({ ...newReview, totalBudget: v })} placeholder={t("optional")} />
+                <Label htmlFor="payroll-compensation-8" >{t("budget")}</Label>
+                <CurrencyInput prefix={newReview.currency} value={newReview.totalBudget} onChange={(v) => setNewReview({ ...newReview, totalBudget: v })} placeholder={t("optional")} id="payroll-compensation-8" aria-label={t("budget")} />
               </div>
             </div>
           </div>
-          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm flex-wrap">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {saving ? t("creating") : t("createReview")}
             </Button>
           </div>

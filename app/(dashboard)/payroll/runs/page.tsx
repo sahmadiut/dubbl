@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollRunJson, type PayrollRun } from "@/i18n/payroll-run-presentation";
@@ -228,8 +230,8 @@ export default function PayrollRunsPage() {
           <div className="relative flex flex-col items-center py-16 px-6">
             {/* Timeline illustration */}
             <div className="relative mb-8 w-full max-w-sm">
-              <div className="absolute top-1/2 left-4 right-4 h-px bg-muted-foreground/15 -translate-y-1/2" />
-              <div className="flex items-center justify-between relative">
+              <div className="absolute top-1/2 start-4 end-4 h-px bg-muted-foreground/15 -translate-y-1/2" />
+              <div className="flex items-center justify-between relative flex-wrap">
                 {[
                   { icon: FileText, label: t("setup"), delay: 0.15, active: true },
                   { icon: Search, label: t("review"), delay: 0.25, active: false },
@@ -292,9 +294,9 @@ export default function PayrollRunsPage() {
               <Button
                 size="lg"
                 onClick={() => setDialogOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newRun")}
               </Button>
             </motion.div>
@@ -309,21 +311,21 @@ export default function PayrollRunsPage() {
           className="rounded-xl border border-dashed border-muted-foreground/15 divide-y divide-dashed divide-muted-foreground/10"
         >
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between gap-4 px-4 py-3.5" style={{ opacity: 1 - i * 0.25 }}>
-              <div className="flex items-center gap-3">
+            <div key={i} className="flex items-center justify-between gap-4 px-4 py-3.5 flex-wrap" style={{ opacity: 1 - i * 0.25 }}>
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="size-9 rounded-lg bg-muted/40" />
                 <div className="space-y-1.5">
                   <div className="h-3.5 w-40 rounded bg-muted/40" />
                   <div className="h-4 w-16 rounded-full bg-muted/25" />
                 </div>
               </div>
-              <div className="hidden sm:flex items-center gap-4">
-                <div className="space-y-1 text-right">
-                  <div className="h-2.5 w-8 rounded bg-muted/25 ml-auto" />
+              <div className="hidden sm:flex items-center gap-4 flex-wrap">
+                <div className="space-y-1 text-end">
+                  <div className="h-2.5 w-8 rounded bg-muted/25 ms-auto" />
                   <div className="h-3.5 w-16 rounded bg-muted/30" />
                 </div>
-                <div className="space-y-1 text-right">
-                  <div className="h-2.5 w-8 rounded bg-muted/25 ml-auto" />
+                <div className="space-y-1 text-end">
+                  <div className="h-2.5 w-8 rounded bg-muted/25 ms-auto" />
                   <div className="h-3.5 w-16 rounded bg-muted/30" />
                 </div>
               </div>
@@ -352,19 +354,19 @@ export default function PayrollRunsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <TabsList className="flex-wrap">
-              <TabsTrigger value="all">{t("all")}</TabsTrigger>
-              <TabsTrigger value="draft">{t("draft")}</TabsTrigger>
-              <TabsTrigger value="completed">{t("finished")}</TabsTrigger>
-              <TabsTrigger value="pending_approval">{t("pendingApproval")}</TabsTrigger>
-              <TabsTrigger value="void">{t("void")}</TabsTrigger>
+            <TabsList className="flex-wrap h-auto min-h-9 max-w-full flex-wrap">
+              <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("draft")}</TabsTrigger>
+              <TabsTrigger value="completed" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("finished")}</TabsTrigger>
+              <TabsTrigger value="pending_approval" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("pendingApproval")}</TabsTrigger>
+              <TabsTrigger value="void" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("void")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               size="sm"
-              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              className=" text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               onClick={() => setDialogOpen(true)}
             >
               <Plus className="size-3" />
@@ -373,7 +375,7 @@ export default function PayrollRunsPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" title={t("oneOffHelp")}>
+                <Button variant="outline" size="sm" className=" text-xs gap-1.5 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" title={t("oneOffHelp")}>
                   {t("oneOff")}
                   <ChevronDown className="size-3" />
                 </Button>
@@ -394,31 +396,30 @@ export default function PayrollRunsPage() {
         </div>
 
         <Tabs value={runTypeFilter} onValueChange={(v) => setRunTypeFilter(v as RunTypeFilter)}>
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="all">{t("allTypes")}</TabsTrigger>
-            <TabsTrigger value="regular">{t("regular")}</TabsTrigger>
-            <TabsTrigger value="termination">{t("termination")}</TabsTrigger>
-            <TabsTrigger value="bonus_only">{t("bonus")}</TabsTrigger>
-            <TabsTrigger value="correction">{t("correction")}</TabsTrigger>
-            <TabsTrigger value="off_cycle">{t("offCycle")}</TabsTrigger>
+          <TabsList className="flex-wrap h-auto min-h-9 max-w-full flex-wrap">
+            <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("allTypes")}</TabsTrigger>
+            <TabsTrigger value="regular" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("regular")}</TabsTrigger>
+            <TabsTrigger value="termination" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("termination")}</TabsTrigger>
+            <TabsTrigger value="bonus_only" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("bonus")}</TabsTrigger>
+            <TabsTrigger value="correction" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("correction")}</TabsTrigger>
+            <TabsTrigger value="off_cycle" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("offCycle")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
         {/* Search + Sort */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm" dir="auto" aria-label={t("search")} />
             {search && (
               <button
                 aria-label={t("clearSearch")}
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
@@ -426,8 +427,8 @@ export default function PayrollRunsPage() {
           </div>
 
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
-            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-full sm:w-[140px] text-xs">
-              <ArrowUpDown className="size-3 mr-1.5 text-muted-foreground" />
+            <SelectTrigger aria-label={t("sortBy")} className=" w-full sm:w-[140px] text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
+              <ArrowUpDown className="size-3 me-1.5 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -445,7 +446,7 @@ export default function PayrollRunsPage() {
 
       {/* Runs list */}
       {refetching || pendingSearch ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20 flex-wrap">
               <div className="brand-loader" aria-label={shared("loading2")}>
             <div className="brand-loader-circle brand-loader-circle-1" />
             <div className="brand-loader-circle brand-loader-circle-2" />
@@ -477,41 +478,41 @@ export default function PayrollRunsPage() {
                 <button
                   key={run.id}
                   onClick={() => router.push(`/payroll/runs/${run.id}`)}
-                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                  className="w-full flex items-center justify-between gap-4 px-4 py-3 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-wrap">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                       <FileText className="size-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
+                      <p className="text-sm font-medium [overflow-wrap:anywhere]">
+                        {t.rich("period", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: run.payPeriodStart, end: run.payPeriodEnd  })}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <Badge variant="outline" className={cn("text-[11px]", statusColors[run.status] || "")}>
-                          {statusLabels[run.status]}
+                          <BidiText>{statusLabels[run.status]}</BidiText>
                         </Badge>
                         {run.runType && run.runType !== "regular" && (
                           <Badge variant="outline" className={cn("text-[11px]", runTypeColors[run.runType] || "")}>
-                            {runTypeLabels[run.runType]}
+                            <BidiText>{runTypeLabels[run.runType]}</BidiText>
                           </Badge>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="hidden sm:block text-right">
+                  <div className="flex items-center gap-4 shrink-0 flex-wrap">
+                    <div className="hidden sm:block text-end">
                       <p className="text-xs text-muted-foreground">{t("gross")}</p>
-                      <p className="text-sm font-mono tabular-nums">{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</p>
+                      <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText></p>
                     </div>
-                    <div className="hidden sm:block text-right">
+                    <div className="hidden sm:block text-end">
                       <p className="text-xs text-muted-foreground">{t("deductions")}</p>
-                      <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation)}</p>
+                      <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400"><IdentifierText>{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText></p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-xs text-muted-foreground">{t("net")}</p>
-                      <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</p>
+                      <p className="text-sm font-mono tabular-nums font-medium"><IdentifierText>{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText></p>
                     </div>
                   </div>
                 </button>
@@ -561,32 +562,30 @@ function NewRunDialog({
         <DialogHeader>
           <DialogTitle>{t("newRun")}</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
           <div className="space-y-2">
-            <Label>{t("periodStart")}</Label>
+            <Label htmlFor="payroll-runs-1" >{t("periodStart")}</Label>
             <Input
               type="date"
               value={payPeriodStart}
-              onChange={(e) => setPayPeriodStart(e.target.value)}
-            />
+              onChange={(e) => setPayPeriodStart(e.target.value)} dir="ltr" id="payroll-runs-1" aria-label={t("periodStart")} />
           </div>
           <div className="space-y-2">
-            <Label>{t("periodEnd")}</Label>
+            <Label htmlFor="payroll-runs-2" >{t("periodEnd")}</Label>
             <Input
               type="date"
               value={payPeriodEnd}
-              onChange={(e) => setPayPeriodEnd(e.target.value)}
-            />
+              onChange={(e) => setPayPeriodEnd(e.target.value)} dir="ltr" id="payroll-runs-2" aria-label={t("periodEnd")} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
             {t("cancel")}
           </Button>
           <Button
             onClick={onSubmit}
             disabled={!payPeriodStart || !payPeriodEnd || loading}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
           >
             {loading ? t("creating") : t("create")}
           </Button>

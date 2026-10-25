@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -223,7 +225,7 @@ export default function ContractorsPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
-                className="absolute -top-2 -right-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
+                className="absolute -top-2 -end-3 flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950/60 ring-2 ring-blue-100/50 dark:ring-blue-900/30"
               >
                 <DollarSign className="size-4 text-blue-600 dark:text-blue-400" />
               </motion.div>
@@ -231,7 +233,7 @@ export default function ContractorsPage() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.6 }}
-                className="absolute -bottom-1 -left-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
+                className="absolute -bottom-1 -start-3 flex size-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/60 ring-2 ring-amber-100/50 dark:ring-amber-900/30"
               >
                 <FileText className="size-3.5 text-amber-600 dark:text-amber-400" />
               </motion.div>
@@ -254,9 +256,9 @@ export default function ContractorsPage() {
               <Button
                 onClick={() => openDrawer("contractor")}
                 size="lg"
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("addFirst")}
               </Button>
             </motion.div>
@@ -267,7 +269,7 @@ export default function ContractorsPage() {
         <motion.div {...anim(0.6)} className="space-y-3">
           <div className="rounded-xl border border-dashed border-muted-foreground/15 divide-y divide-dashed divide-muted-foreground/10">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5" style={{ opacity: 1 - i * 0.25 }}>
+              <div key={i} className="flex items-center gap-4 px-4 py-3.5 flex-wrap" style={{ opacity: 1 - i * 0.25 }}>
                 <div className="size-9 rounded-lg bg-muted/40" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 w-36 rounded bg-muted/40" />
@@ -285,34 +287,34 @@ export default function ContractorsPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 [&>*]:min-w-0">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Users className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("activeContractors")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">
-            {activeCount}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400">
+            <IdentifierText>{activeCount}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Users className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("inactive")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {inactiveCount}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{inactiveCount}</IdentifierText>
           </p>
         </motion.div>
 
         <motion.div {...anim(0.1)} className="rounded-xl border bg-card p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
             <Briefcase className="size-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">{t("totalContractors")}</span>
           </div>
-          <p className="mt-2 text-2xl font-bold font-mono tabular-nums truncate">
-            {totalCount}
+          <p className="mt-2 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{totalCount}</IdentifierText>
           </p>
         </motion.div>
       </div>
@@ -321,27 +323,27 @@ export default function ContractorsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <TabsList>
-              <TabsTrigger value="all">{t("all")}</TabsTrigger>
-              <TabsTrigger value="active">{t("active")}</TabsTrigger>
-              <TabsTrigger value="inactive">{t("inactive")}</TabsTrigger>
+            <TabsList className="h-auto min-h-9 max-w-full flex-wrap" >
+              <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("active")}</TabsTrigger>
+              <TabsTrigger value="inactive" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("inactive")}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder={t("search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-8 h-8 text-sm" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t("search")} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9 pe-8 h-8 text-sm" dir="auto" aria-label={t("search")} />
             {search && (
-              <button aria-label={t("clearSearch")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <button aria-label={t("clearSearch")} onClick={() => setSearch("")} className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                 <X className="size-3.5" />
               </button>
             )}
           </div>
 
           <Select value={sortValue} onValueChange={setSortValue}>
-            <SelectTrigger className="h-8 w-full sm:w-[160px] text-xs">
+            <SelectTrigger className=" w-full sm:w-[160px] text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" aria-label={t("sortBy")} >
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -383,23 +385,23 @@ export default function ContractorsPage() {
                   <button
                     key={c.id}
                     onClick={() => router.push(`/payroll/contractors/${c.id}`)}
-                    className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    className="w-full flex items-center justify-between gap-4 px-4 py-3 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-wrap">
                       <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                         <Briefcase className="size-4 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">{c.company || c.email || "-"}</p>
+                        <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{c.name}</BidiText></p>
+                        <p className="text-xs text-muted-foreground"><BidiText>{c.company || c.email || "-"}</BidiText></p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0 flex-wrap">
                       {c.hourlyRate !== null && (
                         <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums">
                           {t("hourly", { amount: formatMoney(c.hourlyRate, c.currency || "USD", unitPresentation) })}
                           {c.currency && c.currency !== "USD" && (
-                            <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">{currencyLabel(c.currency, unitPresentation.locale)}</code>
+                            <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground"><IdentifierText>{currencyLabel(c.currency, unitPresentation.locale)}</IdentifierText></code>
                           )}
                         </span>
                       )}
@@ -418,7 +420,7 @@ export default function ContractorsPage() {
       {/* Infinite scroll sentinel & count */}
       {!refetching && !pendingSearch && filteredContractors.length > 0 && (
         <>
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center justify-between pt-1 flex-wrap">
             <p className="text-xs text-muted-foreground">
               {t("showing", { loaded: contractors.length, total: totalCount })}
             </p>

@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -177,7 +179,7 @@ export default function ContractorDetailPage() {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/contractors")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> {t("back")}
+          <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("back")}
         </button>
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
       </ContentReveal>
@@ -187,53 +189,53 @@ export default function ContractorDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/contractors")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("back")}
+        <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("back")}
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
           <Briefcase className="size-5 text-muted-foreground" />
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">{contractor.name}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg font-semibold"><BidiText>{contractor.name}</BidiText></h1>
             {contractor.currency && contractor.currency !== "USD" && (
-              <code className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">{currencyLabel(contractor.currency, unitPresentation.locale)}</code>
+              <code className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground"><IdentifierText>{currencyLabel(contractor.currency, unitPresentation.locale)}</IdentifierText></code>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">{contractor.company || contractor.email || "-"}</p>
+          <p className="text-sm text-muted-foreground"><BidiText>{contractor.company || contractor.email || "-"}</BidiText></p>
         </div>
       </div>
 
       <div className="max-w-4xl space-y-6">
         <Section title={t("details")} description={t("detailsHelp")}>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("name")}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-contractors-id-1" >{t("name")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} dir="auto" id="payroll-contractors-id-1" aria-label={t("name")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("email")}</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-contractors-id-2" >{t("email")}</Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" id="payroll-contractors-id-2" aria-label={t("email")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("company")}</Label>
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-contractors-id-3" >{t("company")}</Label>
+              <Input value={company} onChange={(e) => setCompany(e.target.value)} dir="auto" id="payroll-contractors-id-3" aria-label={t("company")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("hourlyRate")}</Label>
-              <CurrencyInput prefix={contractor.currency ?? "USD"} value={hourlyRate} onChange={setHourlyRate} />
+              <Label className="text-xs" htmlFor="payroll-contractors-id-4" >{t("hourlyRate")}</Label>
+              <CurrencyInput prefix={contractor.currency ?? "USD"} value={hourlyRate} onChange={setHourlyRate} id="payroll-contractors-id-4" aria-label={t("hourlyRate")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("bankAccount")}</Label>
-              <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-contractors-id-5" >{t("bankAccount")}</Label>
+              <Input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} dir="ltr" id="payroll-contractors-id-5" aria-label={t("bankAccount")} />
             </div>
           </div>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button size="sm" variant="destructive" onClick={handleDelete}>
-              <Trash2 className="mr-1.5 size-3.5" /> {t("delete")}
+          <div className="mt-4 flex justify-end gap-2 flex-wrap">
+            <Button size="sm" variant="destructive" onClick={handleDelete} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <Trash2 className="me-1.5 size-3.5" /> {t("delete")}
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button size="sm" onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {saving ? t("saving") : t("save")}
             </Button>
           </div>
@@ -244,26 +246,26 @@ export default function ContractorDetailPage() {
         <Section title={t("payments")} description={t("paymentsHelp")}>
           <div className="space-y-4">
             <div className="rounded-lg border p-4 space-y-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 [&>*]:min-w-0">
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("amount")}</Label>
-                  <CurrencyInput prefix={paymentCurrency || contractor.currency || "USD"} size="sm" value={paymentAmount} onChange={setPaymentAmount} />
+                  <Label className="text-xs" htmlFor="payroll-contractors-id-6" >{t("amount")}</Label>
+                  <CurrencyInput prefix={paymentCurrency || contractor.currency || "USD"} size="sm" value={paymentAmount} onChange={setPaymentAmount} id="payroll-contractors-id-6" aria-label={t("amount")} />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1" role="group" aria-label={t("currency")}>
                   <Label className="text-xs">{t("currency")}</Label>
                   <CurrencySelect value={paymentCurrency} onValueChange={setPaymentCurrency} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("description")}</Label>
-                  <Input value={paymentDesc} onChange={(e) => setPaymentDesc(e.target.value)} className="h-8 text-sm" />
+                  <Label className="text-xs" htmlFor="payroll-contractors-id-7" >{t("description")}</Label>
+                  <Input value={paymentDesc} onChange={(e) => setPaymentDesc(e.target.value)} className="h-8 text-sm" dir="auto" id="payroll-contractors-id-7" aria-label={t("description")} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{t("invoice")}</Label>
-                  <Input value={paymentInvoice} onChange={(e) => setPaymentInvoice(e.target.value)} className="h-8 text-sm" />
+                  <Label className="text-xs" htmlFor="payroll-contractors-id-8" >{t("invoice")}</Label>
+                  <Input value={paymentInvoice} onChange={(e) => setPaymentInvoice(e.target.value)} className="h-8 text-sm" dir="ltr" id="payroll-contractors-id-8" aria-label={t("invoice")} />
                 </div>
               </div>
-              <Button size="sm" onClick={handleAddPayment} disabled={!paymentAmount}>
-                <Plus className="mr-1.5 size-3" /> {t("addPayment")}
+              <Button size="sm" onClick={handleAddPayment} disabled={!paymentAmount} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                <Plus className="me-1.5 size-3" /> {t("addPayment")}
               </Button>
             </div>
 
@@ -272,18 +274,18 @@ export default function ContractorDetailPage() {
             ) : (
               <div className="rounded-xl border bg-card divide-y">
                 {(contractor.payments || []).map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
+                  <div key={p.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                     <div>
-                      <p className="text-sm font-medium font-mono tabular-nums">{formatMoney(p.amount, p.currency || contractor.currency || "USD", unitPresentation)}</p>
-                      <p className="text-xs text-muted-foreground">{p.description || p.invoiceNumber || "-"}</p>
+                      <p className="text-sm font-medium font-mono tabular-nums"><IdentifierText>{formatMoney(p.amount, p.currency || contractor.currency || "USD", unitPresentation)}</IdentifierText></p>
+                      <p className="text-xs text-muted-foreground"><BidiText>{p.description || p.invoiceNumber || "-"}</BidiText></p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className={cn("text-[10px]", statusColors[p.status] || "")}>
                         {t(p.status)}
                       </Badge>
                       {p.status === "pending" && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleProcessPayment(p.id)}>
-                          <Play className="mr-1 size-3" /> {t("process")}
+                        <Button size="sm" variant="outline" className=" text-xs h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => handleProcessPayment(p.id)}>
+                          <Play className="me-1 size-3" /> {t("process")}
                         </Button>
                       )}
                     </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { payrollTimeJson, payrollTimeOrganization, type TimeSheetRow } from "@/i18n/payroll-time-presentation";
 
@@ -109,22 +111,22 @@ export default function TimesheetsPage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <TabsList className="flex-wrap">
-              <TabsTrigger value="all">{t("all")}</TabsTrigger>
-              <TabsTrigger value="draft">{t("draft")}</TabsTrigger>
-              <TabsTrigger value="submitted">{t("submitted")}</TabsTrigger>
-              <TabsTrigger value="approved">{t("approved")}</TabsTrigger>
-              <TabsTrigger value="rejected">{t("rejected")}</TabsTrigger>
+            <TabsList className="flex-wrap h-auto min-h-9 max-w-full flex-wrap">
+              <TabsTrigger value="all" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("all")}</TabsTrigger>
+              <TabsTrigger value="draft" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("draft")}</TabsTrigger>
+              <TabsTrigger value="submitted" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("submitted")}</TabsTrigger>
+              <TabsTrigger value="approved" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("approved")}</TabsTrigger>
+              <TabsTrigger value="rejected" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" >{t("rejected")}</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button size="sm" className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700" onClick={() => setDialogOpen(true)}>
+          <Button size="sm" className=" text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" onClick={() => setDialogOpen(true)}>
             <Plus className="size-3" /> {t("newSheet")}
           </Button>
         </div>
 
         <div className="relative sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t("search")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
+          <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder={t("search")} value={search} onChange={(e) => setSearch(e.target.value)} className="ps-9 h-8 text-sm" dir="auto" aria-label={t("search")} />
         </div>
       </div>
 
@@ -142,19 +144,19 @@ export default function TimesheetsPage() {
             <button
               key={ts.id}
               onClick={() => router.push(`/payroll/timesheets/${ts.id}`)}
-              className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
+              className="w-full flex items-center justify-between gap-4 px-4 py-3 text-start hover:bg-muted/50 transition-colors first:rounded-t-xl last:rounded-b-xl"
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-wrap">
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                   <Clock className="size-4 text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{ts.employee?.name || t("unknown")}</p>
-                  <p className="text-xs text-muted-foreground">{t("dateRange", { start: ts.periodStart, end: ts.periodEnd })}</p>
+                  <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{ts.employee?.name || t("unknown")}</BidiText></p>
+                  <p className="text-xs text-muted-foreground">{t.rich("dateRange", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: ts.periodStart, end: ts.periodEnd  })}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-sm font-mono tabular-nums">{t("hoursValue", { hours: String(ts.totalHours) })}</span>
+              <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                <span className="text-sm font-mono tabular-nums">{t.rich("hoursValue", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(ts.totalHours)  })}</span>
                 <Badge variant="outline" className={cn("text-[11px]", statusColors[ts.status] || "")}>
                   {t(ts.status)}
                 </Badge>
@@ -167,34 +169,33 @@ export default function TimesheetsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{t("newSheet")}</DialogTitle></DialogHeader>
-          <div className="grid gap-4">
+          <div className="grid gap-4 [&>*]:min-w-0">
             <div className="space-y-2">
-              <Label>{t("employee")}</Label>
+              <Label htmlFor="payroll-timesheets-1" >{t("employee")}</Label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
                 value={newTs.employeeId}
-                onChange={(e) => setNewTs({ ...newTs, employeeId: e.target.value })}
-              >
+                onChange={(e) => setNewTs({ ...newTs, employeeId: e.target.value })} id="payroll-timesheets-1" aria-label={t("employee")} >
                 <option value="">{t("selectEmployee")}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 [&>*]:min-w-0">
               <div className="space-y-2">
-                <Label>{t("periodStart")}</Label>
-                <Input type="date" value={newTs.periodStart} onChange={(e) => setNewTs({ ...newTs, periodStart: e.target.value })} />
+                <Label htmlFor="payroll-timesheets-2" >{t("periodStart")}</Label>
+                <Input type="date" value={newTs.periodStart} onChange={(e) => setNewTs({ ...newTs, periodStart: e.target.value })} dir="ltr" id="payroll-timesheets-2" aria-label={t("periodStart")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("periodEnd")}</Label>
-                <Input type="date" value={newTs.periodEnd} onChange={(e) => setNewTs({ ...newTs, periodEnd: e.target.value })} />
+                <Label htmlFor="payroll-timesheets-3" >{t("periodEnd")}</Label>
+                <Input type="date" value={newTs.periodEnd} onChange={(e) => setNewTs({ ...newTs, periodEnd: e.target.value })} dir="ltr" id="payroll-timesheets-3" aria-label={t("periodEnd")} />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={handleCreate} disabled={creating} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button onClick={handleCreate} disabled={creating} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
               {creating ? t("creating") : t("create")}
             </Button>
           </DialogFooter>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { payrollTimeJson, payrollTimeMatch, payrollTimeOrganization, type LeaveDetail } from "@/i18n/payroll-time-presentation";
 
@@ -108,7 +110,7 @@ export default function LeaveRequestDetailPage() {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/leave")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> {t("backLeave")}
+          <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backLeave")}
         </button>
         <p className="text-sm text-muted-foreground">{t("leaveNotFound")}</p>
       </ContentReveal>
@@ -118,32 +120,32 @@ export default function LeaveRequestDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/leave")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("backLeave")}
+        <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backLeave")}
       </button>
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
             <CalendarDays className="size-5 text-muted-foreground" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">{req.employee?.name || t("unknown")}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-semibold"><BidiText>{req.employee?.name || t("unknown")}</BidiText></h1>
               <Badge variant="outline" className={cn("text-[10px]", statusColors[req.status] || "")}>{t(req.status)}</Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              {t("leaveSummary", { policy: req.policy?.name || "-", start: req.startDate, end: req.endDate, hours: String(req.hours) })}
+              {t.rich("leaveSummary", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  policy: req.policy?.name || "-", start: req.startDate, end: req.endDate, hours: String(req.hours)  })}
             </p>
           </div>
         </div>
         {req.status === "pending" && (
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={handleApprove} disabled={approving} className="bg-emerald-600 hover:bg-emerald-700">
-              <CheckCircle className="mr-1.5 size-3.5" /> {t("approve")}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" onClick={handleApprove} disabled={approving} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">
+              <CheckCircle className="me-1.5 size-3.5" /> {t("approve")}
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => setRejectOpen(true)} disabled={approving}>
-              <XCircle className="mr-1.5 size-3.5" /> {t("reject")}
+            <Button size="sm" variant="destructive" onClick={() => setRejectOpen(true)} disabled={approving} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <XCircle className="me-1.5 size-3.5" /> {t("reject")}
             </Button>
           </div>
         )}
@@ -152,34 +154,34 @@ export default function LeaveRequestDetailPage() {
       {req.reason && (
         <div className="rounded-lg border bg-card px-4 py-3">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("requestReason")}</p>
-          <p className="text-sm">{req.reason}</p>
+          <p className="text-sm"><BidiText>{req.reason}</BidiText></p>
         </div>
       )}
 
       {req.status === "rejected" && req.rejectionReason && (
         <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20 px-4 py-3">
-          <p className="text-sm text-red-600 dark:text-red-400">{t("rejectedReason", { reason: req.rejectionReason })}</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{t.rich("rejectedReason", { em: (chunks) => <BidiText>{chunks}</BidiText>,  reason: req.rejectionReason  })}</p>
         </div>
       )}
 
       {/* Details */}
       <div className="rounded-xl border bg-card divide-y">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3 flex-wrap">
           <span className="text-sm text-muted-foreground">{t("leaveType")}</span>
-          <span className="text-sm font-medium">{req.policy?.name || "-"}</span>
+          <span className="text-sm font-medium"><BidiText>{req.policy?.name || "-"}</BidiText></span>
         </div>
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3 flex-wrap">
           <span className="text-sm text-muted-foreground">{t("dates")}</span>
-          <span className="text-sm font-medium">{t("dateRange", { start: req.startDate, end: req.endDate })}</span>
+          <span className="text-sm font-medium">{t.rich("dateRange", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: req.startDate, end: req.endDate  })}</span>
         </div>
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3 flex-wrap">
           <span className="text-sm text-muted-foreground">{t("hours")}</span>
-          <span className="text-sm font-mono tabular-nums">{t("hoursValue", { hours: String(req.hours) })}</span>
+          <span className="text-sm font-mono tabular-nums">{t.rich("hoursValue", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  hours: String(req.hours)  })}</span>
         </div>
         {req.status === "approved" && req.approvedAt && (
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-3 flex-wrap">
             <span className="text-sm text-muted-foreground">{t("approvedOn")}</span>
-            <span className="text-sm font-medium">{new Date(req.approvedAt).toLocaleDateString()}</span>
+            <span className="text-sm font-medium"><BidiText>{new Date(req.approvedAt).toLocaleDateString()}</BidiText></span>
           </div>
         )}
       </div>
@@ -191,19 +193,18 @@ export default function LeaveRequestDetailPage() {
             <DialogDescription>{t("rejectLeaveDescription")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("reason")}</Label>
+            <Label className="text-xs" htmlFor="payroll-leave-id-1" >{t("reason")}</Label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder={t("rejectLeaveExample")}
               rows={4}
-              autoFocus
-            />
+              autoFocus dir="auto" id="payroll-leave-id-1" aria-label={t("reason")} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={rejecting}>{t("cancel")}</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={rejecting}>
-              <XCircle className="mr-1.5 size-3.5" /> {t("rejectRequest")}
+            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={rejecting} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={rejecting} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <XCircle className="me-1.5 size-3.5" /> {t("rejectRequest")}
             </Button>
           </DialogFooter>
         </DialogContent>

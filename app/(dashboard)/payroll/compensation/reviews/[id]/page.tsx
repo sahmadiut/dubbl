@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -63,7 +65,7 @@ export default function ReviewDetailPage() {
     return (
       <ContentReveal>
         <button onClick={() => router.push("/payroll/compensation")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6">
-          <ArrowLeft className="size-3.5" /> {t("back")}
+          <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("back")}
         </button>
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
       </ContentReveal>
@@ -76,34 +78,34 @@ export default function ReviewDetailPage() {
   return (
     <ContentReveal className="space-y-6">
       <button onClick={() => router.push("/payroll/compensation")} className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("backToCompensation")}
+        <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backToCompensation")}
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
           <BarChart3 className="size-5 text-muted-foreground" />
         </div>
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">{review.name}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg font-semibold"><BidiText>{review.name}</BidiText></h1>
             <Badge variant="outline" className={statusColors[review.status] || ""}>{t(`status_${review.status}`)}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">{t("effective", { date: review.effectiveDate })}</p>
+          <p className="text-sm text-muted-foreground">{t.rich("effective", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  date: review.effectiveDate  })}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 [&>*]:min-w-0">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("currentTotal")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(totalCurrent, review.currency, unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]"><IdentifierText>{formatMoney(totalCurrent, review.currency, unitPresentation)}</IdentifierText></p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("proposedTotal")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(totalProposed, review.currency, unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400"><IdentifierText>{formatMoney(totalProposed, review.currency, unitPresentation)}</IdentifierText></p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalIncrease")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(review.totals.difference, review.currency, unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]"><IdentifierText>{formatMoney(review.totals.difference, review.currency, unitPresentation)}</IdentifierText></p>
         </div>
       </div>
 
@@ -114,23 +116,23 @@ export default function ReviewDetailPage() {
         ) : (
           <div className="rounded-xl border bg-card divide-y">
             {review.entries.map((e) => (
-              <div key={e.id} className="flex items-center justify-between px-4 py-3">
+              <div key={e.id} className="flex items-center justify-between px-4 py-3 flex-wrap">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">{e.employee?.name || t("unknown")}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{e.employee?.employeeNumber}</p>
-                  {e.reason && <p className="text-xs text-muted-foreground mt-0.5">{e.reason}</p>}
+                  <p className="text-sm font-medium"><BidiText>{e.employee?.name || t("unknown")}</BidiText></p>
+                  <p className="text-xs text-muted-foreground font-mono"><IdentifierText>{e.employee?.employeeNumber}</IdentifierText></p>
+                  {e.reason && <p className="text-xs text-muted-foreground mt-0.5"><BidiText>{e.reason}</BidiText></p>}
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
-                  <div className="text-right">
+                <div className="flex items-center gap-4 shrink-0 flex-wrap">
+                  <div className="text-end">
                     <p className="text-xs text-muted-foreground">{t("current")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(e.currentSalary, review.currency, unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(e.currentSalary, review.currency, unitPresentation)}</IdentifierText></p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-xs text-muted-foreground">{t("proposed")}</p>
-                    <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400">{formatMoney(e.proposedSalary, review.currency, unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400"><IdentifierText>{formatMoney(e.proposedSalary, review.currency, unitPresentation)}</IdentifierText></p>
                   </div>
                   {e.adjustmentPercent !== null && (
-                    <Badge variant="outline" className="text-[10px]">{t("adjustment", { percent: e.adjustmentPercent.toFixed(1) })}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{t.rich("adjustment", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  percent: e.adjustmentPercent.toFixed(1)  })}</Badge>
                   )}
                 </div>
               </div>

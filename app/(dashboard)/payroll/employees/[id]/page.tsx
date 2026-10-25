@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { payrollShare } from "@/lib/money/payroll-ui";
@@ -235,7 +237,7 @@ export default function EmployeeDetailPage() {
           onClick={() => router.push("/payroll/employees")}
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-3.5 rtl:rotate-180" />
           {t("back")}
         </button>
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
@@ -254,13 +256,13 @@ export default function EmployeeDetailPage() {
         onClick={() => router.push("/payroll/employees")}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" />
+        <ArrowLeft className="size-3.5 rtl:rotate-180" />
         {t("back")}
       </button>
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className={cn(
             "flex size-10 items-center justify-center rounded-xl",
             isActive
@@ -275,8 +277,8 @@ export default function EmployeeDetailPage() {
             )} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">{emp.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg font-semibold"><BidiText>{emp.name}</BidiText></h1>
               <Badge variant="outline" className={
                 isActive
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
@@ -286,51 +288,51 @@ export default function EmployeeDetailPage() {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              {emp.employeeNumber}{emp.position ? ` · ${emp.position}` : ""}
+              <IdentifierText>{emp.employeeNumber}</IdentifierText><BidiText>{emp.position ? ` · ${emp.position}` : ""}</BidiText>
             </p>
             {emp.member && (
               <p className="text-xs text-muted-foreground">
-                {t("linked", { member: emp.member.user.name || emp.member.user.email })}
+                {t.rich("linked", { em: (chunks) => <BidiText>{chunks}</BidiText>,  member: emp.member.user.name || emp.member.user.email  })}
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setIsActive(!isActive)}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={() => setIsActive(!isActive)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
             {isActive ? (
-              <><PowerOff className="mr-1.5 size-3.5" />{t("deactivate")}</>
+              <><PowerOff className="me-1.5 size-3.5" />{t("deactivate")}</>
             ) : (
-              <><Power className="mr-1.5 size-3.5" />{t("activate")}</>
+              <><Power className="me-1.5 size-3.5" />{t("activate")}</>
             )}
           </Button>
         </div>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 [&>*]:min-w-0">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {compensationType === "salary" ? t("annualSalary") : compensationType === "hourly" ? t("hourlyRate") : t("compensation")}
           </p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">
-            {compensationType === "salary"
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">
+            <IdentifierText>{compensationType === "salary"
               ? formatMoney(salaryInCents, currency, unitPresentation)
               : compensationType === "hourly"
                 ? formatMoney(payrollCentsPreview(hourlyRate), currency, unitPresentation)
-                : "-"}
+                : "-"}</IdentifierText>
           </p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("periodPay")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), currency, unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]"><IdentifierText>{formatMoney(getPerPeriodPay(salaryInCents, payFrequency), currency, unitPresentation)}</IdentifierText></p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("taxRate")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{taxRateNum}%</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]"><IdentifierText>{taxRateNum}%</IdentifierText></p>
         </motion.div>
         <motion.div {...anim(0.12)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("compensationType")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{t(compensationType === "salary" ? "salary" : compensationType === "hourly" ? "hourly" : compensationType === "milestone" ? "milestone" : "commission")}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]">{t(compensationType === "salary" ? "salary" : compensationType === "hourly" ? "hourly" : compensationType === "milestone" ? "milestone" : "commission")}</p>
         </motion.div>
       </div>
 
@@ -338,33 +340,30 @@ export default function EmployeeDetailPage() {
       <div className="max-w-4xl space-y-6">
         {/* Personal Info */}
         <Section title={t("personalInfo")} description={t("personalHelp")}>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("name")}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Label className="text-xs" htmlFor="payroll-employees-id-1" >{t("name")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} dir="auto" id="payroll-employees-id-1" aria-label={t("name")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("email")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-2" >{t("email")}</Label>
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+                onChange={(e) => setEmail(e.target.value)} dir="ltr" id="payroll-employees-id-2" aria-label={t("email")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("employeeNumber")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-3" >{t("employeeNumber")}</Label>
               <Input
                 value={employeeNumber}
                 onChange={(e) => setEmployeeNumber(e.target.value)}
-                disabled
-              />
+                disabled dir="ltr" id="payroll-employees-id-3" aria-label={t("employeeNumber")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("position")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-4" >{t("position")}</Label>
               <Input
                 value={position}
-                onChange={(e) => setPosition(e.target.value)}
-              />
+                onChange={(e) => setPosition(e.target.value)} dir="auto" id="payroll-employees-id-4" aria-label={t("position")} />
             </div>
           </div>
         </Section>
@@ -373,11 +372,11 @@ export default function EmployeeDetailPage() {
 
         {/* Compensation */}
         <Section title={t("compensation")} description={t("compensationHelp")}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("compensationType")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-5" >{t("compensationType")}</Label>
               <Select value={compensationType} onValueChange={setCompensationType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-employees-id-5" aria-label={t("compensationType")} ><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="salary">{t("salary")}</SelectItem>
                   <SelectItem value="hourly">{t("hourly")}</SelectItem>
@@ -387,17 +386,16 @@ export default function EmployeeDetailPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("annualSalary")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-6" >{t("annualSalary")}</Label>
               <CurrencyInput
                 prefix={currency}
                 value={salary}
-                onChange={setSalary}
-              />
+                onChange={setSalary} id="payroll-employees-id-6" aria-label={t("annualSalary")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("frequency")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-7" >{t("frequency")}</Label>
               <Select value={payFrequency} onValueChange={setPayFrequency}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-employees-id-7" aria-label={t("frequency")} >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -408,21 +406,20 @@ export default function EmployeeDetailPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("taxRateInput")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-8" >{t("taxRateInput")}</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={taxRate}
-                onChange={(e) => setTaxRate(e.target.value)}
-              />
+                onChange={(e) => setTaxRate(e.target.value)} dir="ltr" id="payroll-employees-id-8" aria-label={t("taxRateInput")} />
             </div>
             {compensationType === "hourly" && (
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("hourlyRate")}</Label>
-                <CurrencyInput prefix={currency} value={hourlyRate} onChange={setHourlyRate} />
+                <Label className="text-xs" htmlFor="payroll-employees-id-9" >{t("hourlyRate")}</Label>
+                <CurrencyInput prefix={currency} value={hourlyRate} onChange={setHourlyRate} id="payroll-employees-id-9" aria-label={t("hourlyRate")} />
               </div>
             )}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" role="group" aria-label={t("currency")}>
               <Label className="text-xs">{t("currency")}</Label>
               <CurrencySelect value={currency} onValueChange={setCurrency} />
             </div>
@@ -433,31 +430,28 @@ export default function EmployeeDetailPage() {
 
         {/* Details */}
         <Section title={t("details")} description={t("detailsHelp")}>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3 [&>*]:min-w-0">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("bankAccount")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-10" >{t("bankAccount")}</Label>
               <Input
                 value={bankAccountNumber}
-                onChange={(e) => setBankAccountNumber(e.target.value)}
-              />
+                onChange={(e) => setBankAccountNumber(e.target.value)} dir="ltr" id="payroll-employees-id-10" aria-label={t("bankAccount")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("startDate")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-11" >{t("startDate")}</Label>
               <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                disabled
-              />
+                disabled dir="ltr" id="payroll-employees-id-11" aria-label={t("startDate")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("endDate")}</Label>
+              <Label className="text-xs" htmlFor="payroll-employees-id-12" >{t("endDate")}</Label>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                disabled
-              />
+                disabled dir="ltr" id="payroll-employees-id-12" aria-label={t("endDate")} />
             </div>
           </div>
         </Section>
@@ -473,12 +467,12 @@ export default function EmployeeDetailPage() {
               {deductions.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center justify-between rounded-md border px-4 py-3"
+                  className="flex items-center justify-between rounded-md border px-4 py-3 flex-wrap"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <div>
-                      <p className="text-sm font-medium">{d.deductionType.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-sm font-medium"><BidiText>{d.deductionType.name}</BidiText></p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <Badge variant="outline" className="text-[11px]">
                           {t(d.deductionType.category === "pre_tax" ? "preTax" : "postTax")}
                         </Badge>
@@ -496,9 +490,9 @@ export default function EmployeeDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <span className="text-sm font-mono tabular-nums">
-                      {d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD", unitPresentation) : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD", unitPresentation) : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : t("noAmount")}
+                      <IdentifierText>{d.amount != null ? formatMoney(d.amount, emp.currency ?? "USD", unitPresentation) : d.percent != null ? `${d.percent}%` : d.deductionType.defaultAmount != null ? formatMoney(d.deductionType.defaultAmount, emp.currency ?? "USD", unitPresentation) : d.deductionType.defaultPercent != null ? `${d.deductionType.defaultPercent}%` : t("noAmount")}</IdentifierText>
                     </span>
                     <Badge
                       variant="outline"
@@ -526,11 +520,11 @@ export default function EmployeeDetailPage() {
             <p className="text-sm text-muted-foreground">{t("noTax")}</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">{t("filingStatus")}</Label>
+                  <Label className="text-xs" htmlFor="payroll-employees-id-13" >{t("filingStatus")}</Label>
                   <Select value={tcFilingStatus} onValueChange={setTcFilingStatus}>
-                    <SelectTrigger><SelectValue placeholder={t("selectStatus")} /></SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-employees-id-13" aria-label={t("filingStatus")} ><SelectValue placeholder={t("selectStatus")} /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="single">{t("single")}</SelectItem>
                       <SelectItem value="married_joint">{t("marriedJoint")}</SelectItem>
@@ -540,38 +534,35 @@ export default function EmployeeDetailPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">{t("federalAllowances")}</Label>
+                  <Label className="text-xs" htmlFor="payroll-employees-id-14" >{t("federalAllowances")}</Label>
                   <Input
                     type="number"
                     value={tcFederalAllowances}
-                    onChange={(e) => setTcFederalAllowances(e.target.value)}
-                  />
+                    onChange={(e) => setTcFederalAllowances(e.target.value)} dir="ltr" id="payroll-employees-id-14" aria-label={t("federalAllowances")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">{t("stateAllowances")}</Label>
+                  <Label className="text-xs" htmlFor="payroll-employees-id-15" >{t("stateAllowances")}</Label>
                   <Input
                     type="number"
                     value={tcStateAllowances}
-                    onChange={(e) => setTcStateAllowances(e.target.value)}
-                  />
+                    onChange={(e) => setTcStateAllowances(e.target.value)} dir="ltr" id="payroll-employees-id-15" aria-label={t("stateAllowances")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">{t("withholding")}</Label>
+                  <Label className="text-xs" htmlFor="payroll-employees-id-16" >{t("withholding")}</Label>
                   <CurrencyInput
                     prefix={currency}
                     value={tcAddlFederal}
-                    onChange={setTcAddlFederal}
-                  />
+                    onChange={setTcAddlFederal} id="payroll-employees-id-16" aria-label={t("withholding")} />
                 </div>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end flex-wrap">
                 <Button
                   size="sm"
                   onClick={handleSaveTaxConfig}
                   disabled={taxSaving}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 >
-                  <Save className="mr-1.5 size-3.5" />
+                  <Save className="me-1.5 size-3.5" />
                   {taxSaving ? t("saving") : t("saveTax")}
                 </Button>
               </div>
@@ -590,11 +581,11 @@ export default function EmployeeDetailPage() {
               {leaveBalances.map((lb) => (
                 <div
                   key={lb.id}
-                  className="flex items-center justify-between rounded-md border px-4 py-3"
+                  className="flex items-center justify-between rounded-md border px-4 py-3 flex-wrap"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <div>
-                      <p className="text-sm font-medium">{lb.policy?.name || "-"}</p>
+                      <p className="text-sm font-medium"><BidiText>{lb.policy?.name || "-"}</BidiText></p>
                       {lb.policy?.leaveType && (
                         <Badge variant="outline" className="mt-0.5 text-[11px]">
                           {t(leaveTypeKey(lb.policy.leaveType))}
@@ -602,14 +593,14 @@ export default function EmployeeDetailPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-sm font-mono tabular-nums">
-                    <div className="text-right">
+                  <div className="flex items-center gap-4 text-sm font-mono tabular-nums flex-wrap">
+                    <div className="text-end">
                       <p className="text-[11px] font-sans text-muted-foreground">{t("balance")}</p>
-                      <p>{t("hours", { value: String(lb.balance) })}</p>
+                      <p>{t.rich("hours", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  value: String(lb.balance)  })}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className="text-[11px] font-sans text-muted-foreground">{t("used")}</p>
-                      <p>{t("hours", { value: String(lb.usedHours) })}</p>
+                      <p>{t.rich("hours", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  value: String(lb.usedHours)  })}</p>
                     </div>
                   </div>
                 </div>
@@ -625,27 +616,27 @@ export default function EmployeeDetailPage() {
 
             <Section title={t("bandTitle")} description={t("bandHelp")}>
               <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("band")}</p>
-                    <p className="text-sm font-medium">{compensationBand.name}</p>
+                    <p className="text-sm font-medium"><BidiText>{compensationBand.name}</BidiText></p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("minSalary")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.minSalary, compensationBand.currency, unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(compensationBand.minSalary, compensationBand.currency, unitPresentation)}</IdentifierText></p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("midSalary")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.midSalary, compensationBand.currency, unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(compensationBand.midSalary, compensationBand.currency, unitPresentation)}</IdentifierText></p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("maxSalary")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(compensationBand.maxSalary, compensationBand.currency, unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(compensationBand.maxSalary, compensationBand.currency, unitPresentation)}</IdentifierText></p>
                   </div>
                 </div>
                 {compensationBand.currency === (emp.currency ?? "USD") && compensationBand.currency === (emp.currency ?? "USD") && compensationBand.maxSalary > compensationBand.minSalary && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground flex-wrap">
                       <span>{t("range")}</span>
                       <span className="font-mono tabular-nums">
                         {payrollShare(salaryInCents - BigInt(compensationBand.minSalary), BigInt(compensationBand.maxSalary) - BigInt(compensationBand.minSalary))}
@@ -670,14 +661,14 @@ export default function EmployeeDetailPage() {
         <div className="h-px bg-border" />
 
         {/* Save */}
-        <div className="flex justify-end">
+        <div className="flex justify-end flex-wrap">
           <Button
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
           >
-            <Save className="mr-1.5 size-3.5" />
+            <Save className="me-1.5 size-3.5" />
             {saving ? t("saving") : t("save")}
           </Button>
         </div>
@@ -696,9 +687,8 @@ export default function EmployeeDetailPage() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={handleDelete}
-            >
-              <Trash2 className="mr-1.5 size-3.5" />
+              onClick={handleDelete} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+              <Trash2 className="me-1.5 size-3.5" />
               {t("delete")}
             </Button>
           </div>

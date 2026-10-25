@@ -9,6 +9,7 @@ import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as nextIntl from "next-intl";
 import { createTranslator } from "next-intl";
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import ts from "typescript";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import { payrollOverviewJson, payrollOverviewStatuses } from "../i18n/payroll-overview-presentation";
@@ -27,7 +28,7 @@ const run = { id: "run-a", payPeriodStart: "2026-10-01", payPeriodEnd: "2026-10-
   totalGross: 9007199254740991, totalGrossMinor: "9007199254740991", totalDeductions: 29, totalDeductionsMinor: "29",
   totalNet: 9007199254740962, totalNetMinor: "9007199254740962", baseCurrency: "USD" };
 const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "PayrollOverview" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "PayrollOverview" });
 type Capture = { kind: unknown; props: Record<string, unknown> };
 type Harness = { captured: Capture[]; events: unknown[]; effects: (() => void | (() => void))[] };
 
@@ -96,7 +97,7 @@ test("payroll overview renders every finite run status, period and exact monetar
     const view = render({ loading: false, employees, runs }, locale), t = translator(locale);
     for (const key of ["overview", "activeEmployees", "monthlyPayrollCost", "paidThisYear", "unfinished", "recentRuns", "viewAll", "beforeAndTakeHome", "breakdown", "takeHome", "taxesDeductions", "totalBefore", "quickActions", "newRun", "addEmployee", "draft", "processing", "completed", "void", "pendingApproval"] as const)
       assert.ok(view.html.includes(escape(t(key))), key);
-    assert.ok(view.html.includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
+    assert.ok(visibleText(view.html).includes(escape(t("period", { start: run.payPeriodStart, end: run.payPeriodEnd }))));
     assert.ok(view.html.includes(escape(payrollMoneyDisplay(run.totalNet, currency, resolvePresentation({ user: { language: locale } })))));
     const monthly = payrollGroupedDisplay(employees.filter(e => e.isActive).map(e => ({ amount: e.salary, currency: e.currency })), 12n, resolvePresentation({ user: { language: locale } }));
     assert.ok(view.html.includes(escape(monthly)));

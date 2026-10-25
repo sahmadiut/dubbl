@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
@@ -114,10 +116,10 @@ export default function RunPayslipsPage() {
         onClick={() => router.push(`/payroll/runs/${id}`)}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" /> {t("backToRun")}
+        <ArrowLeft className="size-3.5 rtl:rotate-180" /> {t("backToRun")}
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
           <ScrollText className="size-5 text-muted-foreground" />
         </div>
@@ -125,7 +127,7 @@ export default function RunPayslipsPage() {
           <h1 className="text-lg font-semibold">{t("payslips")}</h1>
           {run && (
             <p className="text-sm text-muted-foreground">
-              {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
+              {t.rich("period", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: run.payPeriodStart, end: run.payPeriodEnd  })}
             </p>
           )}
         </div>
@@ -143,7 +145,7 @@ export default function RunPayslipsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="mt-4"
+            className="mt-4 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
             onClick={() => router.push(`/payroll/runs/${id}`)}
           >
             {t("goToRun")}
@@ -161,40 +163,40 @@ export default function RunPayslipsPage() {
               : 0n;
             return (
               <div key={row.payrollItemId}>
-                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="flex items-center justify-between gap-4 px-4 py-3 flex-wrap">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{row.name}</p>
+                    <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{row.name}</BidiText></p>
                     {row.employeeNumber && (
                       <p className="text-xs text-muted-foreground font-mono">
-                        {row.employeeNumber}
+                        <IdentifierText>{row.employeeNumber}</IdentifierText>
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 shrink-0">
+                  <div className="flex items-center gap-4 shrink-0 flex-wrap">
                     {ps ? (
                       <>
-                        <div className="hidden sm:block text-right">
+                        <div className="hidden sm:block text-end">
                           <p className="text-xs text-muted-foreground">
                             {t("beforeDeductions")}
                           </p>
                           <p className="text-sm font-mono tabular-nums">
-                            {formatMoney(ps.grossAmount, ps.currency, unitPresentation)}
+                            <IdentifierText>{formatMoney(ps.grossAmount, ps.currency, unitPresentation)}</IdentifierText>
                           </p>
                         </div>
-                        <div className="hidden sm:block text-right">
+                        <div className="hidden sm:block text-end">
                           <p className="text-xs text-muted-foreground">
                             {t("taxesDeductions")}
                           </p>
                           <p className="text-sm font-mono tabular-nums text-red-600 dark:text-red-400">
-                            {formatMoney(totalDeductions, ps.currency, unitPresentation)}
+                            <IdentifierText>{formatMoney(totalDeductions, ps.currency, unitPresentation)}</IdentifierText>
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <p className="text-xs text-muted-foreground">
                             {t("takeHome")}
                           </p>
                           <p className="text-sm font-mono tabular-nums font-medium">
-                            {formatMoney(ps.netAmount, ps.currency, unitPresentation)}
+                            <IdentifierText>{formatMoney(ps.netAmount, ps.currency, unitPresentation)}</IdentifierText>
                           </p>
                         </div>
                         <Badge variant="outline" className="text-[10px]">
@@ -203,12 +205,11 @@ export default function RunPayslipsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => toggle(row)}
-                        >
+                          onClick={() => toggle(row)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                           {t(isOpen ? "hide" : "viewPayslip")}
                           <ChevronDown
                             className={cn(
-                              "ml-1.5 size-3.5 transition-transform",
+                              "ms-1.5 size-3.5 transition-transform",
                               isOpen && "rotate-180"
                             )}
                           />
@@ -224,7 +225,7 @@ export default function RunPayslipsPage() {
 
                 {isOpen && ps && (
                   <div className="border-t bg-muted/30 px-4 py-4">
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4 [&>*]:min-w-0">
                       <Detail label={t("beforeDeductions")} value={formatMoney(ps.grossAmount, ps.currency, unitPresentation)} />
                       <Detail label={t("taxWithheld")} value={formatMoney(ps.taxAmount, ps.currency, unitPresentation)} />
                       <Detail label={t("otherDeductions")} value={formatMoney(otherDeductions, ps.currency, unitPresentation)} />
@@ -240,13 +241,13 @@ export default function RunPayslipsPage() {
                           {ps.deductionsBreakdown.map((d, i) => (
                             <div
                               key={i}
-                              className="flex items-center justify-between px-3 py-2"
+                              className="flex items-center justify-between px-3 py-2 flex-wrap"
                             >
                               <span className="text-xs capitalize">
-                                {d.name || t(`deductionCategory_${d.category}`)}
+                                <BidiText>{d.name || t(`deductionCategory_${d.category}`)}</BidiText>
                               </span>
                               <span className="text-xs font-mono tabular-nums">
-                                {formatMoney(d.amount || 0, ps.currency, unitPresentation)}
+                                <IdentifierText>{formatMoney(d.amount || 0, ps.currency, unitPresentation)}</IdentifierText>
                               </span>
                             </div>
                           ))}
@@ -258,7 +259,7 @@ export default function RunPayslipsPage() {
                       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5">
                         {t("yearSoFar")}
                       </p>
-                      <div className="grid grid-cols-3 gap-x-8 gap-y-2">
+                      <div className="grid grid-cols-3 gap-x-8 gap-y-2 [&>*]:min-w-0">
                         <Detail label={t("earned")} value={formatMoney(ps.ytdGross, ps.currency, unitPresentation)} small />
                         <Detail label={t("tax")} value={formatMoney(ps.ytdTax, ps.currency, unitPresentation)} small />
                         <Detail label={t("takeHome")} value={formatMoney(ps.ytdNet, ps.currency, unitPresentation)} small />
@@ -309,7 +310,7 @@ function Detail({
           emphasize && "font-semibold"
         )}
       >
-        {value}
+        <IdentifierText>{value}</IdentifierText>
       </p>
     </div>
   );

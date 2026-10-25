@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 
@@ -341,34 +343,31 @@ export default function PayrollSettingsPage() {
         {/* General Settings */}
         <motion.div {...anim(0)}>
           <Section title={t("general")} description={t("generalDescription")}>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("taxRate")}</Label>
+                <Label className="text-xs" htmlFor="payroll-settings-1" >{t("taxRate")}</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={defaultTaxPercent}
-                  onChange={(e) => setDefaultTaxPercent(e.target.value)}
-                />
+                  onChange={(e) => setDefaultTaxPercent(e.target.value)} dir="ltr" id="payroll-settings-1" aria-label={t("taxRate")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("overtimeThreshold")}</Label>
+                <Label className="text-xs" htmlFor="payroll-settings-2" >{t("overtimeThreshold")}</Label>
                 <Input
                   type="number"
                   value={settings.overtimeThresholdHours}
-                  onChange={(e) => setSettings({ ...settings, overtimeThresholdHours: parseFloat(e.target.value || "40") })}
-                />
+                  onChange={(e) => setSettings({ ...settings, overtimeThresholdHours: parseFloat(e.target.value || "40") })} dir="ltr" id="payroll-settings-2" aria-label={t("overtimeThreshold")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("overtimeMultiplier")}</Label>
+                <Label className="text-xs" htmlFor="payroll-settings-3" >{t("overtimeMultiplier")}</Label>
                 <Input
                   type="number"
                   step="0.1"
                   value={settings.overtimeMultiplier}
-                  onChange={(e) => setSettings({ ...settings, overtimeMultiplier: parseFloat(e.target.value || "1.5") })}
-                />
+                  onChange={(e) => setSettings({ ...settings, overtimeMultiplier: parseFloat(e.target.value || "1.5") })} dir="ltr" id="payroll-settings-3" aria-label={t("overtimeMultiplier")} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" role="group" aria-label={t("currency")}>
                 <Label className="text-xs">{t("currency")}</Label>
                 <CurrencySelect
                   value={settings.defaultCurrency}
@@ -376,27 +375,24 @@ export default function PayrollSettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("salaryAccount")}</Label>
+                <Label className="text-xs" htmlFor="payroll-settings-4" >{t("salaryAccount")}</Label>
                 <Input
                   value={settings.salaryExpenseAccountCode ?? ""}
-                  onChange={(e) => setSettings({ ...settings, salaryExpenseAccountCode: e.target.value })}
-                />
+                  onChange={(e) => setSettings({ ...settings, salaryExpenseAccountCode: e.target.value })} dir="ltr" id="payroll-settings-4" aria-label={t("salaryAccount")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("taxAccount")}</Label>
+                <Label className="text-xs" htmlFor="payroll-settings-5" >{t("taxAccount")}</Label>
                 <Input
                   value={settings.taxPayableAccountCode ?? ""}
-                  onChange={(e) => setSettings({ ...settings, taxPayableAccountCode: e.target.value })}
-                />
+                  onChange={(e) => setSettings({ ...settings, taxPayableAccountCode: e.target.value })} dir="ltr" id="payroll-settings-5" aria-label={t("taxAccount")} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("bankAccount")}</Label>
+                <Label className="text-xs" htmlFor="payroll-settings-6" >{t("bankAccount")}</Label>
                 <Input
                   value={settings.bankAccountCode ?? ""}
-                  onChange={(e) => setSettings({ ...settings, bankAccountCode: e.target.value })}
-                />
+                  onChange={(e) => setSettings({ ...settings, bankAccountCode: e.target.value })} dir="ltr" id="payroll-settings-6" aria-label={t("bankAccount")} />
               </div>
-              <div className="flex items-center gap-3 pt-5">
+              <div className="flex items-center gap-3 pt-5 flex-wrap">
                 <Switch
                   checked={settings.autoApprovalEnabled}
                   onCheckedChange={(v: boolean) => setSettings({ ...settings, autoApprovalEnabled: v })}
@@ -404,14 +400,14 @@ export default function PayrollSettingsPage() {
                 <Label className="text-xs">{t("autoApprove")}</Label>
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-end flex-wrap">
               <Button
                 size="sm"
                 onClick={handleSaveSettings}
                 disabled={saving}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <Save className="mr-1.5 size-3.5" />
+                <Save className="me-1.5 size-3.5" />
                 {saving ? t("saving") : t("save")}
               </Button>
             </div>
@@ -424,9 +420,9 @@ export default function PayrollSettingsPage() {
         <motion.div {...anim(0.05)}>
           <Section title={t("deductions")} description={t("deductionsDescription")}>
             <div className="space-y-3">
-              <div className="flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => setDeductionDrawer(true)}>
-                  <Plus className="mr-1.5 size-3" />
+              <div className="flex justify-end flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setDeductionDrawer(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                  <Plus className="me-1.5 size-3" />
                   {t("addType")}
                 </Button>
               </div>
@@ -435,13 +431,13 @@ export default function PayrollSettingsPage() {
               ) : (
                 <div className="rounded-lg border divide-y">
                   {deductionTypes.map((dt) => (
-                    <div key={dt.id} className="flex items-center justify-between px-4 py-2.5">
+                    <div key={dt.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                       <div>
-                        <p className="text-sm font-medium">{dt.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-sm font-medium"><BidiText>{dt.name}</BidiText></p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <Badge variant="outline" className="text-[10px]">{t(settingsLabelKey(dt.category))}</Badge>
-                          {dt.defaultAmount != null && <span className="text-xs text-muted-foreground">{unitPresentation.locale === "en-US" ? "$" + payrollCentsDecimal(dt.defaultAmount) : payrollMoneyDisplay(dt.defaultAmount, "USD", unitPresentation)}</span>}
-                          {dt.defaultPercent != null && <span className="text-xs text-muted-foreground">{dt.defaultPercent}%</span>}
+                          {dt.defaultAmount != null && <span className="text-xs text-muted-foreground"><IdentifierText>{unitPresentation.locale === "en-US" ? "$" + payrollCentsDecimal(dt.defaultAmount) : payrollMoneyDisplay(dt.defaultAmount, "USD", unitPresentation)}</IdentifierText></span>}
+                          {dt.defaultPercent != null && <span className="text-xs text-muted-foreground"><IdentifierText>{dt.defaultPercent}%</IdentifierText></span>}
                         </div>
                       </div>
                       <Button size="icon" variant="ghost" className="size-7" aria-label={t("deleteDeductionTitle")} onClick={() => handleDeleteDeduction(dt.id)}>
@@ -461,9 +457,9 @@ export default function PayrollSettingsPage() {
         <motion.div {...anim(0.1)}>
           <Section title={t("brackets")} description={t("bracketsDescription")}>
             <div className="space-y-3">
-              <div className="flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => setBracketDrawer(true)}>
-                  <Plus className="mr-1.5 size-3" />
+              <div className="flex justify-end flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setBracketDrawer(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                  <Plus className="me-1.5 size-3" />
                   {t("addBracket")}
                 </Button>
               </div>
@@ -472,11 +468,11 @@ export default function PayrollSettingsPage() {
               ) : (
                 <div className="rounded-lg border divide-y">
                   {taxBrackets.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between px-4 py-2.5">
+                    <div key={b.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                       <div>
-                        <p className="text-sm font-medium">{b.name}</p>
+                        <p className="text-sm font-medium"><BidiText>{b.name}</BidiText></p>
                         <p className="text-xs text-muted-foreground">
-                          {t("bracketSummary", { level: t(settingsLabelKey(b.jurisdictionLevel)), jurisdiction: b.jurisdiction ? ` · ${b.jurisdiction}` : "", min: payrollCentsDecimal(b.minIncome), ceiling: b.maxIncome != null ? t("bracketCeiling", { amount: payrollCentsDecimal(b.maxIncome) }) : t("unbounded"), rate: payrollCentsDecimal(b.rate) })}
+                          {t.rich("bracketSummary", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  level: t(settingsLabelKey(b.jurisdictionLevel)), jurisdiction: b.jurisdiction ? ` · ${b.jurisdiction}` : "", min: payrollCentsDecimal(b.minIncome), ceiling: b.maxIncome != null ? t("bracketCeiling", { amount: payrollCentsDecimal(b.maxIncome) }) : t("unbounded"), rate: payrollCentsDecimal(b.rate)  })}
                         </p>
                       </div>
                     </div>
@@ -493,9 +489,9 @@ export default function PayrollSettingsPage() {
         <motion.div {...anim(0.15)}>
           <Section title={t("shifts")} description={t("shiftsDescription")}>
             <div className="space-y-3">
-              <div className="flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => setShiftDrawer(true)}>
-                  <Plus className="mr-1.5 size-3" />
+              <div className="flex justify-end flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setShiftDrawer(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                  <Plus className="me-1.5 size-3" />
                   {t("addShift")}
                 </Button>
               </div>
@@ -504,11 +500,11 @@ export default function PayrollSettingsPage() {
               ) : (
                 <div className="rounded-lg border divide-y">
                   {shifts.map((s) => (
-                    <div key={s.id} className="flex items-center justify-between px-4 py-2.5">
+                    <div key={s.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                       <div>
-                        <p className="text-sm font-medium">{s.name}</p>
+                        <p className="text-sm font-medium"><BidiText>{s.name}</BidiText></p>
                         <p className="text-xs text-muted-foreground">
-                          {t("shiftSummary", { start: s.startTime, end: s.endTime, type: t(settingsLabelKey(s.shiftType)) })}{s.premiumPercent ? t("shiftPremium", { percent: String(s.premiumPercent) }) : ""}
+                          {t.rich("shiftSummary", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: s.startTime, end: s.endTime, type: t(settingsLabelKey(s.shiftType))  })}{s.premiumPercent ? t("shiftPremium", { percent: String(s.premiumPercent) }) : ""}
                         </p>
                       </div>
                       <Badge variant="outline" className={cn("text-[10px]", s.isActive ? "text-emerald-600" : "text-muted-foreground")}>
@@ -528,9 +524,9 @@ export default function PayrollSettingsPage() {
         <motion.div {...anim(0.2)}>
           <Section title={t("policies")} description={t("policiesDescription")}>
             <div className="space-y-3">
-              <div className="flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => setLeaveDrawer(true)}>
-                  <Plus className="mr-1.5 size-3" />
+              <div className="flex justify-end flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setLeaveDrawer(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                  <Plus className="me-1.5 size-3" />
                   {t("addPolicy")}
                 </Button>
               </div>
@@ -539,9 +535,9 @@ export default function PayrollSettingsPage() {
               ) : (
                 <div className="rounded-lg border divide-y">
                   {leavePolicies.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
+                    <div key={p.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                       <div>
-                        <p className="text-sm font-medium">{p.name}</p>
+                        <p className="text-sm font-medium"><BidiText>{p.name}</BidiText></p>
                         <p className="text-xs text-muted-foreground">
                           {t("leaveSummary", { type: t(settingsLabelKey(p.leaveType)), hours: String(p.accrualRate), method: t(settingsLabelKey(p.accrualMethod)) })}{p.maxBalance ? t("leaveCap", { hours: String(p.maxBalance) }) : ""}
                         </p>
@@ -564,9 +560,9 @@ export default function PayrollSettingsPage() {
             ) : (
               <div className="rounded-lg border divide-y">
                 {approvalChains.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between px-4 py-2.5">
+                  <div key={c.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                     <div>
-                      <p className="text-sm font-medium">{c.name}</p>
+                      <p className="text-sm font-medium"><BidiText>{c.name}</BidiText></p>
                       <p className="text-xs text-muted-foreground">{t("steps", { count: c.steps.length })}</p>
                     </div>
                     <Badge variant="outline" className={cn("text-[10px]", c.isActive ? "text-emerald-600" : "text-muted-foreground")}>
@@ -585,9 +581,9 @@ export default function PayrollSettingsPage() {
         <motion.div {...anim(0.3)}>
           <Section title={t("bands")} description={t("bandsDescription")}>
             <div className="space-y-3">
-              <div className="flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => setBandDrawer(true)}>
-                  <Plus className="mr-1.5 size-3" />
+              <div className="flex justify-end flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setBandDrawer(true)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                  <Plus className="me-1.5 size-3" />
                   {t("addBand")}
                 </Button>
               </div>
@@ -596,11 +592,11 @@ export default function PayrollSettingsPage() {
               ) : (
                 <div className="rounded-lg border divide-y">
                   {compensationBands.map((band) => (
-                    <div key={band.id} className="flex items-center justify-between px-4 py-2.5">
+                    <div key={band.id} className="flex items-center justify-between px-4 py-2.5 flex-wrap">
                       <div>
-                        <p className="text-sm font-medium">{band.name}</p>
+                        <p className="text-sm font-medium"><BidiText>{band.name}</BidiText></p>
                         <p className="text-xs text-muted-foreground">
-                          {t("bandSummary", { level: band.level ?? "—", min: payrollMoneyDisplay(band.minSalary, band.currency, unitPresentation), mid: payrollMoneyDisplay(band.midSalary, band.currency, unitPresentation), max: payrollMoneyDisplay(band.maxSalary, band.currency, unitPresentation) })}
+                          {t.rich("bandSummary", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  level: band.level ?? "—", min: payrollMoneyDisplay(band.minSalary, band.currency, unitPresentation), mid: payrollMoneyDisplay(band.midSalary, band.currency, unitPresentation), max: payrollMoneyDisplay(band.maxSalary, band.currency, unitPresentation)  })}
                         </p>
                       </div>
                       <Button size="icon" variant="ghost" className="size-7" aria-label={t("deleteBandTitle")} onClick={() => handleDeleteBand(band.id)}>
@@ -619,10 +615,10 @@ export default function PayrollSettingsPage() {
         {/* Self-Service Link */}
         <motion.div {...anim(0.35)}>
           <Section title={t("portal")} description={t("portalDescription")}>
-            <div className="flex items-center gap-3">
-              <Button asChild size="sm" variant="outline">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Button asChild size="sm" variant="outline" className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                 <Link href="/payroll/self-service">
-                  <ExternalLink className="mr-1.5 size-3" />
+                  <ExternalLink className="me-1.5 size-3" />
                   {t("openPortal")}
                 </Link>
               </Button>
@@ -635,7 +631,7 @@ export default function PayrollSettingsPage() {
       <Sheet open={deductionDrawer} onOpenChange={setDeductionDrawer}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <DollarSign className="size-5" />
               </div>
@@ -648,33 +644,33 @@ export default function PayrollSettingsPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleAddDeduction(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>{t("name")}</Label>
-                <Input value={newDeduction.name} onChange={(e) => setNewDeduction({ ...newDeduction, name: e.target.value })} />
+                <Label htmlFor="payroll-settings-7" >{t("name")}</Label>
+                <Input value={newDeduction.name} onChange={(e) => setNewDeduction({ ...newDeduction, name: e.target.value })} dir="auto" id="payroll-settings-7" aria-label={t("name")} />
               </div>
               <div className="space-y-2">
-                <Label>{t("category")}</Label>
+                <Label htmlFor="payroll-settings-8" >{t("category")}</Label>
                 <Select value={newDeduction.category} onValueChange={(v) => setNewDeduction({ ...newDeduction, category: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-settings-8" aria-label={t("category")} ><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pre_tax">{t("preTax")}</SelectItem>
                     <SelectItem value="post_tax">{t("postTax")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("defaultAmount")}</Label>
-                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newDeduction.defaultAmount} onChange={(v) => setNewDeduction({ ...newDeduction, defaultAmount: v })} />
+                  <Label htmlFor="payroll-settings-9" >{t("defaultAmount")}</Label>
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newDeduction.defaultAmount} onChange={(v) => setNewDeduction({ ...newDeduction, defaultAmount: v })} id="payroll-settings-9" aria-label={t("defaultAmount")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("defaultPercent")}</Label>
-                  <Input type="number" step="0.01" value={newDeduction.defaultPercent} onChange={(e) => setNewDeduction({ ...newDeduction, defaultPercent: e.target.value })} />
+                  <Label htmlFor="payroll-settings-10" >{t("defaultPercent")}</Label>
+                  <Input type="number" step="0.01" value={newDeduction.defaultPercent} onChange={(e) => setNewDeduction({ ...newDeduction, defaultPercent: e.target.value })} dir="ltr" id="payroll-settings-10" aria-label={t("defaultPercent")} />
                 </div>
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setDeductionDrawer(false)}>{t("cancel")}</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={() => setDeductionDrawer(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -684,7 +680,7 @@ export default function PayrollSettingsPage() {
       <Sheet open={bracketDrawer} onOpenChange={setBracketDrawer}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <Shield className="size-5" />
               </div>
@@ -697,14 +693,14 @@ export default function PayrollSettingsPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleAddBracket(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>{t("name")}</Label>
-                <Input value={newBracket.name} onChange={(e) => setNewBracket({ ...newBracket, name: e.target.value })} />
+                <Label htmlFor="payroll-settings-11" >{t("name")}</Label>
+                <Input value={newBracket.name} onChange={(e) => setNewBracket({ ...newBracket, name: e.target.value })} dir="auto" id="payroll-settings-11" aria-label={t("name")} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("jurisdiction")}</Label>
+                  <Label htmlFor="payroll-settings-12" >{t("jurisdiction")}</Label>
                   <Select value={newBracket.jurisdictionLevel} onValueChange={(v) => setNewBracket({ ...newBracket, jurisdictionLevel: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-settings-12" aria-label={t("jurisdiction")} ><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="federal">{t("federal")}</SelectItem>
                       <SelectItem value="state">{t("state")}</SelectItem>
@@ -713,22 +709,22 @@ export default function PayrollSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("rate")}</Label>
-                  <Input type="number" step="0.01" value={newBracket.rate} onChange={(e) => setNewBracket({ ...newBracket, rate: e.target.value })} />
+                  <Label htmlFor="payroll-settings-13" >{t("rate")}</Label>
+                  <Input type="number" step="0.01" value={newBracket.rate} onChange={(e) => setNewBracket({ ...newBracket, rate: e.target.value })} dir="ltr" id="payroll-settings-13" aria-label={t("rate")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("minIncome")}</Label>
-                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBracket.minIncome} onChange={(v) => setNewBracket({ ...newBracket, minIncome: v })} />
+                  <Label htmlFor="payroll-settings-14" >{t("minIncome")}</Label>
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBracket.minIncome} onChange={(v) => setNewBracket({ ...newBracket, minIncome: v })} id="payroll-settings-14" aria-label={t("minIncome")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("maxIncome")}</Label>
-                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBracket.maxIncome} onChange={(v) => setNewBracket({ ...newBracket, maxIncome: v })} placeholder={t("unlimited")} />
+                  <Label htmlFor="payroll-settings-15" >{t("maxIncome")}</Label>
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBracket.maxIncome} onChange={(v) => setNewBracket({ ...newBracket, maxIncome: v })} placeholder={t("unlimited")} id="payroll-settings-15" aria-label={t("maxIncome")} />
                 </div>
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setBracketDrawer(false)}>{t("cancel")}</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={() => setBracketDrawer(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -738,7 +734,7 @@ export default function PayrollSettingsPage() {
       <Sheet open={shiftDrawer} onOpenChange={setShiftDrawer}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <Clock className="size-5" />
               </div>
@@ -751,14 +747,14 @@ export default function PayrollSettingsPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleAddShift(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>{t("name")}</Label>
-                <Input value={newShift.name} onChange={(e) => setNewShift({ ...newShift, name: e.target.value })} />
+                <Label htmlFor="payroll-settings-16" >{t("name")}</Label>
+                <Input value={newShift.name} onChange={(e) => setNewShift({ ...newShift, name: e.target.value })} dir="auto" id="payroll-settings-16" aria-label={t("name")} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("type")}</Label>
+                  <Label htmlFor="payroll-settings-17" >{t("type")}</Label>
                   <Select value={newShift.shiftType} onValueChange={(v) => setNewShift({ ...newShift, shiftType: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-settings-17" aria-label={t("type")} ><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="regular">{t("regular")}</SelectItem>
                       <SelectItem value="overtime">{t("overtime")}</SelectItem>
@@ -769,22 +765,22 @@ export default function PayrollSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("premium")}</Label>
-                  <Input type="number" step="0.25" min={0} value={newShift.premiumPercent} onChange={(e) => setNewShift({ ...newShift, premiumPercent: e.target.value })} />
+                  <Label htmlFor="payroll-settings-18" >{t("premium")}</Label>
+                  <Input type="number" step="0.25" min={0} value={newShift.premiumPercent} onChange={(e) => setNewShift({ ...newShift, premiumPercent: e.target.value })} dir="ltr" id="payroll-settings-18" aria-label={t("premium")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("startTime")}</Label>
-                  <Input type="time" value={newShift.startTime} onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })} />
+                  <Label htmlFor="payroll-settings-19" >{t("startTime")}</Label>
+                  <Input type="time" value={newShift.startTime} onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })} dir="ltr" id="payroll-settings-19" aria-label={t("startTime")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("endTime")}</Label>
-                  <Input type="time" value={newShift.endTime} onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })} />
+                  <Label htmlFor="payroll-settings-20" >{t("endTime")}</Label>
+                  <Input type="time" value={newShift.endTime} onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })} dir="ltr" id="payroll-settings-20" aria-label={t("endTime")} />
                 </div>
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setShiftDrawer(false)}>{t("cancel")}</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={() => setShiftDrawer(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -794,7 +790,7 @@ export default function PayrollSettingsPage() {
       <Sheet open={leaveDrawer} onOpenChange={setLeaveDrawer}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <CalendarDays className="size-5" />
               </div>
@@ -807,14 +803,14 @@ export default function PayrollSettingsPage() {
           <form onSubmit={(e) => { e.preventDefault(); handleAddLeavePolicy(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-2">
-                <Label>{t("name")}</Label>
-                <Input value={newLeave.name} onChange={(e) => setNewLeave({ ...newLeave, name: e.target.value })} />
+                <Label htmlFor="payroll-settings-21" >{t("name")}</Label>
+                <Input value={newLeave.name} onChange={(e) => setNewLeave({ ...newLeave, name: e.target.value })} dir="auto" id="payroll-settings-21" aria-label={t("name")} />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("leaveType")}</Label>
+                  <Label htmlFor="payroll-settings-22" >{t("leaveType")}</Label>
                   <Select value={newLeave.leaveType} onValueChange={(v) => setNewLeave({ ...newLeave, leaveType: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-settings-22" aria-label={t("leaveType")} ><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="vacation">{t("vacation")}</SelectItem>
                       <SelectItem value="sick">{t("sick")}</SelectItem>
@@ -827,9 +823,9 @@ export default function PayrollSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("accrual")}</Label>
+                  <Label htmlFor="payroll-settings-23" >{t("accrual")}</Label>
                   <Select value={newLeave.accrualMethod} onValueChange={(v) => setNewLeave({ ...newLeave, accrualMethod: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-settings-23" aria-label={t("accrual")} ><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="per_pay_period">{t("perPayPeriod")}</SelectItem>
                       <SelectItem value="monthly">{t("monthly")}</SelectItem>
@@ -839,18 +835,18 @@ export default function PayrollSettingsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("hoursEarned")}</Label>
-                  <Input type="number" step="0.5" value={newLeave.accrualRate} onChange={(e) => setNewLeave({ ...newLeave, accrualRate: e.target.value })} />
+                  <Label htmlFor="payroll-settings-24" >{t("hoursEarned")}</Label>
+                  <Input type="number" step="0.5" value={newLeave.accrualRate} onChange={(e) => setNewLeave({ ...newLeave, accrualRate: e.target.value })} dir="ltr" id="payroll-settings-24" aria-label={t("hoursEarned")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("maxBalance")}</Label>
-                  <Input type="number" value={newLeave.maxBalance} onChange={(e) => setNewLeave({ ...newLeave, maxBalance: e.target.value })} placeholder={t("unlimited")} />
+                  <Label htmlFor="payroll-settings-25" >{t("maxBalance")}</Label>
+                  <Input type="number" value={newLeave.maxBalance} onChange={(e) => setNewLeave({ ...newLeave, maxBalance: e.target.value })} placeholder={t("unlimited")} dir="ltr" id="payroll-settings-25" aria-label={t("maxBalance")} />
                 </div>
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setLeaveDrawer(false)}>{t("cancel")}</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={() => setLeaveDrawer(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>
@@ -860,7 +856,7 @@ export default function PayrollSettingsPage() {
       <Sheet open={bandDrawer} onOpenChange={setBandDrawer}>
         <SheetContent className="sm:max-w-lg w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
                 <Layers className="size-5" />
               </div>
@@ -872,34 +868,34 @@ export default function PayrollSettingsPage() {
           </SheetHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleAddBand(); }}>
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("name")}</Label>
-                  <Input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} />
+                  <Label htmlFor="payroll-settings-26" >{t("name")}</Label>
+                  <Input value={newBand.name} onChange={(e) => setNewBand({ ...newBand, name: e.target.value })} dir="auto" id="payroll-settings-26" aria-label={t("name")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("level")}</Label>
-                  <Input value={newBand.level} onChange={(e) => setNewBand({ ...newBand, level: e.target.value })} placeholder={t("levelPlaceholder")} />
+                  <Label htmlFor="payroll-settings-27" >{t("level")}</Label>
+                  <Input value={newBand.level} onChange={(e) => setNewBand({ ...newBand, level: e.target.value })} placeholder={t("levelPlaceholder")} dir="auto" id="payroll-settings-27" aria-label={t("level")} />
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-3 [&>*]:min-w-0">
                 <div className="space-y-2">
-                  <Label>{t("minSalary")}</Label>
-                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} />
+                  <Label htmlFor="payroll-settings-28" >{t("minSalary")}</Label>
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.minSalary} onChange={(v) => setNewBand({ ...newBand, minSalary: v })} id="payroll-settings-28" aria-label={t("minSalary")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("midSalary")}</Label>
-                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} />
+                  <Label htmlFor="payroll-settings-29" >{t("midSalary")}</Label>
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.midSalary} onChange={(v) => setNewBand({ ...newBand, midSalary: v })} id="payroll-settings-29" aria-label={t("midSalary")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("maxSalary")}</Label>
-                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} />
+                  <Label htmlFor="payroll-settings-30" >{t("maxSalary")}</Label>
+                  <CurrencyInput prefix={currencyLabel("USD", unitPresentation.locale, "$")} value={newBand.maxSalary} onChange={(v) => setNewBand({ ...newBand, maxSalary: v })} id="payroll-settings-30" aria-label={t("maxSalary")} />
                 </div>
               </div>
             </div>
-            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setBandDrawer(false)}>{t("cancel")}</Button>
-              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">{t("create")}</Button>
+            <div className="border-t px-4 py-3 sm:px-6 flex justify-end gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={() => setBandDrawer(false)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >{t("cancel")}</Button>
+              <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]">{t("create")}</Button>
             </div>
           </form>
         </SheetContent>

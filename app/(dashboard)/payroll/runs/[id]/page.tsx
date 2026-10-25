@@ -1,4 +1,6 @@
 "use client";
+
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
@@ -293,7 +295,7 @@ export default function PayrollRunDetailPage() {
           onClick={() => router.push("/payroll/runs")}
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-3.5 rtl:rotate-180" />
           {t("back")}
         </button>
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
@@ -316,13 +318,13 @@ export default function PayrollRunDetailPage() {
         onClick={() => router.push("/payroll/runs")}
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" />
+        <ArrowLeft className="size-3.5 rtl:rotate-180" />
         {t("back")}
       </button>
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className={cn(
             "flex size-10 items-center justify-center rounded-xl",
             run.status === "completed"
@@ -339,7 +341,7 @@ export default function PayrollRunDetailPage() {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-lg font-semibold">
-                {t("period", { start: run.payPeriodStart, end: run.payPeriodEnd })}
+                {t.rich("period", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  start: run.payPeriodStart, end: run.payPeriodEnd  })}
               </h1>
               <Badge variant="outline" className={statusColors[run.status] || ""}>
                 {t(`status_${run.status}`)}
@@ -359,11 +361,11 @@ export default function PayrollRunDetailPage() {
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {run.processedAt ? t("processedAt", { date: run.processedAt }) : t("unfinished")}
+              {run.processedAt ? t.rich("processedAt", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  date: run.processedAt  }) : t("unfinished")}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {run.status === "draft" && (
             <>
               <Button
@@ -371,19 +373,18 @@ export default function PayrollRunDetailPage() {
                 size="sm"
                 onClick={handleSubmitForApproval}
                 disabled={submittingApproval}
-                title={t("sendHelp")}
-              >
-                <Send className="mr-1.5 size-3.5" />
+                title={t("sendHelp")} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                <Send className="me-1.5 size-3.5" />
                 {submittingApproval ? t("sending") : t("send")}
               </Button>
               <Button
                 size="sm"
                 onClick={handleProcess}
                 disabled={processing}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
                 title={t("finishHelp")}
               >
-                <Play className="mr-1.5 size-3.5" />
+                <Play className="me-1.5 size-3.5" />
                 {processing ? t("finishing") : t("finish")}
               </Button>
             </>
@@ -394,18 +395,17 @@ export default function PayrollRunDetailPage() {
                 size="sm"
                 onClick={handleApprove}
                 disabled={approving}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]"
               >
-                <CheckCircle2 className="mr-1.5 size-3.5" />
+                <CheckCircle2 className="me-1.5 size-3.5" />
                 {approving ? t("approving") : t("approve")}
               </Button>
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={handleReject}
-                disabled={rejecting}
-              >
-                <XCircle className="mr-1.5 size-3.5" />
+                disabled={rejecting} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                <XCircle className="me-1.5 size-3.5" />
                 {rejecting ? t("rejecting") : t("reject")}
               </Button>
             </>
@@ -414,18 +414,18 @@ export default function PayrollRunDetailPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 [&>*]:min-w-0">
         <motion.div {...anim(0)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("gross")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere]"><IdentifierText>{formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText></p>
         </motion.div>
         <motion.div {...anim(0.05)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("deductions")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-red-600 dark:text-red-400">{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere] text-red-600 dark:text-red-400"><IdentifierText>{formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText></p>
         </motion.div>
         <motion.div {...anim(0.09)} className="rounded-xl border bg-card p-4">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("net")}</p>
-          <p className="mt-1 text-2xl font-bold font-mono tabular-nums truncate text-emerald-600 dark:text-emerald-400">{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</p>
+          <p className="mt-1 text-2xl font-bold font-mono tabular-nums [overflow-wrap:anywhere] text-emerald-600 dark:text-emerald-400"><IdentifierText>{formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)}</IdentifierText></p>
         </motion.div>
       </div>
 
@@ -434,23 +434,23 @@ export default function PayrollRunDetailPage() {
         <motion.button
           {...anim(0.12)}
           onClick={() => router.push(`/accounting/${run.journalEntryId}`)}
-          className="group flex w-full items-center justify-between gap-4 rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+          className="group flex w-full items-center justify-between gap-4 rounded-xl border bg-card p-4 text-start transition-colors hover:bg-muted/50"
         >
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-wrap">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
               <BookOpen className="size-5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium">{t("viewEntry")}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {t("entrySummary", { gross: formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation), deductions: formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation), net: formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation) })}
+              <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                {t.rich("entrySummary", { code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  gross: formatMoney(run.totalGross, run.baseCurrency ?? "USD", unitPresentation), deductions: formatMoney(run.totalDeductions, run.baseCurrency ?? "USD", unitPresentation), net: formatMoney(run.totalNet, run.baseCurrency ?? "USD", unitPresentation)  })}
               </p>
             </div>
           </div>
-          <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
         </motion.button>
       ) : run.status === "completed" ? (
-        <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card p-4">
+        <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card p-4 flex-wrap">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
             <BookOpen className="size-5 text-muted-foreground" />
           </div>
@@ -466,18 +466,17 @@ export default function PayrollRunDetailPage() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-sm font-semibold">{t("employees", { count: run.items.length })}</h3>
           <div className="relative sm:max-w-xs w-full">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-8 h-8 text-sm"
-            />
+              className="ps-9 pe-8 h-8 text-sm" dir="auto" aria-label={t("search")} />
             {search && (
               <button
                 onClick={() => setSearch("")}
                 aria-label={t("clearSearch")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </button>
@@ -499,46 +498,46 @@ export default function PayrollRunDetailPage() {
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-4 px-4 py-3"
+                className="flex items-center justify-between gap-4 px-4 py-3 flex-wrap"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{item.employee?.name || "-"}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{item.employee?.employeeNumber}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{item.employee?.name || "-"}</BidiText></p>
+                  <p className="text-xs text-muted-foreground font-mono"><IdentifierText>{item.employee?.employeeNumber}</IdentifierText></p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     {item.type && (
                       <Badge variant="outline" className="text-[9px] h-4 capitalize">
                         {t(`itemType_${item.type}`)}
                       </Badge>
                     )}
                     {item.description && (
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{item.description}</span>
+                      <span className="text-[10px] text-muted-foreground [overflow-wrap:anywhere] max-w-[200px]"><BidiText>{item.description}</BidiText></span>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-4 shrink-0 flex-wrap">
                   {item.currency && item.currency !== "USD" && (
                     <Badge variant="outline" className="text-[9px] h-4 font-mono shrink-0">
-                      {currencyLabel(item.currency, unitPresentation.locale)}
+                      <IdentifierText>{currencyLabel(item.currency, unitPresentation.locale)}</IdentifierText>
                       {item.fxRate && item.fxRate !== 1 && (
-                        <span className="ml-0.5 text-muted-foreground">@ {item.rateExact}</span>
+                        <span className="ms-0.5 text-muted-foreground">@ <IdentifierText>{item.rateExact}</IdentifierText></span>
                       )}
                     </Badge>
                   )}
-                  <div className="hidden sm:block text-right">
+                  <div className="hidden sm:block text-end">
                     <p className="text-xs text-muted-foreground">{t("beforeDeductions")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.grossAmount, item.currency ?? "USD", unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(item.grossAmount, item.currency ?? "USD", unitPresentation)}</IdentifierText></p>
                   </div>
-                  <div className="hidden sm:block text-right">
+                  <div className="hidden sm:block text-end">
                     <p className="text-xs text-muted-foreground">{t("tax")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(item.taxAmount, item.currency ?? "USD", unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(item.taxAmount, item.currency ?? "USD", unitPresentation)}</IdentifierText></p>
                   </div>
-                  <div className="hidden sm:block text-right">
+                  <div className="hidden sm:block text-end">
                     <p className="text-xs text-muted-foreground">{t("otherDeductions")}</p>
-                    <p className="text-sm font-mono tabular-nums">{formatMoney(payrollSum([item.preTaxDeductions ?? 0, item.postTaxDeductions ?? 0]), item.currency ?? "USD", unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums"><IdentifierText>{formatMoney(payrollSum([item.preTaxDeductions ?? 0, item.postTaxDeductions ?? 0]), item.currency ?? "USD", unitPresentation)}</IdentifierText></p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-xs text-muted-foreground">{t("takeHome")}</p>
-                    <p className="text-sm font-mono tabular-nums font-medium">{formatMoney(item.netAmount, item.currency ?? "USD", unitPresentation)}</p>
+                    <p className="text-sm font-mono tabular-nums font-medium"><IdentifierText>{formatMoney(item.netAmount, item.currency ?? "USD", unitPresentation)}</IdentifierText></p>
                   </div>
                 </div>
               </div>
@@ -549,15 +548,15 @@ export default function PayrollRunDetailPage() {
 
       {/* Bonuses section */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap">
           <h3 className="text-sm font-semibold flex items-center gap-1.5">
             <Gift className="size-4" />
             {t("bonuses", { count: bonuses.length })}
           </h3>
           <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={run.status !== "draft" || run.approvalStatus === "approved" || !["regular", "off_cycle", "bonus_only"].includes(run.runType)}>
-                <Plus className="mr-1.5 size-3.5" />
+              <Button variant="outline" size="sm" disabled={run.status !== "draft" || run.approvalStatus === "approved" || !["regular", "off_cycle", "bonus_only"].includes(run.runType)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+                <Plus className="me-1.5 size-3.5" />
                 {t("addBonus")}
               </Button>
             </DialogTrigger>
@@ -570,19 +569,19 @@ export default function PayrollRunDetailPage() {
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
-                  <Label>{t("employee")}</Label>
+                  <Label htmlFor="payroll-runs-id-1" >{t("employee")}</Label>
                   <Select
                     value={bonusForm.employeeId}
                     onValueChange={(v) => setBonusForm((f) => ({ ...f, employeeId: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-runs-id-1" aria-label={t("employee")} >
                       <SelectValue placeholder={t("selectEmployee")} />
                     </SelectTrigger>
                     <SelectContent>
                       {(run.items || []).filter((item, index, items) => items.findIndex(i => i.employeeId === item.employeeId) === index).map((item) =>
                         item.employee ? (
                           <SelectItem key={item.employeeId} value={item.employeeId}>
-                            {t("employeeOption", { name: item.employee.name, number: item.employee.employeeNumber })}
+                            {t.rich("employeeOption", { em: (chunks) => <BidiText>{chunks}</BidiText>, code: (chunks) => <IdentifierText>{chunks}</IdentifierText>,  name: item.employee.name, number: item.employee.employeeNumber  })}
                           </SelectItem>
                         ) : null
                       )}
@@ -590,12 +589,12 @@ export default function PayrollRunDetailPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("bonusTypeLabel")}</Label>
+                  <Label htmlFor="payroll-runs-id-2" >{t("bonusTypeLabel")}</Label>
                   <Select
                     value={bonusForm.bonusType}
                     onValueChange={(v) => setBonusForm((f) => ({ ...f, bonusType: v }))}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere] data-[size=default]:h-auto data-[size=sm]:h-auto *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal" id="payroll-runs-id-2" aria-label={t("bonusTypeLabel")} >
                       <SelectValue placeholder={t("selectType")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -608,28 +607,25 @@ export default function PayrollRunDetailPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("amount")}</Label>
+                  <Label htmlFor="payroll-runs-id-3" >{t("amount")}</Label>
                   <CurrencyInput
                     prefix={run.items.find(i => i.employeeId === bonusForm.employeeId)?.currency ?? "USD"}
                     value={bonusForm.amount}
-                    onChange={(v) => setBonusForm((f) => ({ ...f, amount: v }))}
-                  />
+                    onChange={(v) => setBonusForm((f) => ({ ...f, amount: v }))} id="payroll-runs-id-3" aria-label={t("amount")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("description")}</Label>
+                  <Label htmlFor="payroll-runs-id-4" >{t("description")}</Label>
                   <Textarea
                     placeholder={t("descriptionPlaceholder")}
                     value={bonusForm.description}
-                    onChange={(e) => setBonusForm((f) => ({ ...f, description: e.target.value }))}
-                  />
+                    onChange={(e) => setBonusForm((f) => ({ ...f, description: e.target.value }))} dir="auto" id="payroll-runs-id-4" aria-label={t("description")} />
                 </div>
               </div>
               <DialogFooter>
                 <Button
                   onClick={handleCreateBonus}
                   disabled={creatingBonus}
-                  size="sm"
-                >
+                  size="sm" className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
                   {creatingBonus ? t("adding") : t("addBonus")}
                 </Button>
               </DialogFooter>
@@ -650,21 +646,21 @@ export default function PayrollRunDetailPage() {
             {bonuses.map((bonus) => (
               <div
                 key={bonus.id}
-                className="flex items-center justify-between gap-4 px-4 py-3"
+                className="flex items-center justify-between gap-4 px-4 py-3 flex-wrap"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{bonus.employee?.name || "-"}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{bonus.employee?.name || "-"}</BidiText></p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <Badge variant="outline" className="text-[9px] h-4 capitalize">
                       {t(`bonusType_${bonus.bonusType}`)}
                     </Badge>
                     {bonus.description && (
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[200px]">{bonus.description}</span>
+                      <span className="text-[10px] text-muted-foreground [overflow-wrap:anywhere] max-w-[200px]"><BidiText>{bonus.description}</BidiText></span>
                     )}
                   </div>
                 </div>
                 <p className="text-sm font-mono tabular-nums font-medium shrink-0">
-                  {formatMoney(bonus.amount, bonus.employee?.currency ?? "USD", unitPresentation)}
+                  <IdentifierText>{formatMoney(bonus.amount, bonus.employee?.currency ?? "USD", unitPresentation)}</IdentifierText>
                 </p>
               </div>
             ))}
@@ -674,21 +670,19 @@ export default function PayrollRunDetailPage() {
 
       {/* Generate Payslips */}
       {run.status === "completed" && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             size="sm"
             onClick={handleGeneratePayslips}
-            disabled={generatingPayslips}
-          >
-            <ScrollText className="mr-1.5 size-3.5" />
+            disabled={generatingPayslips} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+            <ScrollText className="me-1.5 size-3.5" />
             {generatingPayslips ? t("generating") : t("generate")}
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/payroll/runs/${id}/payslips`)}
-          >
-            <ScrollText className="mr-1.5 size-3.5" />
+            onClick={() => router.push(`/payroll/runs/${id}/payslips`)} className="h-auto min-h-8 max-w-full whitespace-normal py-1.5 [overflow-wrap:anywhere]" >
+            <ScrollText className="me-1.5 size-3.5" />
             {t("viewPayslips")}
           </Button>
         </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft, Info } from "lucide-react";
@@ -19,7 +21,7 @@ export function BackToReports() {
       href="/reports"
       className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
     >
-      <ArrowLeft className="size-3.5" /> {t("backToReports")}
+      <ArrowLeft className="size-3.5 [&:dir(rtl)]:rotate-180" /> {t("backToReports")}
     </Link>
   );
 }
@@ -70,18 +72,19 @@ export function BasisToggle({
     <TooltipProvider delayDuration={150}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[13px] text-muted-foreground">{t("basisPrompt")}</span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {options.map((o) => (
             <Tooltip key={o.value}>
               <TooltipTrigger asChild>
                 <Button
+                  aria-pressed={basis === o.value}
                   variant={basis === o.value ? "default" : "outline"}
                   size="sm"
                   onClick={() => onChange(o.value)}
-                  className={basis === o.value ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-                >
+                  className={[basis === o.value ? "bg-emerald-600 hover:bg-emerald-700" : "", "h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"].join(" ")}
+                ><BidiText>
                   {o.label}
-                </Button>
+                </BidiText></Button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">{o.help}</TooltipContent>
             </Tooltip>

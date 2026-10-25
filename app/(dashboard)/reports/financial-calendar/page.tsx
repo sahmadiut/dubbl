@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { financialCalendarUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
@@ -101,21 +103,21 @@ export default function FinancialCalendarPage() {
         <BrandLoader className="h-48" />
       ) : (
         <ContentReveal>
-          <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
             {/* Calendar Grid */}
-            <div className="rounded-lg border overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+            <div dir="ltr" className="min-w-0 rounded-lg border overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between px-4 py-3 border-b bg-muted/30">
                 <Button aria-label={t("previousMonth")} variant="ghost" size="icon" className="size-7" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>
-                  <ChevronLeft className="size-4" />
+                  <ChevronLeft className="size-4 [&:dir(rtl)]:rotate-180" />
                 </Button>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">{monthName}</p>
-                  <Button variant="outline" size="sm" className="h-6 px-2 text-[11px]" onClick={() => { const now = new Date(); setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }}>
+                  <p className="text-sm font-medium"><BidiText>{monthName}</BidiText></p>
+                  <Button variant="outline" size="sm" className="h-6 px-2 text-[11px] h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={() => { const now = new Date(); setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1)); }}>
                     {t("today")}
                   </Button>
                 </div>
                 <Button aria-label={t("nextMonth")} variant="ghost" size="icon" className="size-7" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>
-                  <ChevronRight className="size-4" />
+                  <ChevronRight className="size-4 [&:dir(rtl)]:rotate-180" />
                 </Button>
               </div>
 
@@ -127,7 +129,7 @@ export default function FinancialCalendarPage() {
                 </div>
                 <div className="grid grid-cols-7">
                   {Array.from({ length: startDay }).map((_, i) => (
-                    <div key={`empty-${i}`} className="h-24 border-t border-r last:border-r-0" />
+                    <div key={`empty-${i}`} className="h-24 border-t border-e last:border-e-0" />
                   ))}
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
@@ -139,24 +141,25 @@ export default function FinancialCalendarPage() {
                     return (
                       <button
                         key={day}
+                        aria-label={dateStr}
                         onClick={() => setSelectedDate(dateStr === selectedDate ? null : dateStr)}
                         className={cn(
-                          "h-24 border-t border-r p-1 text-left transition-colors hover:bg-muted/50",
-                          (startDay + i + 1) % 7 === 0 && "border-r-0",
+                          "min-h-24 h-auto min-w-0 border-t border-e p-1 text-start transition-colors hover:bg-muted/50",
+                          (startDay + i + 1) % 7 === 0 && "border-e-0",
                           isSelected && "ring-2 ring-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20"
                         )}
                       >
                         <span className={cn(
                           "inline-flex size-5 items-center justify-center rounded-full text-[11px]",
                           isToday && "bg-emerald-600 text-white font-medium"
-                        )}>
+                        )}><IdentifierText>
                           {day}
-                        </span>
+                        </IdentifierText></span>
                         <div className="mt-0.5 space-y-0.5">
                           {dayEvents.slice(0, 3).map((e, idx) => (
                             <div key={idx} className="flex items-center gap-1">
                               <div className={cn("size-1.5 rounded-full shrink-0", typeColors[e.type]?.dot)} />
-                              <span className="text-[9px] truncate text-muted-foreground">{e.title.split(" - ")[0]}</span>
+                              <span className="text-[9px] min-w-0 whitespace-normal [overflow-wrap:anywhere] text-muted-foreground"><BidiText>{e.title.split(" - ")[0]}</BidiText></span>
                             </div>
                           ))}
                           {dayEvents.length > 3 && (
@@ -176,14 +179,14 @@ export default function FinancialCalendarPage() {
                 {Object.entries(typeLabels).map(([type, label]) => (
                   <div key={type} className="flex items-center gap-1.5">
                     <div className={cn("size-2 rounded-full", typeColors[type]?.dot)} />
-                    <span className="text-[11px] text-muted-foreground">{label}</span>
+                    <span className="text-[11px] text-muted-foreground"><BidiText>{label}</BidiText></span>
                   </div>
                 ))}
               </div>
 
               {selectedDate ? (
                 <div>
-                  <p className="text-sm font-medium mb-2">{new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+                  <p className="text-sm font-medium mb-2"><IdentifierText>{new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</IdentifierText></p>
                   {selectedEvents.length === 0 ? (
                     <p className="text-xs text-muted-foreground">{t("noEvents")}</p>
                   ) : (
@@ -196,9 +199,9 @@ export default function FinancialCalendarPage() {
                               {typeLabels[e.type]}
                             </span>
                           </div>
-                          <p className="text-sm font-medium">{e.title}</p>
+                          <p className="text-sm font-medium"><BidiText>{e.title}</BidiText></p>
                           {e.amount !== undefined && (
-                            <p className="text-sm font-mono tabular-nums">{currencyLabel(e.currencyCode, presentation.locale)} {formatMoney(e.amount, e.currencyCode, presentation)}</p>
+                            <p className="text-sm font-mono tabular-nums"><IdentifierText>{currencyLabel(e.currencyCode, presentation.locale)} {formatMoney(e.amount, e.currencyCode, presentation)}</IdentifierText></p>
                           )}
                         </div>
                       ))}
@@ -217,14 +220,14 @@ export default function FinancialCalendarPage() {
                   <p className="text-sm font-medium mb-2">{t("allEvents")}</p>
                   <div className="space-y-1 max-h-[400px] overflow-y-auto">
                     {events.map((e, i) => (
-                      <div key={i} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50 text-xs">
+                      <div key={i} className="flex flex-wrap items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50 text-xs">
                         <div className="flex items-center gap-2 min-w-0">
                           <div className={cn("size-1.5 rounded-full shrink-0", typeColors[e.type]?.dot)} />
-                          <span className="text-muted-foreground w-16 shrink-0">{new Date(e.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                          <span className="truncate">{e.title}</span>
+                          <span className="text-muted-foreground w-16 shrink-0"><IdentifierText>{new Date(e.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</IdentifierText></span>
+                          <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{e.title}</BidiText></span>
                         </div>
                         {e.amount !== undefined && (
-                          <span className="font-mono tabular-nums shrink-0 ml-2">{currencyLabel(e.currencyCode, presentation.locale)} {formatMoney(e.amount, e.currencyCode, presentation)}</span>
+                          <span className="font-mono tabular-nums shrink-0 ms-2"><IdentifierText>{currencyLabel(e.currencyCode, presentation.locale)} {formatMoney(e.amount, e.currencyCode, presentation)}</IdentifierText></span>
                         )}
                       </div>
                     ))}

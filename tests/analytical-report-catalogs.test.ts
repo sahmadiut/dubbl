@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -38,8 +39,8 @@ function state(route: Route): Record<string, unknown> {
   if (route === "pnl-comparison") return { ...ready, ...pnlComparisonUi(comparison) };
   return { ...ready, ...financialRatiosUi(ratios) };
 }
-const tFor = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "AnalyticalReports" });
-function expectText(h: Harness, text: string) { assert.ok(h.html.includes(esc(text)), text); }
+const tFor = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "AnalyticalReports" });
+function expectText(h: Harness, text: string) { assert.ok(visibleText(h.html).includes(esc(text)), text); }
 
 test("tracking JSX translates finite sections and unassigned headers, preserves exact drilldown/export contracts", () => {
   for (const locale of locales) {
@@ -62,7 +63,7 @@ test("budget JSX localizes headers and shared progress while retaining fixed cen
     for (const key of ["budgetTitle", "budgetDescription", "budgetLabel", "code", "account", "budgeted", "actual", "variance", "totalBudgeted", "totalActual", "totalVariance"] as const) expectText(h, t(key));
     expectText(h, t("progressActual", { amount: budgetMoney(-1n, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) })); expectText(h, t("progressBudget", { amount: budgetMoney(large, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }));
     expectText(h, budgetMoney(large + 1n, "JPY", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" })); assert.ok(h.html.includes("width:0%"));
-    const item = h.captured.find(c => c.kind === "SelectItem")!.props; assert.equal(item.value, "budget-1"); assert.equal(item.children, caller);
+    const item = h.captured.find(c => c.kind === "SelectItem")!.props; assert.equal(item.value, "budget-1"); assert.equal((item.children as { props: { children: unknown } }).props.children, caller, "Isolated visible text or exact child: analytical-report-catalogs:66");
     (h.captured.find(c => c.kind === "Select")!.props.onValueChange as (v: string) => void)("budget-2"); assert.ok(has(h, "selectedBudgetId", "budget-2"));
     const empty = render("budget-vs-actual", ready, locale); expectText(empty, t("noBudgets")); expectText(empty, t("noBudgetsDescription"));
     expectText(render("budget-vs-actual", { ...state("budget-vs-actual"), comparisons: [] }, locale), t("noBudgetLines"));

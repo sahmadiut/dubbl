@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { Fragment, useState, useEffect } from "react";
@@ -108,7 +110,7 @@ export default function TrialBalancePage() {
             variant={showCompare ? "default" : "outline"}
             size="sm"
             onClick={() => setShowCompare((v) => !v)}
-            className={showCompare ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            className={[showCompare ? "bg-emerald-600 hover:bg-emerald-700" : "", "h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"].join(" ")}
           >
             {t(showCompare ? "comparingEarlier" : "compareEarlier")}
           </Button>
@@ -135,15 +137,15 @@ export default function TrialBalancePage() {
                   <TableHead>{t("account")}</TableHead>
                   <TableHead className="w-24">{t("type")}</TableHead>
                   {dates.map((d) => (
-                    <TableHead key={d} colSpan={2} className="text-center">{t("asOfDate", { date: d })}</TableHead>
+                    <TableHead key={d} colSpan={2} className="text-center">{t.rich("asOfDate", { date: d, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</TableHead>
                   ))}
                 </TableRow>
                 <TableRow className="bg-muted/30">
                   <TableHead colSpan={3} />
                   {dates.map((d) => (
                     <Fragment key={d}>
-                      <TableHead className="w-28 text-right text-xs">{t("moneyInSide")}</TableHead>
-                      <TableHead className="w-28 text-right text-xs">{t("moneyOutSide")}</TableHead>
+                      <TableHead className="w-28 text-end text-xs">{t("moneyInSide")}</TableHead>
+                      <TableHead className="w-28 text-end text-xs">{t("moneyOutSide")}</TableHead>
                     </Fragment>
                   ))}
                 </TableRow>
@@ -151,24 +153,24 @@ export default function TrialBalancePage() {
               <TableBody>
                 {accounts.map((a) => (
                   <TableRow key={a.accountId}>
-                    <TableCell className="font-mono text-sm">{a.code}</TableCell>
+                    <TableCell className="font-mono text-sm"><IdentifierText>{a.code}</IdentifierText></TableCell>
                     <TableCell className="font-medium">
                       <Link
                         href={`/reports/general-ledger?${new URLSearchParams({ endDate: asAt }).toString()}#${a.accountId}`}
                         className="hover:text-emerald-600 hover:underline"
-                      >
+                      ><BidiText>
                         {a.name}
-                      </Link>
+                      </BidiText></Link>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground capitalize">{accountTypeLabel(ta, a.type)}</TableCell>
                     {splitsFor(a).map((s, i) => (
                       <Fragment key={i}>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                           {s.debitBalance > 0n ? formatMoney(s.debitBalance) : ""}
-                        </TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        </IdentifierText></TableCell>
+                        <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                           {s.creditBalance > 0n ? formatMoney(s.creditBalance) : ""}
-                        </TableCell>
+                        </IdentifierText></TableCell>
                       </Fragment>
                     ))}
                   </TableRow>
@@ -177,12 +179,12 @@ export default function TrialBalancePage() {
                   <TableCell colSpan={3}>{t("total")}</TableCell>
                   {totals.map((t, i) => (
                     <Fragment key={i}>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                         {formatMoney(t.debit)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                         {formatMoney(t.credit)}
-                      </TableCell>
+                      </IdentifierText></TableCell>
                     </Fragment>
                   ))}
                 </TableRow>

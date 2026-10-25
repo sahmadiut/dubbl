@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { bankCashFlowUi, bankAccountPickerUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
@@ -133,11 +135,11 @@ export default function BankCashFlowPage() {
             aria-label={t("bankAccount")}
             value={bankAccountId}
             onChange={(e) => setBankAccountId(e.target.value)}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            dir="auto" className="h-auto min-h-9 max-w-full min-w-0 rounded-md border bg-background px-2 text-sm"
           >
-            <option value="">{t("allAccounts")}</option>
+            <option dir="auto" value="">{t("allAccounts")}</option>
             {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
+              <option dir="auto" key={a.id} value={a.id}>
                 {a.accountName}
               </option>
             ))}
@@ -149,10 +151,10 @@ export default function BankCashFlowPage() {
             aria-label={t("group")}
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            dir="auto" className="h-auto min-h-9 max-w-full min-w-0 rounded-md border bg-background px-2 text-sm"
           >
             {GROUP_OPTIONS.map((o) => (
-              <option key={o} value={o}>
+              <option dir="auto" key={o} value={o}>
                 {t(o)}
               </option>
             ))}
@@ -187,10 +189,10 @@ export default function BankCashFlowPage() {
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead>{t("period")}</TableHead>
-                  <TableHead className="w-32 text-right">{t("moneyIn")}</TableHead>
-                  <TableHead className="w-32 text-right">{t("moneyOut")}</TableHead>
-                  <TableHead className="w-32 text-right">{t("netChange")}</TableHead>
-                  <TableHead className="w-36 text-right">{t("cumulative")}</TableHead>
+                  <TableHead className="w-32 text-end">{t("moneyIn")}</TableHead>
+                  <TableHead className="w-32 text-end">{t("moneyOut")}</TableHead>
+                  <TableHead className="w-32 text-end">{t("netChange")}</TableHead>
+                  <TableHead className="w-36 text-end">{t("cumulative")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -206,19 +208,19 @@ export default function BankCashFlowPage() {
                 ) : (
                   periods.map((p) => (
                     <TableRow key={p.startDate}>
-                      <TableCell className="font-medium text-sm">{p.label}</TableCell>
-                      <TableCell className="text-right font-mono text-sm tabular-nums text-emerald-600">
+                      <TableCell className="font-medium text-sm"><BidiText>{p.label}</BidiText></TableCell>
+                      <TableCell className="text-end font-mono text-sm tabular-nums text-emerald-600"><IdentifierText>
                         {formatMoney(p.inflows, currency, presentation)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm tabular-nums text-rose-600">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono text-sm tabular-nums text-rose-600"><IdentifierText>
                         {formatMoney(analyticalAbs(p.outflows), currency, presentation)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm tabular-nums">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono text-sm tabular-nums"><IdentifierText>
                         {formatMoney(p.net, currency, presentation)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm tabular-nums">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono text-sm tabular-nums"><IdentifierText>
                         {formatMoney(p.balance, currency, presentation)}
-                      </TableCell>
+                      </IdentifierText></TableCell>
                     </TableRow>
                   ))
                 )}
@@ -227,15 +229,15 @@ export default function BankCashFlowPage() {
                 <TableBody>
                   <TableRow className="bg-muted/30 font-bold">
                     <TableCell>{t("total")}</TableCell>
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
+                    <TableCell className="text-end font-mono text-sm tabular-nums"><IdentifierText>
                       {formatMoney(totals.inflows, currency, presentation)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
+                    </IdentifierText></TableCell>
+                    <TableCell className="text-end font-mono text-sm tabular-nums"><IdentifierText>
                       {formatMoney(analyticalAbs(totals.outflows), currency, presentation)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
+                    </IdentifierText></TableCell>
+                    <TableCell className="text-end font-mono text-sm tabular-nums"><IdentifierText>
                       {formatMoney(totals.net, currency, presentation)}
-                    </TableCell>
+                    </IdentifierText></TableCell>
                     <TableCell />
                   </TableRow>
                 </TableBody>

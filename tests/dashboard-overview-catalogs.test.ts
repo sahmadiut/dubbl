@@ -1,3 +1,4 @@
+import { catalogText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -76,7 +77,7 @@ const forecast = { currencyCode: "KWD", forecastPeriod: { start: "2024-02-04", e
 
 test("dashboard production rendering localizes overview, aging, alerts and onboarding while retaining exact values and actions", () => {
   for (const locale of locales) {
-    const messages = locale === "en-US" ? en : fa, t = intl.createTranslator({ locale, messages, namespace: "DashboardOverview" });
+    const messages = locale === "en-US" ? en : fa, t = intl.createTranslator({ locale, messages: catalogText(messages), namespace: "DashboardOverview" });
     const h = render("page", ready, locale);
     for (const key of ["overviewHelp", "morning0", "gettingStarted", "setupHelp", "budgetAlerts", "revenue", "expenses", "netIncome", "aging", "kpis", "overdueInvoices", "overdueBills", "uncategorized", "needsReconciliation", "recentEntries", "noEntries", "firstEntry", "bucket0", "bucket4"] as const) assert.ok(h.html.includes(t(key)), key);
     assert.ok(h.html.includes("&lt;script&gt;caller")); assert.ok(!h.html.includes("<script>"));
@@ -103,7 +104,7 @@ test("dashboard production rendering localizes overview, aging, alerts and onboa
 
 test("cash widget renders translated periods, legend, exact tooltip and finite errors", () => {
   for (const locale of locales) {
-    const messages = locale === "en-US" ? en : fa, t = intl.createTranslator({ locale, messages, namespace: "DashboardOverview" });
+    const messages = locale === "en-US" ? en : fa, t = intl.createTranslator({ locale, messages: catalogText(messages), namespace: "DashboardOverview" });
     const h = render("cash", { loading: false, forecast: cashForecastUi(forecast) }, locale);
     for (const key of ["forecastTitle", "expectedIn", "expectedOut", "netPosition"] as const) assert.ok(h.html.includes(t(key)));
     for (const count of [30, 60, 90]) assert.ok(h.html.includes(t("periodDays", { count })));

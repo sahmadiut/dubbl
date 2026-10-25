@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { duplicateDetectionUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
@@ -93,25 +95,25 @@ export default function DuplicateDetectionPage() {
 
             {groups.map((group, gi) => (
               <div key={gi} className="rounded-lg border p-4 space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={group.type === "invoice" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-blue-200 bg-blue-50 text-blue-700"}>
                       {t(group.type)}
                     </Badge>
-                    <span className="text-sm font-medium">{group.contactName}</span>
+                    <span className="text-sm font-medium"><BidiText>{group.contactName}</BidiText></span>
                   </div>
-                  <span className="font-mono text-sm font-semibold tabular-nums">{currencyLabel(group.currencyCode, presentation.locale)} {formatMoney(group.amount, group.currencyCode, presentation)}</span>
+                  <span className="font-mono text-sm font-semibold tabular-nums"><IdentifierText>{currencyLabel(group.currencyCode, presentation.locale)} {formatMoney(group.amount, group.currencyCode, presentation)}</IdentifierText></span>
                 </div>
                 <div className="space-y-1">
                   {group.items.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => router.push(group.type === "invoice" ? `/sales/${item.id}` : `/purchases/${item.id}`)}
-                      className="flex items-center justify-between w-full rounded px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
+                      className="flex flex-wrap items-center justify-between w-full rounded px-3 py-1.5 text-sm hover:bg-muted/50 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <span className="font-mono text-xs text-muted-foreground">{item.number}</span>
-                        <span>{new Date(item.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <span><IdentifierText>{new Date(item.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</IdentifierText></span>
                       </div>
                       <Badge variant="outline" className="text-[10px]">{group.type === "invoice" ? invoiceStatusLabel(ti, item.status) : billStatusLabel(item.status, tb)}</Badge>
                     </button>

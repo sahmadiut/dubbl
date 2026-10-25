@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -138,25 +140,25 @@ export default function VatReturnPage() {
                   <button
                     onClick={() => toggle(b.box)}
                     aria-expanded={isOpen}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4 hover:bg-muted/40 transition-colors text-left"
+                    className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4 hover:bg-muted/40 transition-colors text-start"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      {isOpen ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-xs font-mono font-semibold text-muted-foreground">
+                      {isOpen ? <ChevronDown className="size-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="size-4 shrink-0 text-muted-foreground [&:dir(rtl)]:rotate-180" />}
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-xs font-mono font-semibold text-muted-foreground"><IdentifierText>
                         {b.box}
-                      </span>
-                      <span className="text-sm font-medium truncate">
+                      </IdentifierText></span>
+                      <span className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>
                         {plain ? t(plain.title) : b.label}
-                      </span>
+                      </BidiText></span>
                     </div>
-                    <span className="font-mono tabular-nums text-sm font-semibold shrink-0">
+                    <span className="font-mono tabular-nums text-sm font-semibold shrink-0"><IdentifierText>
                       {reportResultMoney(b.amount, data.currencyCode, presentation)}
-                    </span>
+                    </IdentifierText></span>
                   </button>
                   {isOpen && (
                     <div className="border-t bg-muted/20 px-3 py-3 sm:px-4 text-sm text-muted-foreground space-y-2">
-                      <p>{plain ? t(plain.help) : b.label}</p>
-                      <p className="text-xs">{t("officialLabel", { label: b.label })}</p>
+                      <p><BidiText>{plain ? t(plain.help) : b.label}</BidiText></p>
+                      <p className="text-xs">{t.rich("officialLabel", { label: b.label, code: (chunks) => <BidiText>{chunks}</BidiText> })}</p>
                       {href && (
                         <Button asChild variant="outline" size="sm" className="mt-1">
                           <Link href={href}>{t("drillDown")}</Link>

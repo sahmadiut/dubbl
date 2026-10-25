@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -90,10 +92,10 @@ export default function Form1099Page() {
             variant={year === y ? "default" : "outline"}
             size="sm"
             onClick={() => setYear(y)}
-            className={year === y ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-          >
+            className={[year === y ? "bg-emerald-600 hover:bg-emerald-700" : "", "h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"].join(" ")}
+          ><IdentifierText>
             {y}
-          </Button>
+          </IdentifierText></Button>
         ))}
       </div>
 
@@ -119,16 +121,16 @@ export default function Form1099Page() {
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">{t("needForm")}</p>
-                <p className="mt-1 text-xl font-bold">{data.reportableCount}</p>
+                <p className="mt-1 text-xl font-bold"><IdentifierText>{data.reportableCount}</IdentifierText></p>
                 <p className="text-xs text-muted-foreground">{t("aboveThreshold")}</p>
               </div>
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">{t("reportableTotal")}</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.reportableTotal, data.currencyCode, presentation)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums"><IdentifierText>{reportResultMoney(data.reportableTotal, data.currencyCode, presentation)}</IdentifierText></p>
               </div>
               <div className="rounded-xl border bg-card/80 p-4">
                 <p className="text-xs text-muted-foreground">{t("threshold")}</p>
-                <p className="mt-1 text-xl font-bold font-mono tabular-nums">{reportResultMoney(data.threshold, data.currencyCode, presentation)}</p>
+                <p className="mt-1 text-xl font-bold font-mono tabular-nums"><IdentifierText>{reportResultMoney(data.threshold, data.currencyCode, presentation)}</IdentifierText></p>
               </div>
             </div>
 
@@ -138,8 +140,8 @@ export default function Form1099Page() {
                   <TableRow className="bg-muted/50">
                     <TableHead>{t("contractor")}</TableHead>
                     <TableHead>{t("taxId")}</TableHead>
-                    <TableHead className="text-right w-24">{t("payments")}</TableHead>
-                    <TableHead className="text-right w-32">{t("totalPaid")}</TableHead>
+                    <TableHead className="text-end w-24">{t("payments")}</TableHead>
+                    <TableHead className="text-end w-32">{t("totalPaid")}</TableHead>
                     <TableHead className="w-36">{t("needsForm")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -147,18 +149,18 @@ export default function Form1099Page() {
                   {data.vendors.map((v) => (
                     <TableRow key={v.contactId}>
                       <TableCell className="font-medium">
-                        {v.name}
+                        <BidiText>{v.name}</BidiText>
                         {v.backupWithholding && (
-                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-600">
+                          <span className="ms-2 inline-flex items-center gap-1 text-xs text-amber-600">
                             <AlertTriangle className="size-3" /> {t("backupWithholding")}
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="font-mono text-sm text-muted-foreground">
-                        {v.taxIdentifier || <span className="text-amber-600">{t("missing")}</span>}
+                        <IdentifierText>{v.taxIdentifier || <span className="text-amber-600">{t("missing")}</span>}</IdentifierText>
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">{v.paymentCount}</TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(v.totalPaid, data.currencyCode, presentation)}</TableCell>
+                      <TableCell className="text-end font-mono tabular-nums"><IdentifierText>{v.paymentCount}</IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(v.totalPaid, data.currencyCode, presentation)}</IdentifierText></TableCell>
                       <TableCell>
                         <span className={cn(
                           "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",

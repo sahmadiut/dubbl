@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { usePresentation } from "@/i18n/provider";
@@ -78,21 +80,21 @@ function entryColumns(t: ReturnType<typeof useTranslations>, presentation: Numbe
     header: "#",
     className: "w-16",
     render: (r) => (
-      <span className="font-mono text-xs text-muted-foreground">
+      <span className="font-mono text-xs text-muted-foreground"><IdentifierText>
         {r.entryNumber}
-      </span>
+      </IdentifierText></span>
     ),
   },
   {
     key: "date",
     header: t("date"),
     className: "w-28",
-    render: (r) => <span className="text-sm">{r.date}</span>,
+    render: (r) => <span className="text-sm"><IdentifierText>{r.date}</IdentifierText></span>,
   },
   {
     key: "description",
     header: t("description"),
-    render: (r) => <span className="text-sm font-medium">{r.description}</span>,
+    render: (r) => <span className="text-sm font-medium"><BidiText>{r.description}</BidiText></span>,
   },
   {
     key: "status",
@@ -116,11 +118,11 @@ function entryColumns(t: ReturnType<typeof useTranslations>, presentation: Numbe
   {
     key: "amount",
     header: t("amount"),
-    className: "w-28 text-right",
+    className: "w-28 text-end",
     render: (r) => (
-      <span className="font-mono text-sm tabular-nums">
+      <span className="font-mono text-sm tabular-nums"><IdentifierText>
         {coreDebitDisplay([r], presentation)}
-      </span>
+      </IdentifierText></span>
     ),
   },
   ];
@@ -155,20 +157,20 @@ function AgingColumn({
 
   return (
     <div>
-      <p className="text-sm font-medium">{title}</p>
-      <p className="mt-0.5 font-mono text-lg font-bold tabular-nums">
+      <p className="text-sm font-medium"><BidiText>{title}</BidiText></p>
+      <p className="mt-0.5 font-mono text-lg font-bold tabular-nums"><IdentifierText>
         {formatMoney(total, currencyCode)}
-      </p>
+      </IdentifierText></p>
       <div className="mt-3 space-y-2">
         {buckets.map((bucket, i) => {
           const pct = displayPercent(bucket.total, maxBucket);
           return (
             <div key={bucket.label} className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex flex-wrap items-center justify-between text-xs">
                 <span className="text-muted-foreground">{t((["bucket0", "bucket1", "bucket2", "bucket3", "bucket4"] as const)[i])}</span>
-                <span className="font-mono tabular-nums">
+                <span className="font-mono tabular-nums"><IdentifierText>
                   {formatMoney(bucket.total, currencyCode)}
-                </span>
+                </IdentifierText></span>
               </div>
               <div className="h-1.5 rounded-full bg-muted">
                 <div
@@ -193,10 +195,10 @@ function KpiItem({ label, value, good }: { label: string; value: string; good: b
       <p className={cn(
         "text-lg font-bold font-mono tabular-nums",
         good ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-      )}>
+      )}><IdentifierText>
         {value}
-      </p>
-      <p className="text-[11px] text-muted-foreground mt-0.5">{label}</p>
+      </IdentifierText></p>
+      <p className="text-[11px] text-muted-foreground mt-0.5"><BidiText>{label}</BidiText></p>
     </div>
   );
 }
@@ -425,43 +427,43 @@ export default function DashboardPage() {
                 speed={0.2}
               />
               <div className="relative p-5 sm:p-8">
-                <h2 className="text-xl sm:text-2xl font-bold text-emerald-950">
-                  {firstName ? t("greetingWithName", { greeting: t(greeting), name: firstName }) : t(greeting)}
-                </h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-emerald-950"><BidiText>
+                  {firstName ? t.rich("greetingWithName", { greeting: t(greeting), name: firstName, code: (chunks) => <BidiText>{chunks}</BidiText> }) : t(greeting)}
+                </BidiText></h2>
                 <p className="mt-1 max-w-lg text-sm text-emerald-950/70">
                   {t("overviewHelp")}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-2">
                   <Button
                     size="sm"
-                    className="bg-emerald-950 text-white hover:bg-emerald-900"
+                    className="bg-emerald-950 text-white hover:bg-emerald-900 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                     onClick={() => router.push("/accounting/accounts")}
                   >
-                    <Landmark className="mr-1.5 size-3.5" />
+                    <Landmark className="me-1.5 size-3.5" />
                     {t("accounts")}
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-emerald-950/10 text-emerald-950 hover:bg-emerald-950/20 border-0"
+                    className="bg-emerald-950/10 text-emerald-950 hover:bg-emerald-950/20 border-0 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                     onClick={() => openDrawer("entry")}
                   >
-                    <BookOpen className="mr-1.5 size-3.5" />
+                    <BookOpen className="me-1.5 size-3.5" />
                     {t("newEntry")}
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-emerald-950/10 text-emerald-950 hover:bg-emerald-950/20 border-0"
+                    className="bg-emerald-950/10 text-emerald-950 hover:bg-emerald-950/20 border-0 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                     onClick={() => openDrawer("invoice")}
                   >
-                    <FileText className="mr-1.5 size-3.5" />
+                    <FileText className="me-1.5 size-3.5" />
                     {t("newInvoice")}
                   </Button>
                   <Button
                     size="sm"
-                    className="bg-emerald-950/10 text-emerald-950 hover:bg-emerald-950/20 border-0"
+                    className="bg-emerald-950/10 text-emerald-950 hover:bg-emerald-950/20 border-0 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                     onClick={() => router.push("/contacts")}
                   >
-                    <Users className="mr-1.5 size-3.5" />
+                    <Users className="me-1.5 size-3.5" />
                     {t("contacts")}
                   </Button>
                 </div>
@@ -475,7 +477,7 @@ export default function DashboardPage() {
                   onClick={dismissOnboarding}
                   disabled={dismissingOnboarding}
                   aria-label={t("dismissGettingStarted")}
-                  className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                  className="absolute end-3 top-3 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                 >
                   <X className="size-4" />
                 </button>
@@ -512,19 +514,19 @@ export default function DashboardPage() {
                     <button
                       key={step.href}
                       onClick={() => router.push(step.href)}
-                      className="flex items-start gap-3 rounded-lg border bg-background p-3 text-right transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      className="flex items-start gap-3 rounded-lg border bg-background p-3 text-end transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                     >
                       <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground/40" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">{step.label}</p>
-                        <p className="text-xs text-muted-foreground">{step.desc}</p>
+                        <p className="text-sm font-medium"><BidiText>{step.label}</BidiText></p>
+                        <p className="text-xs text-muted-foreground"><BidiText>{step.desc}</BidiText></p>
                       </div>
-                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground/40" />
+                      <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground/40 [&:dir(rtl)]:rotate-180" />
                     </button>
                   ))}
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <Button
+                  <Button className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                     variant="outline"
                     size="sm"
                     onClick={dismissOnboarding}
@@ -549,11 +551,11 @@ export default function DashboardPage() {
                   {budgetAlerts.slice(0, 3).map((alert) => (
                     <div
                       key={alert.accountName}
-                      className="flex items-center justify-between text-xs"
+                      className="flex flex-wrap items-center justify-between text-xs"
                     >
-                      <span className="text-amber-700 dark:text-amber-400">
+                      <span className="text-amber-700 dark:text-amber-400"><BidiText>
                         {alert.accountName}
-                      </span>
+                      </BidiText></span>
                       <span
                         className={cn(
                           "font-mono tabular-nums font-medium",
@@ -562,7 +564,7 @@ export default function DashboardPage() {
                             : "text-amber-700 dark:text-amber-400"
                         )}
                       >
-                        {t("budgetUsed", { percent: String(alert.pct), actual: budgetMoney(alert.actual, alert.currencyCode), budget: budgetMoney(alert.budgeted, alert.currencyCode) })}
+                        {t.rich("budgetUsed", { percent: String(alert.pct), actual: budgetMoney(alert.actual, alert.currencyCode), budget: budgetMoney(alert.budgeted, alert.currencyCode), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                       </span>
                     </div>
                   ))}
@@ -616,11 +618,11 @@ export default function DashboardPage() {
                 </h3>
                 <div className="mt-4 space-y-3">
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex flex-wrap items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t("revenue")}</span>
-                      <span className="font-mono text-sm tabular-nums font-medium">
+                      <span className="font-mono text-sm tabular-nums font-medium"><IdentifierText>
                         {formatMoney(pnl.totalRevenue, pnl.currencyCode)}
-                      </span>
+                      </IdentifierText></span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div
@@ -630,11 +632,11 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex flex-wrap items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t("expenses")}</span>
-                      <span className="font-mono text-sm tabular-nums font-medium">
+                      <span className="font-mono text-sm tabular-nums font-medium"><IdentifierText>
                         {formatMoney(pnl.totalExpenses, pnl.currencyCode)}
-                      </span>
+                      </IdentifierText></span>
                     </div>
                     <div className="h-2 rounded-full bg-muted">
                       <div
@@ -643,7 +645,7 @@ export default function DashboardPage() {
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between border-t pt-3">
+                  <div className="flex flex-wrap items-center justify-between border-t pt-3">
                     <span className="text-sm text-muted-foreground">
                       {t("netIncome")}
                     </span>
@@ -654,9 +656,9 @@ export default function DashboardPage() {
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-red-600 dark:text-red-400"
                       )}
-                    >
+                    ><IdentifierText>
                       {formatMoney(pnl.netIncome, pnl.currencyCode)}
-                    </span>
+                    </IdentifierText></span>
                   </div>
                 </div>
                 {topExpenses.length > 0 && (
@@ -668,14 +670,14 @@ export default function DashboardPage() {
                       {topExpenses.map((exp) => (
                         <div
                           key={exp.accountName}
-                          className="flex items-center justify-between text-sm"
+                          className="flex flex-wrap items-center justify-between text-sm"
                         >
-                          <span className="truncate text-muted-foreground">
+                          <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] text-muted-foreground"><BidiText>
                             {exp.accountName}
-                          </span>
-                          <span className="ml-2 shrink-0 font-mono text-xs tabular-nums">
+                          </BidiText></span>
+                          <span className="ms-2 shrink-0 font-mono text-xs tabular-nums"><IdentifierText>
                             {formatMoney(exp.balance, pnl.currencyCode)}
-                          </span>
+                          </IdentifierText></span>
                         </div>
                       ))}
                     </div>
@@ -711,7 +713,7 @@ export default function DashboardPage() {
             {/* Financial KPIs */}
             {ratios && Object.values(ratios).some((v) => v !== null) && (
               <div className="rounded-lg border bg-card p-5">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between mb-4">
                   <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                     {t("kpis")}
                   </h3>
@@ -746,27 +748,27 @@ export default function DashboardPage() {
                 {actionAlerts.overdueInvoices?.count > 0 && (
                   <button
                     onClick={() => router.push("/sales")}
-                    className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-left transition-colors hover:bg-red-100 dark:hover:bg-red-950/50"
+                    className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-3 text-start transition-colors hover:bg-red-100 dark:hover:bg-red-950/50"
                   >
                     <p className="text-xs font-medium text-red-800 dark:text-red-300">{t("overdueInvoices")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-red-600 mt-0.5">{actionAlerts.overdueInvoices.count}</p>
-                    <p className="text-[11px] text-red-600/70 font-mono tabular-nums">{t("outstandingMoney", { amount: formatMoney(actionAlerts.overdueInvoices.total, actionAlerts.overdueInvoices.currencyCode) })}</p>
+                    <p className="text-[11px] text-red-600/70 font-mono tabular-nums">{t.rich("outstandingMoney", { amount: formatMoney(actionAlerts.overdueInvoices.total, actionAlerts.overdueInvoices.currencyCode), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</p>
                   </button>
                 )}
                 {actionAlerts.overdueBills?.count > 0 && (
                   <button
                     onClick={() => router.push("/purchases")}
-                    className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 p-3 text-left transition-colors hover:bg-orange-100 dark:hover:bg-orange-950/50"
+                    className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 p-3 text-start transition-colors hover:bg-orange-100 dark:hover:bg-orange-950/50"
                   >
                     <p className="text-xs font-medium text-orange-800 dark:text-orange-300">{t("overdueBills")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-orange-600 mt-0.5">{actionAlerts.overdueBills.count}</p>
-                    <p className="text-[11px] text-orange-600/70 font-mono tabular-nums">{t("toPayMoney", { amount: formatMoney(actionAlerts.overdueBills.total, actionAlerts.overdueBills.currencyCode) })}</p>
+                    <p className="text-[11px] text-orange-600/70 font-mono tabular-nums">{t.rich("toPayMoney", { amount: formatMoney(actionAlerts.overdueBills.total, actionAlerts.overdueBills.currencyCode), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</p>
                   </button>
                 )}
                 {actionAlerts.uncategorizedTransactions > 0 && (
                   <button
                     onClick={() => router.push("/accounting/banking")}
-                    className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-3 text-left transition-colors hover:bg-blue-100 dark:hover:bg-blue-950/50"
+                    className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-3 text-start transition-colors hover:bg-blue-100 dark:hover:bg-blue-950/50"
                   >
                     <p className="text-xs font-medium text-blue-800 dark:text-blue-300">{t("uncategorized")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-blue-600 mt-0.5">{actionAlerts.uncategorizedTransactions}</p>
@@ -776,7 +778,7 @@ export default function DashboardPage() {
                 {actionAlerts.accountsNeedingReconciliation?.length > 0 && (
                   <button
                     onClick={() => router.push("/accounting/banking")}
-                    className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 p-3 text-left transition-colors hover:bg-violet-100 dark:hover:bg-violet-950/50"
+                    className="rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/30 p-3 text-start transition-colors hover:bg-violet-100 dark:hover:bg-violet-950/50"
                   >
                     <p className="text-xs font-medium text-violet-800 dark:text-violet-300">{t("needsReconciliation")}</p>
                     <p className="text-lg font-bold font-mono tabular-nums text-violet-600 mt-0.5">{actionAlerts.accountsNeedingReconciliation.length}</p>
@@ -787,14 +789,14 @@ export default function DashboardPage() {
             )}
 
             {/* Section D: Recent Activity */}
-            <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between">
                   <h2 className="text-[13px] font-semibold">{t("recentEntries")}</h2>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 text-xs text-muted-foreground"
+                    className="h-7 text-xs text-muted-foreground h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                     onClick={() => router.push("/accounting")}
                   >
                     {t("viewAll")}

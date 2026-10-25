@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { executiveSummaryUi, analyticalReportJson, analyticalAbs } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
@@ -109,7 +111,7 @@ export default function ExecutiveSummaryPage() {
         <ContentReveal>
           {priorPeriod && (
             <p className="mb-3 text-[13px] text-muted-foreground">
-              {t("priorPeriod", { start: priorPeriod.startDate, end: priorPeriod.endDate })}
+              {t.rich("priorPeriod", { start: priorPeriod.startDate, end: priorPeriod.endDate, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
             </p>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -119,17 +121,17 @@ export default function ExecutiveSummaryPage() {
               const Icon = up ? TrendingUp : down ? TrendingDown : Minus;
               return (
                 <div key={k.key} className="rounded-xl border bg-card/80 p-4 sm:p-5">
-                  <p className="text-xs font-medium text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground"><BidiText>
                     {Object.hasOwn(KPI_LABEL_KEYS, k.key) ? t(KPI_LABEL_KEYS[k.key as keyof typeof KPI_LABEL_KEYS]) : k.label}
-                  </p>
-                  <p className="mt-1.5 text-xl sm:text-2xl font-bold font-mono tabular-nums">
+                  </BidiText></p>
+                  <p className="mt-1.5 text-xl sm:text-2xl font-bold font-mono tabular-nums"><IdentifierText>
                     {statementMoneyText(k.current, currencyCode, presentation)}
-                  </p>
+                  </IdentifierText></p>
                   <div className="mt-2 flex items-center gap-1.5 text-xs">
                     <Icon className={cn("size-3.5", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")} />
                     <span className={cn("font-medium", up && "text-emerald-600", down && "text-red-600", !up && !down && "text-muted-foreground")}>
-                      {k.delta >= 0 ? "+" : "-"}{statementMoneyText(analyticalAbs(k.delta), currencyCode, presentation)}
-                      {k.deltaPercent !== null && t("deltaPercent", { sign: k.deltaPercent >= 0 ? "+" : "", value: String(k.deltaPercent) })}
+                      <IdentifierText>{k.delta >= 0 ? "+" : "-"}{statementMoneyText(analyticalAbs(k.delta), currencyCode, presentation)}</IdentifierText>
+                      {k.deltaPercent !== null && <IdentifierText>{t("deltaPercent", { sign: k.deltaPercent >= 0 ? "+" : "", value: String(k.deltaPercent) })}</IdentifierText>}
                     </span>
                     <span className="text-muted-foreground">{t("vsLastPeriod")}</span>
                   </div>

@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createTranslator } from "next-intl";
@@ -13,7 +14,7 @@ const submit = (h: Harness) => h.captured.find(c => typeof c.props.onClick === "
 
 test("production schedule JSX localizes empty/list/timing states and keeps caller values escaped", () => {
   for (const locale of ["en-US", "fa-IR"] as const) {
-    const t = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ScheduledReports" });
+    const t = createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "ScheduledReports" });
     assert.ok(render("schedules", ready, locale).html.includes(t("noReports")));
     assert.ok(render("schedules", base, locale).html.includes(t("empty")));
     for (const frequency of ["daily", "weekly", "monthly", "quarterly"] as const) {
@@ -21,7 +22,7 @@ test("production schedule JSX localizes empty/list/timing states and keeps calle
       const h = render("schedules", { ...base, schedules: [schedule], frequency }, locale);
       for (const label of [t(frequency), t("csv"), t("status"), t(schedule.isActive ? "on" : "paused")]) assert.ok(h.html.includes(label), label);
       const timing = frequency === "weekly" ? t("weeklyTiming", { day: t("saturday"), time: "09:45" }) : frequency === "daily" ? t("at", { time: "09:45" }) : t("monthlyTiming", { day: "28", time: "09:45" });
-      assert.ok(h.html.includes(timing));
+      assert.ok(visibleText(h.html).includes(timing), "Isolated visible text or exact child: scheduled-report-catalogs:25");
       assert.ok(h.html.includes("&lt;script&gt;My report&lt;/script&gt;"));
       assert.ok(h.html.includes("a@example.com"));
       const values = h.captured.filter(c => c.kind === "SelectItem").map(c => c.props.value);
@@ -58,7 +59,7 @@ test("create callback preserves org, recipient parsing, schedule enums and condi
 
 test("validation and server/network failures use localized errors and leave the form open", async () => {
   for (const locale of ["en-US", "fa-IR"] as const) {
-    const t = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ScheduledReports" });
+    const t = createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "ScheduledReports" });
     for (const [override, key] of [[{ savedReportId: "" }, "pickReport"], [{ recipients: " , " }, "addRecipient"]] as const) {
       await withIO(async () => { throw new Error("must not fetch"); }, async () => {
         const h = render("schedules", { ...base, ...override }, locale);

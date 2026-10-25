@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { financialRatiosUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
@@ -152,16 +154,16 @@ export default function FinancialRatiosPage() {
               const good = info.goodWhen(value);
               return (
                 <div key={key} className="rounded-lg border p-4 space-y-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t(info.label)}</p>
                     <Gauge className="size-3.5 text-muted-foreground/50" />
                   </div>
                   <p className={cn(
-                    "text-2xl font-bold font-mono tabular-nums truncate",
+                    "text-2xl font-bold font-mono tabular-nums min-w-0 whitespace-normal [overflow-wrap:anywhere]",
                     good ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                  )}>
-                    {key === "dso" || key === "dpo" ? t("ratioDays", { value: ratiosExact![key]! }) : info.format(ratiosExact![key as keyof Ratios]!)}
-                  </p>
+                  )}><BidiText>
+                    <IdentifierText>{key === "dso" || key === "dpo" ? t("ratioDays", { value: ratiosExact![key]! }) : info.format(ratiosExact![key as keyof Ratios]!)}</IdentifierText>
+                  </BidiText></p>
                   <p className="text-[11px] text-muted-foreground leading-tight">{t(info.description)}</p>
                 </div>
               );
@@ -190,9 +192,9 @@ export default function FinancialRatiosPage() {
                     ] as const).map(([label, value]) => (
                       <tr key={label} className="border-b last:border-b-0">
                         <td className="px-4 py-2 text-muted-foreground">{t(label)}</td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums font-medium">
+                        <td className="px-4 py-2 text-end font-mono tabular-nums font-medium"><IdentifierText>
                           {formatMoney(value, currencyCode, presentation)}
-                        </td>
+                        </IdentifierText></td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { bankStatusUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
@@ -129,10 +131,10 @@ export default function BankReconciliationStatusPage() {
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead>{t("account")}</TableHead>
-                  <TableHead className="text-right">{t("balance")}</TableHead>
-                  <TableHead className="text-right">{t("toReview")}</TableHead>
-                  <TableHead className="text-right">{t("waitingValue")}</TableHead>
-                  <TableHead className="text-right">{t("older")}</TableHead>
+                  <TableHead className="text-end">{t("balance")}</TableHead>
+                  <TableHead className="text-end">{t("toReview")}</TableHead>
+                  <TableHead className="text-end">{t("waitingValue")}</TableHead>
+                  <TableHead className="text-end">{t("older")}</TableHead>
                   <TableHead>{t("lastReviewed")}</TableHead>
                   <TableHead>{t("lastImport")}</TableHead>
                   <TableHead>{t("status")}</TableHead>
@@ -148,9 +150,9 @@ export default function BankReconciliationStatusPage() {
                         <Link
                           href={`/accounting/banking/${a.id}`}
                           className="hover:text-emerald-600 hover:underline"
-                        >
+                        ><BidiText>
                           {a.accountName}
-                        </Link>
+                        </BidiText></Link>
                         {a.gaps.hasGap && (
                           <div className="mt-0.5 flex items-center gap-1 text-xs text-amber-600">
                             <AlertTriangle className="size-3" />
@@ -158,32 +160,32 @@ export default function BankReconciliationStatusPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                         {formatMoney(a.balance, a.currencyCode, presentation)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono tabular-nums">
                         {a.unreconciled.count}
                       </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                         {a.unreconciled.total > 0
                           ? formatMoney(a.unreconciled.total, a.currencyCode, presentation)
                           : "—"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-end font-mono tabular-nums">
                         {olderCount > 0 ? (
-                          <span className="text-amber-600 font-medium">
+                          <span className="text-amber-600 font-medium"><IdentifierText>
                             {olderCount}
-                          </span>
+                          </IdentifierText></span>
                         ) : (
                           "—"
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground"><IdentifierText>
                         {fmtDate(a.lastReconciliation?.endDate)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      </IdentifierText></TableCell>
+                      <TableCell className="text-sm text-muted-foreground"><IdentifierText>
                         {fmtDate(a.lastImport?.date)}
-                      </TableCell>
+                      </IdentifierText></TableCell>
                       <TableCell>
                         {isClear ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
@@ -204,12 +206,12 @@ export default function BankReconciliationStatusPage() {
                 <TableRow className="bg-muted/30 font-bold">
                   <TableCell>{t("total")}</TableCell>
                   <TableCell />
-                  <TableCell className="text-right font-mono tabular-nums">
+                  <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                     {totalCount}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
+                  </IdentifierText></TableCell>
+                  <TableCell className="text-end font-mono tabular-nums">
                     {[...currencyTotals].map(([currency, total]) => (
-                      <div key={currency}>{currencyLabel(currency, presentation.locale)} {bankTotalDecimal(total, currency)}</div>
+                      <div key={currency}><IdentifierText>{currencyLabel(currency, presentation.locale)} {bankTotalDecimal(total, currency)}</IdentifierText></div>
                     ))}
                   </TableCell>
                   <TableCell colSpan={4} />

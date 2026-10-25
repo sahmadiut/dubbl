@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -79,11 +81,11 @@ export default function IncomeStatementPage() {
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
-          className="h-9 rounded-md border bg-background px-3 text-sm"
+          dir="auto" className="h-auto min-h-9 max-w-full min-w-0 rounded-md border bg-background px-3 text-sm"
           aria-label={t("year")}
         >
           {YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>{y}</option>
+            <option dir="auto" key={y} value={y}>{y}</option>
           ))}
         </select>
       </PageHeader>
@@ -104,33 +106,33 @@ export default function IncomeStatementPage() {
               { key: "expenses", label: t("moneyOut"), totalLabel: t("totalCosts"), section: data.expenses },
             ].map((s) => (
               <div key={s.key} className="space-y-2">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"><BidiText>
                   {s.label}
-                </h3>
+                </BidiText></h3>
                 <div className="rounded-lg border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="w-24">{t("code")}</TableHead>
                         <TableHead>{t("account")}</TableHead>
-                        <TableHead className="w-32 text-right">{t("amount")}</TableHead>
+                        <TableHead className="w-32 text-end">{t("amount")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {s.section.accounts.map((a) => (
                         <TableRow key={a.code}>
-                          <TableCell className="font-mono text-sm">{a.code}</TableCell>
-                          <TableCell>{a.name}</TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
+                          <TableCell className="font-mono text-sm"><IdentifierText>{a.code}</IdentifierText></TableCell>
+                          <TableCell><BidiText>{a.name}</BidiText></TableCell>
+                          <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                             {statementUiMoney(a.balance, data.currencyCode, presentation)}
-                          </TableCell>
+                          </IdentifierText></TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/30 font-bold">
                         <TableCell colSpan={2}>{s.totalLabel}</TableCell>
-                        <TableCell className="text-right font-mono tabular-nums">
+                        <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                           {statementUiMoney(s.section.total, data.currencyCode, presentation)}
-                        </TableCell>
+                        </IdentifierText></TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -139,13 +141,13 @@ export default function IncomeStatementPage() {
             ))}
 
             <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4 sm:p-6">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <span className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
                   {t("profit")}
                 </span>
-                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-emerald-700 dark:text-emerald-300"><IdentifierText>
                   {statementUiMoney(data.netIncome, data.currencyCode, presentation)}
-                </span>
+                </IdentifierText></span>
               </div>
             </div>
           </div>

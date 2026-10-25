@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentifierText } from "@/components/ui/bidi-text";
+
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Package2, FileSpreadsheet, Check } from "lucide-react";
@@ -54,7 +56,7 @@ export default function ReportPackPage() {
             <div>
               <h3 className="text-sm font-semibold">{t("contents")}</h3>
               <p className="text-xs text-muted-foreground">
-                {t("period", { startDate, endDate })}
+                {t.rich("period", { startDate, endDate, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
               </p>
             </div>
           </div>
@@ -71,9 +73,9 @@ export default function ReportPackPage() {
             ))}
           </ul>
 
-          <Button asChild className="mt-5 bg-emerald-600 hover:bg-emerald-700">
+          <Button asChild className="mt-5 h-auto min-h-9 max-w-full whitespace-normal [overflow-wrap:anywhere] bg-emerald-600 hover:bg-emerald-700">
             <a href={downloadUrl}>
-              <FileSpreadsheet className="mr-1.5 size-4" />
+              <FileSpreadsheet className="me-1.5 size-4" />
               {t("download")}
             </a>
           </Button>

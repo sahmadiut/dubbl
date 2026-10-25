@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -20,9 +22,9 @@ export default function CashFlowPage() {
   const presentation = usePresentation();
   const t = useTranslations("BalanceCashReports");
   const columns: Column<CashFlowRow>[] = [
-    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "amount", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amount, r.currencyCode, presentation)}</span> },
+    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.accountCode}</IdentifierText></span> },
+    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium"><BidiText>{r.accountName}</BidiText></span> },
+    { key: "amount", header: t("amount"), className: "w-32 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{reportUiMoney(r.amount, r.currencyCode, presentation)}</IdentifierText></span> },
   ];
   const now = new Date();
   const [initialLoad, setInitialLoad] = useState(true);
@@ -139,20 +141,20 @@ export default function CashFlowPage() {
             {sections.map((s) => (
               <div key={s.key} className="space-y-2">
                 <div>
-                  <h2 className="text-lg font-semibold">{s.title}</h2>
+                  <h2 className="text-lg font-semibold"><BidiText>{s.title}</BidiText></h2>
                   <p className="text-[13px] text-muted-foreground">{s.help}</p>
                 </div>
                 <DataTable columns={columns} data={s.data} loading={false} emptyMessage={t(`cashEmpty_${s.key}`)} />
-                <div className="flex justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
+                <div className="flex flex-wrap gap-2 justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
                   <span>{t(`cashTotal_${s.key}`)}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(s.total)}</span>
+                  <span className="font-mono tabular-nums"><IdentifierText>{formatMoney(s.total)}</IdentifierText></span>
                 </div>
               </div>
             ))}
 
-            <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg font-semibold text-sm sm:text-base">
+            <div className="flex flex-wrap gap-2 justify-between px-3 py-2 sm:px-4 sm:py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg font-semibold text-sm sm:text-base">
               <span>{t("totalCashChange")}</span>
-              <span className="font-mono tabular-nums">{formatMoney(netCashFlow)}</span>
+              <span className="font-mono tabular-nums"><IdentifierText>{formatMoney(netCashFlow)}</IdentifierText></span>
             </div>
           </div>
         </ContentReveal>

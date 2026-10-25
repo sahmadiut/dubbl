@@ -1,7 +1,10 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import { expenseAnalyticsUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -137,6 +140,7 @@ export default function ExpenseAnalyticsPage() {
             <div className="mt-4">
               <p className="text-sm font-medium mb-3">{t("monthlySpending")}</p>
               <div className="rounded-lg border p-4">
+                <div dir="ltr" className="min-w-0 [&_text]:[unicode-bidi:plaintext] [&_.recharts-tooltip-wrapper]:max-w-full [&_.recharts-default-tooltip]:whitespace-normal [&_.recharts-default-tooltip]:[overflow-wrap:anywhere]">
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                     <defs>
@@ -149,12 +153,13 @@ export default function ExpenseAnalyticsPage() {
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                     <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, presentation.locale)} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                     <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      contentStyle={{ fontSize: 12, borderRadius: 8, direction: localeDirection(presentation.locale) }}
                       formatter={(_value, _name, item) => [statementMoneyText(item.payload.minorUnits, currencyCode, presentation)]}
                     />
                     <Area type="monotone" dataKey="expenses" name={t("expenses")} stroke="#ef4444" fill="url(#expGrad)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             </div>
           )}
@@ -178,19 +183,19 @@ export default function ExpenseAnalyticsPage() {
 
               <div className="space-y-2">
                 {categories.map((c, i) => (
-                  <div key={c.accountId} className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                  <div key={c.accountId} className="flex flex-wrap items-center justify-between rounded-lg border px-4 py-2.5">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn("size-2.5 rounded-full shrink-0", CATEGORY_COLORS[i % CATEGORY_COLORS.length])} />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{c.accountName}</p>
+                        <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{c.accountName}</BidiText></p>
                         <p className="text-xs text-muted-foreground">
-                          {t("categoryTransactions", { code: c.accountCode, count: c.transactions })}
+                          {t.rich("categoryTransactions", { code: c.accountCode, count: c.transactions, em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <p className="text-sm font-mono font-semibold tabular-nums">{statementMoneyText(c.total, currencyCode, presentation)}</p>
-                      <p className="text-xs text-muted-foreground font-mono tabular-nums">{c.percentage}%</p>
+                    <div className="text-end shrink-0 ms-4">
+                      <p className="text-sm font-mono font-semibold tabular-nums"><IdentifierText>{statementMoneyText(c.total, currencyCode, presentation)}</IdentifierText></p>
+                      <p className="text-xs text-muted-foreground font-mono tabular-nums"><IdentifierText>{c.percentage}%</IdentifierText></p>
                     </div>
                   </div>
                 ))}

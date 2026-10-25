@@ -72,8 +72,8 @@ test("shared report navigation and basis callbacks retain canonical routes and a
       assert.ok(h.html.includes(escaped(messages.ReportNavigation.basisPrompt)));
       for (const value of ["accrual", "cash"] as const) {
         const label = messages.ReportNavigation[value === "accrual" ? "accrualLabel" : "cashLabel"];
-        const button = h.captured.find(c => c.kind === "Button" && c.props.children === label);
-        assert.ok(button);
+        const button = h.captured.find(c => c.kind === "Button" && (c.props.children as { props?: { children: unknown } })?.props?.children === label);
+        assert.ok(button, "actual basis Button retains exact isolated label");
         assert.equal(button.props.variant, value === basis ? "default" : "outline");
         assert.equal(button.props.className?.toString().includes("bg-emerald-600"), value === basis);
         (button.props.onClick as () => void)();

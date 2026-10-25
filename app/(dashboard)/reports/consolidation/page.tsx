@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -234,7 +236,7 @@ export default function ConsolidationPage() {
   return (
     <ContentReveal className="space-y-6">
       <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("back")}
+        <ArrowLeft className="size-3.5 [&:dir(rtl)]:rotate-180" /> {t("back")}
       </Link>
 
       <PageHeader
@@ -260,16 +262,17 @@ export default function ConsolidationPage() {
         </div>
 
         {/* Create group */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Input
+            aria-label={t("newGroup")} name="newGroupName" dir="auto"
             placeholder={t("newGroup")}
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && createGroup()}
             className="max-w-xs"
           />
-          <Button onClick={createGroup} size="sm" disabled={!newGroupName.trim()}>
-            <Plus className="size-4 mr-1" />
+          <Button className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={createGroup} size="sm" disabled={!newGroupName.trim()}>
+            <Plus className="size-4 me-1" />
             {t("create")}
           </Button>
         </div>
@@ -278,9 +281,8 @@ export default function ConsolidationPage() {
         {groups.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {groups.map((g) => (
-              <button
+              <div
                 key={g.id}
-                onClick={() => setSelectedGroupId(g.id)}
                 className={cn(
                   "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
                   selectedGroupId === g.id
@@ -288,22 +290,22 @@ export default function ConsolidationPage() {
                     : "border-border/50 hover:border-border"
                 )}
               >
-                <Building2 className="size-4" />
-                {g.name}
-                <Badge variant="secondary" className="text-xs">
-                  {g.members.length}
-                </Badge>
+                <button type="button" aria-pressed={selectedGroupId === g.id} onClick={() => setSelectedGroupId(g.id)} className="flex min-w-0 flex-wrap items-center gap-2 text-start [overflow-wrap:anywhere]">
+                  <Building2 className="size-4 shrink-0" />
+                  <BidiText>{g.name}</BidiText>
+                  <Badge variant="secondary" className="text-xs"><IdentifierText>{g.members.length}</IdentifierText></Badge>
+                </button>
                 <button
                   aria-label={t("deleteGroup", { name: g.name })}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteGroup(g.id);
                   }}
-                  className="ml-1 rounded p-0.5 hover:bg-red-100 dark:hover:bg-red-950/40"
+                  className="ms-1 rounded p-0.5 hover:bg-red-100 dark:hover:bg-red-950/40"
                 >
                   <Trash2 className="size-3 text-muted-foreground hover:text-red-500" />
                 </button>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -319,14 +321,14 @@ export default function ConsolidationPage() {
       {selectedGroup && (
         <div className="rounded-xl border border-border/50 bg-card/80 p-4 sm:p-6 space-y-4">
           <h2 className="text-sm font-semibold">
-            {t("members", { name: selectedGroup.name })}
+            {t.rich("members", { name: selectedGroup.name, code: (chunks) => <BidiText>{chunks}</BidiText> })}
           </h2>
 
           {/* Add member - org picker */}
           {availableOrgs.length > 0 ? (
             <Popover open={orgPickerOpen} onOpenChange={setOrgPickerOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]">
                   <Plus className="size-4" />
                   {t("addBusiness")}
                   <ChevronsUpDown className="size-3 opacity-50" />
@@ -347,12 +349,12 @@ export default function ConsolidationPage() {
                             setOrgPickerOpen(false);
                           }}
                         >
-                          <Building2 className="size-4 mr-2 shrink-0 text-muted-foreground" />
+                          <Building2 className="size-4 me-2 shrink-0 text-muted-foreground" />
                           <div className="flex flex-col min-w-0">
-                            <span className="truncate text-sm">{org.name}</span>
-                            <span className="truncate text-xs text-muted-foreground">
+                            <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] text-sm"><BidiText>{org.name}</BidiText></span>
+                            <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] text-xs text-muted-foreground"><IdentifierText>
                               {org.slug}{org.country ? ` · ${org.country}` : ""}
-                            </span>
+                            </IdentifierText></span>
                           </div>
                         </CommandItem>
                       ))}
@@ -373,13 +375,13 @@ export default function ConsolidationPage() {
           {selectedGroup.members.length > 0 ? (
             <div className="divide-y divide-border/50 rounded-lg border border-border/50">
               {selectedGroup.members.map((m) => (
-                <div key={m.id} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-3">
+                <div key={m.id} className="flex flex-wrap items-center justify-between px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <Building2 className="size-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">{m.organization.name}</p>
+                      <p className="text-sm font-medium"><BidiText>{m.organization.name}</BidiText></p>
                       {m.label && (
-                        <p className="text-xs text-muted-foreground">{m.label}</p>
+                        <p className="text-xs text-muted-foreground"><BidiText>{m.label}</BidiText></p>
                       )}
                     </div>
                   </div>
@@ -441,7 +443,7 @@ export default function ConsolidationPage() {
             </button>
           </div>
 
-          {reportError && <p role="alert" className="text-sm text-destructive">{reportError}</p>}
+          {reportError && <p role="alert" className="text-sm text-destructive"><BidiText>{reportError}</BidiText></p>}
           {reportLoading ? (
             <BrandLoader className="h-48" />
           ) : (
@@ -470,29 +472,29 @@ export default function ConsolidationPage() {
                       <TableHeader>
                         <TableRow className="border-border/50">
                           <TableHead className="px-4">{t("business")}</TableHead>
-                          <TableHead className="px-4 text-right">{t("revenue")}</TableHead>
-                          <TableHead className="px-4 text-right">{t("expenses")}</TableHead>
-                          <TableHead className="px-4 text-right">{t("netIncome")}</TableHead>
+                          <TableHead className="px-4 text-end">{t("revenue")}</TableHead>
+                          <TableHead className="px-4 text-end">{t("expenses")}</TableHead>
+                          <TableHead className="px-4 text-end">{t("netIncome")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {pnl.byEntity.map((e) => (
                           <TableRow key={e.orgId} className="border-border/30">
-                            <TableCell className="px-4 py-3 font-medium">{e.label}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.revenue, report!.presentationCurrency, presentation)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.expenses, report!.presentationCurrency, presentation)}</TableCell>
-                            <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", e.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
+                            <TableCell className="px-4 py-3 font-medium"><BidiText>{e.label}</BidiText></TableCell>
+                            <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(e.revenue, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                            <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(e.expenses, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                            <TableCell className={cn("px-4 py-3 text-end font-mono tabular-nums", e.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}><IdentifierText>
                               {reportResultMoney(e.netIncome, report!.presentationCurrency, presentation)}
-                            </TableCell>
+                            </IdentifierText></TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell className="px-4 py-3">{t("total")}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalRevenue, report!.presentationCurrency, presentation)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(pnl.totalExpenses, report!.presentationCurrency, presentation)}</TableCell>
-                          <TableCell className={cn("px-4 py-3 text-right font-mono tabular-nums", pnl.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}>
+                          <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(pnl.totalRevenue, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                          <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(pnl.totalExpenses, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                          <TableCell className={cn("px-4 py-3 text-end font-mono tabular-nums", pnl.netIncome >= 0 ? "text-emerald-600" : "text-red-600")}><IdentifierText>
                             {reportResultMoney(pnl.netIncome, report!.presentationCurrency, presentation)}
-                          </TableCell>
+                          </IdentifierText></TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -527,25 +529,25 @@ export default function ConsolidationPage() {
                       <TableHeader>
                         <TableRow className="border-border/50">
                           <TableHead className="px-4">{t("business")}</TableHead>
-                          <TableHead className="px-4 text-right">{t("assets")}</TableHead>
-                          <TableHead className="px-4 text-right">{t("liabilities")}</TableHead>
-                          <TableHead className="px-4 text-right">{t("equity")}</TableHead>
+                          <TableHead className="px-4 text-end">{t("assets")}</TableHead>
+                          <TableHead className="px-4 text-end">{t("liabilities")}</TableHead>
+                          <TableHead className="px-4 text-end">{t("equity")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {bs.byEntity.map((e) => (
                           <TableRow key={e.orgId} className="border-border/30">
-                            <TableCell className="px-4 py-3 font-medium">{e.label}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.assets, report!.presentationCurrency, presentation)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.liabilities, report!.presentationCurrency, presentation)}</TableCell>
-                            <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(e.equity, report!.presentationCurrency, presentation)}</TableCell>
+                            <TableCell className="px-4 py-3 font-medium"><BidiText>{e.label}</BidiText></TableCell>
+                            <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(e.assets, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                            <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(e.liabilities, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                            <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(e.equity, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="bg-muted/30 font-semibold">
                           <TableCell className="px-4 py-3">{t("total")}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalAssets, report!.presentationCurrency, presentation)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalLiabilities, report!.presentationCurrency, presentation)}</TableCell>
-                          <TableCell className="px-4 py-3 text-right font-mono tabular-nums">{reportResultMoney(bs.totalEquity, report!.presentationCurrency, presentation)}</TableCell>
+                          <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(bs.totalAssets, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                          <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(bs.totalLiabilities, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
+                          <TableCell className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(bs.totalEquity, report!.presentationCurrency, presentation)}</IdentifierText></TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -601,18 +603,18 @@ function AccountDetailTable({
   return (
     <div className="rounded-xl border border-border/50 overflow-hidden">
       <div className="bg-muted/30 px-4 py-3">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-sm font-semibold"><BidiText>{title}</BidiText></h3>
       </div>
       <Table>
         <TableHeader>
           <TableRow className="border-border/50">
             <TableHead className="px-4">{t("account")}</TableHead>
             {members.map((m) => (
-              <TableHead key={m.orgId} className="px-4 text-right">
+              <TableHead key={m.orgId} className="px-4 text-end"><BidiText>
                 {m.label}
-              </TableHead>
+              </BidiText></TableHead>
             ))}
-            <TableHead className="px-4 text-right">{t("total")}</TableHead>
+            <TableHead className="px-4 text-end">{t("total")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -648,36 +650,36 @@ function GroupSection({
   return (
     <>
       <TableRow className="bg-muted/20 hover:bg-muted/20">
-        <TableCell colSpan={members.length + 2} className="px-4 py-2 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+        <TableCell colSpan={members.length + 2} className="px-4 py-2 font-semibold text-xs uppercase tracking-wider text-muted-foreground"><BidiText>
           {label}
-        </TableCell>
+        </BidiText></TableCell>
       </TableRow>
       {accounts.map((a) => (
         <TableRow key={`${a.type}:${a.code}`} className="border-border/20">
           <TableCell className="px-4 py-2.5">
-            <span className="font-mono text-xs text-muted-foreground mr-2">{a.code}</span>
-            {a.name}
+            <span className="font-mono text-xs text-muted-foreground me-2"><IdentifierText>{a.code}</IdentifierText></span>
+            <BidiText>{a.name}</BidiText>
           </TableCell>
           {members.map((m) => (
-            <TableCell key={m.orgId} className="px-4 py-2.5 text-right font-mono tabular-nums">
+            <TableCell key={m.orgId} className="px-4 py-2.5 text-end font-mono tabular-nums"><IdentifierText>
               {reportResultMoney(a.byEntity[m.orgId] ?? 0n, currencyCode, presentation)}
-            </TableCell>
+            </IdentifierText></TableCell>
           ))}
-          <TableCell className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">
+          <TableCell className="px-4 py-2.5 text-end font-mono tabular-nums font-medium"><IdentifierText>
             {reportResultMoney(a.total, currencyCode, presentation)}
-          </TableCell>
+          </IdentifierText></TableCell>
         </TableRow>
       ))}
       <TableRow className="border-border/50 bg-muted/10 hover:bg-muted/10">
         <TableCell className="px-4 py-2 font-semibold text-sm">{t("totalLabel", { label })}</TableCell>
         {members.map((m) => (
-          <TableCell key={m.orgId} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
+          <TableCell key={m.orgId} className="px-4 py-2 text-end font-mono tabular-nums font-semibold"><IdentifierText>
             {reportResultMoney(entityTotals[m.orgId] ?? 0n, currencyCode, presentation)}
-          </TableCell>
+          </IdentifierText></TableCell>
         ))}
-        <TableCell className="px-4 py-2 text-right font-mono tabular-nums font-semibold">
+        <TableCell className="px-4 py-2 text-end font-mono tabular-nums font-semibold"><IdentifierText>
           {reportResultMoney(groupTotal, currencyCode, presentation)}
-        </TableCell>
+        </IdentifierText></TableCell>
       </TableRow>
     </>
   );

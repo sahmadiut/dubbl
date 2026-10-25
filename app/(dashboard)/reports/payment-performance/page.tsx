@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { formatExactDecimal } from "@/i18n/numbers";
@@ -100,10 +102,10 @@ export default function PaymentPerformancePage() {
       </PageHeader>
 
       <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }} />
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm">{t("documentCurrency")}</span>
         <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} compact />
-        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
+        {currencyFilter && <Button className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
       </div>
 
       {loading ? (
@@ -175,18 +177,18 @@ function PerformanceTable({
   const t = useTranslations("AgingVendorReports");
   return (
     <div>
-      <p className="text-sm font-medium mb-3">{title}</p>
+      <p className="text-sm font-medium mb-3"><BidiText>{title}</BidiText></p>
       <div className="rounded-lg border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/30">
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("contact")}</th>
-              <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("avgDays")}</th>
-              <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("terms")}</th>
-              <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{countLabel}</th>
-              <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{totalLabel}</th>
-              <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("late")}</th>
-              <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("onTime")}</th>
+              <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("contact")}</th>
+              <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("avgDays")}</th>
+              <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("terms")}</th>
+              <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{countLabel}</th>
+              <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{totalLabel}</th>
+              <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("late")}</th>
+              <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("onTime")}</th>
             </tr>
           </thead>
           <tbody>
@@ -194,17 +196,17 @@ function PerformanceTable({
               const overTerms = e.avgDays > e.avgTermDays;
               return (
                 <tr key={e.contactId} className="border-b last:border-b-0">
-                  <td className="px-4 py-2.5 font-medium">{e.contactName}</td>
-                  <td className={cn("px-4 py-2.5 text-right font-mono tabular-nums font-medium", overTerms ? "text-red-600" : "text-emerald-600")}>
+                  <td className="px-4 py-2.5 font-medium"><BidiText>{e.contactName}</BidiText></td>
+                  <td className={cn("px-4 py-2.5 text-end font-mono tabular-nums font-medium", overTerms ? "text-red-600" : "text-emerald-600")}>
                     {t("dayValue", { days: e.avgDays })}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{t("dayValue", { days: e.avgTermDays })}</td>
-                  <td className="px-4 py-2.5 text-right text-muted-foreground">{getCount(e)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">{currencyLabel(currencyCode, presentation.locale)} {formatExactDecimal(toMajorDecimal(money(BigInt(getTotal(e)), currencyCode)), presentation, false)}</td>
-                  <td className="px-4 py-2.5 text-right text-red-600">{e.lateCount > 0 ? e.lateCount : "-"}</td>
-                  <td className={cn("px-4 py-2.5 text-right font-mono tabular-nums", e.onTimeRate >= 80 ? "text-emerald-600" : "text-red-600")}>
+                  <td className="px-4 py-2.5 text-end font-mono tabular-nums text-muted-foreground">{t("dayValue", { days: e.avgTermDays })}</td>
+                  <td className="px-4 py-2.5 text-end text-muted-foreground"><IdentifierText>{getCount(e)}</IdentifierText></td>
+                  <td className="px-4 py-2.5 text-end font-mono tabular-nums"><IdentifierText>{currencyLabel(currencyCode, presentation.locale)} {formatExactDecimal(toMajorDecimal(money(BigInt(getTotal(e)), currencyCode)), presentation, false)}</IdentifierText></td>
+                  <td className="px-4 py-2.5 text-end text-red-600"><IdentifierText>{e.lateCount > 0 ? e.lateCount : "-"}</IdentifierText></td>
+                  <td className={cn("px-4 py-2.5 text-end font-mono tabular-nums", e.onTimeRate >= 80 ? "text-emerald-600" : "text-red-600")}><IdentifierText>
                     {e.onTimeRate}%
-                  </td>
+                  </IdentifierText></td>
                 </tr>
               );
             })}

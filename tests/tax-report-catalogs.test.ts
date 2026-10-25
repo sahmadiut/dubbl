@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createTranslator } from "next-intl";
@@ -27,8 +28,8 @@ const bodies = { "1099": vendors, "tax-summary": summary(), "vat-return": vat };
 const readers = { "1099": report1099Ui, "tax-summary": taxSummaryUi, "vat-return": vatReturnUi };
 function state(route: typeof routes[number]) { return { ...ready, data: readers[route](bodies[route]), expanded: new Set(vat.boxes.map(b => b.box)) }; }
 const esc = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "TaxReports" });
-function contains(html: string, value: string) { assert.ok(html.includes(esc(value)), value); }
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "TaxReports" });
+function contains(html: string, value: string) { assert.ok(visibleText(html).includes(esc(value)), value); }
 
 test("1099 production JSX translates all vendor copy and retains exact exported data and year callbacks", () => {
   for (const locale of locales) {
@@ -42,8 +43,9 @@ test("1099 production JSX translates all vendor copy and retains exact exported 
     const rows = exp.data as Record<string, unknown>[];
     assert.equal(rows[0].totalPaid, String(large)); assert.equal(rows[0].reportable, true); assert.equal(rows[0].currencyCode, "KWD");
     assert.ok(generateCSV(rows, exp.columns as string[]).includes(String(large)));
-    const year = h.captured.find(c => c.kind === "Button" && typeof c.props.children === "number")!;
-    (year.props.onClick as () => void)(); assert.ok(has(h, "year", year.props.children));
+    const year = h.captured.find(c => c.kind === "Button" && typeof (c.props.children as { props?: { children: unknown } })?.props?.children === "number");
+    assert.ok(year, "actual year Button retains exact isolated numeric value");
+    (year.props.onClick as () => void)(); assert.ok(has(h, "year", (year.props.children as { props: { children: number } }).props.children));
     const empty = render("1099", { ...ready, data: null }, locale);
     contains(empty.html, t("noContractors")); contains(empty.html, t("noContractorsHelp", { year: "2024" }));
   }

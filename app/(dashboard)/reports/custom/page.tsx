@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -210,11 +212,11 @@ export default function CustomReportsPage() {
   return (
     <ContentReveal className="space-y-6">
       <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {t("back")}
+        <ArrowLeft className="size-3.5 [&:dir(rtl)]:rotate-180" /> {t("back")}
       </Link>
 
       <PageHeader title={t("customTitle")} description={t("customDescription")}>
-        <Button size="sm" className="h-7 text-xs gap-1" onClick={openBuilder}>
+        <Button size="sm" className="h-7 text-xs gap-1 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={openBuilder}>
           <Plus className="size-3" />
           {t("newCustom")}
         </Button>
@@ -233,7 +235,7 @@ export default function CustomReportsPage() {
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("customEmptyDescription")}
               </p>
-              <Button size="sm" className="mt-4" onClick={openBuilder}>
+              <Button size="sm" className="mt-4 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={openBuilder}>
                 {t("createCustom")}
               </Button>
             </div>
@@ -243,9 +245,9 @@ export default function CustomReportsPage() {
                 <div key={report.id} className="rounded-lg border bg-card p-4 space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-medium truncate">{report.name}</h3>
+                      <h3 className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{report.name}</BidiText></h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {sourceLabel(report.config.dataSource)}
+                        <BidiText>{sourceLabel(report.config.dataSource)}</BidiText>
                         {" ? "}{t("columnCount", { count: report.config.columns.length })}
                       </p>
                     </div>
@@ -267,10 +269,10 @@ export default function CustomReportsPage() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {report.config.columns.slice(0, 3).map((col) => (
-                      <Badge key={col} variant="outline" className="text-[10px]">{col}</Badge>
+                      <Badge key={col} variant="outline" className="text-[10px]"><IdentifierText>{col}</IdentifierText></Badge>
                     ))}
                     {report.config.columns.length > 3 && (
-                      <Badge variant="outline" className="text-[10px]">+{report.config.columns.length - 3}</Badge>
+                      <Badge variant="outline" className="text-[10px]"><IdentifierText>+{report.config.columns.length - 3}</IdentifierText></Badge>
                     )}
                   </div>
                 </div>
@@ -289,21 +291,21 @@ export default function CustomReportsPage() {
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>{t("reportName")}</Label>
-                <Input value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder={t("placeholder")} />
+                <Label htmlFor="custom-report-name">{t("reportName")}</Label>
+                <Input id="custom-report-name" name="reportName" dir="auto" value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder={t("placeholder")} />
               </div>
               <div className="space-y-1.5">
-                <Label>{t("dataSource")}</Label>
+                <Label htmlFor="custom-report-source">{t("dataSource")}</Label>
                 <Select value={dataSource} onValueChange={(v) => {
                   invalidateRun();
                   setDataSource(v);
                   setSelectedColumns(DATA_SOURCES[v]?.columns.slice(0, 5) || []);
                   setResults(null);
                 }}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="custom-report-source" className="data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(DATA_SOURCES).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{sourceLabel(v.label)}</SelectItem>
+                      <SelectItem key={k} value={k}><BidiText>{sourceLabel(v.label)}</BidiText></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -311,7 +313,7 @@ export default function CustomReportsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>{t("columns")}</Label>
+              <p className="text-sm font-medium">{t("columns")}</p>
               <div className="flex flex-wrap gap-1.5">
                 {availableColumns.map((col) => {
                   const selected = selectedColumns.includes(col);
@@ -329,26 +331,26 @@ export default function CustomReportsPage() {
                           ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
                           : "border-border text-muted-foreground hover:bg-muted"
                       }`}
-                    >
+                    ><IdentifierText>
                       {col}
-                    </button>
+                    </IdentifierText></button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button size="sm" className="gap-1" onClick={runReport} disabled={running || selectedColumns.length === 0}>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" className="gap-1 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={runReport} disabled={running || selectedColumns.length === 0}>
                 <Play className="size-3" />
                 {running ? t("running") : t("runReport")}
               </Button>
-              <Button size="sm" variant="outline" className="gap-1" onClick={saveReport} disabled={!reportName.trim()}>
+              <Button size="sm" variant="outline" className="gap-1 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={saveReport} disabled={!reportName.trim()}>
                 <Save className="size-3" />
                 {t("save")}
               </Button>
             </div>
 
-            {runError && <p role="alert" className="text-sm text-destructive">{runError}</p>}
+            {runError && <p role="alert" className="text-sm text-destructive"><BidiText>{runError}</BidiText></p>}
             <p className="text-xs text-muted-foreground">{t("units")}</p>
             {results && (
               <div className="border rounded-lg overflow-x-auto">
@@ -356,9 +358,9 @@ export default function CustomReportsPage() {
                   <thead>
                     <tr className="border-b bg-muted/50">
                       {selectedColumns.map((col) => (
-                        <th key={col} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+                        <th key={col} className="px-3 py-2 text-start text-xs font-medium text-muted-foreground"><IdentifierText>
                           {col}
-                        </th>
+                        </IdentifierText></th>
                       ))}
                     </tr>
                   </thead>
@@ -367,7 +369,7 @@ export default function CustomReportsPage() {
                       <tr key={i} className="border-b last:border-0">
                         {selectedColumns.map((col) => (
                           <td key={col} className="px-3 py-2 text-xs">
-                            {customReportCell(row, col)}
+                            <BidiText dir={col.endsWith("Minor") ? "ltr" : "auto"}>{customReportCell(row, col)}</BidiText>
                           </td>
                         ))}
                       </tr>

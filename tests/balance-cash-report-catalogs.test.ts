@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -28,7 +29,7 @@ const routes = ["balance-sheet", "comparative-balance-sheet", "cash-flow"] as co
 type Route = typeof routes[number];
 const locales = ["en-US", "fa-IR"] as const;
 type Locale = typeof locales[number];
-const translator = (locale: Locale) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "BalanceCashReports" });
+const translator = (locale: Locale) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "BalanceCashReports" });
 const escaped = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 const caller = "<script>account & label</script>";
 const amount = 9007199254740001, alias = String(amount);
@@ -107,7 +108,7 @@ test("balance pages render bilingual labels and exact comparisons while preservi
     const t = translator(locale), data = balanceSheetUi(balance), periods = statementComparisonPeriods(data);
     const h = render("balance-sheet", { ...ready, data }, locale);
     for (const key of ["balanceTitle", "balanceDescription", "balanceHelp", "downloadPdf", "asOfLabel", "comparingEarlier", "balance_assets", "balance_liabilities", "balance_equity", "balanceTotal_assets", "balanceTotal_liabilities", "balanceTotal_equity", "code", "account"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
-    for (const date of dates) assert.ok(h.html.includes(escaped(t("asOfDate", { date }))));
+    for (const date of dates) assert.ok(visibleText(h.html).includes(escaped(t("asOfDate", { date }))), "Isolated visible text or exact child: balance-cash-report-catalogs:111");
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes(escaped(statementUiMoney(BigInt(alias), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(h.html.includes(escaped(statementUiMoney(-1n, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));

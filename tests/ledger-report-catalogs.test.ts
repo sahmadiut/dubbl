@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -27,7 +28,7 @@ const routes = ["trial-balance", "general-ledger"] as const;
 type Route = typeof routes[number];
 const locales = ["en-US", "fa-IR"] as const;
 type Locale = typeof locales[number];
-const translator = (locale: Locale) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "LedgerReports" });
+const translator = (locale: Locale) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "LedgerReports" });
 const escaped = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 const caller = "<script>account & label</script>";
 const large = 9007199254740001n;
@@ -111,10 +112,10 @@ async function withIO(fetcher: typeof fetch, run: () => Promise<void>, org: stri
 
 test("trial production JSX localizes comparisons and types while preserving exact totals, links and CSV", () => {
   for (const locale of locales) {
-    const t = translator(locale), ta = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "Accounts" });
+    const t = translator(locale), ta = createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "Accounts" });
     const data = trialBalanceUi(trial), h = render("trial-balance", { ...ready, data }, locale);
     for (const key of ["trialTitle", "trialDescription", "trialHelp", "asOfLabel", "comparingEarlier", "code", "account", "type", "moneyInSide", "moneyOutSide", "total"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
-    for (const date of dates) assert.ok(h.html.includes(escaped(t("asOfDate", { date }))));
+    for (const date of dates) assert.ok(visibleText(h.html).includes(escaped(t("asOfDate", { date }))), "Isolated visible text or exact child: ledger-report-catalogs:118");
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes(escaped(ta("asset"))));
     for (const total of trialBalanceTotals(data)) for (const value of [total.debit, total.credit]) assert.ok(h.html.includes(escaped(statementUiMoney(value, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
@@ -143,7 +144,7 @@ test("ledger JSX translates complete filters, counts, labels and paging while pr
     for (const key of ["ledgerTitle", "ledgerDescription", "ledgerHelp", "date", "entryNumber", "description", "reference", "debit", "credit", "runningBalance", "projectFilter", "showAll", "expandAll", "collapseAll"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
     assert.ok(h.html.includes(escaped(t("summary", { accounts: 1, entries: 2 }))));
     assert.ok(h.html.includes(escaped(t("loadMore", { loaded: 1, total: 2 }))));
-    for (const [key, value] of [["inAmount", data.accounts[0].totalDebit], ["outAmount", data.accounts[0].totalCredit], ["balanceAmount", data.accounts[0].balance]] as const) assert.ok(h.html.includes(escaped(t(key, { amount: reportUiMoney(value, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+    for (const [key, value] of [["inAmount", data.accounts[0].totalDebit], ["outAmount", data.accounts[0].totalCredit], ["balanceAmount", data.accounts[0].balance]] as const) assert.ok(visibleText(h.html).includes(escaped(t(key, { amount: reportUiMoney(value, "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))), "Isolated visible text or exact child: ledger-report-catalogs:147");
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes("Jan 10")); // Existing date-presentation exception.
     assert.ok(h.captured.some(c => c.props.id === "gl-cash"));
@@ -163,7 +164,9 @@ test("ledger JSX translates complete filters, counts, labels and paging while pr
     assert.ok(render("general-ledger", { ...ready, data: noLines }, locale).html.includes(escaped(t("noEntries"))));
     const loading = render("general-ledger", { ...ready, data, loadingMore: new Set(["cash"]) }, locale);
     assert.ok(loading.html.includes(escaped(t("loading"))));
-    assert.equal(loading.captured.find(c => c.props.children === t("loading"))!.props.disabled, true);
+    const loadingButton = loading.captured.find(c => c.kind === "Button" && (c.props.children as { props?: { children: unknown } })?.props?.children === t("loading"));
+    assert.ok(loadingButton, "actual wrapped load-more Button exists");
+    assert.equal(loadingButton.props.disabled, true);
     const singular = render("general-ledger", { ...ready, data: generalLedgerUi({ ...ledger, accounts: [{ ...ledger.accounts[0], totalEntries: 1, ...pair("totalCredit", 0n), ...pair("balance", large), ...pair("closingLedgerBalance", large + 101n) }] }) }, locale);
     assert.ok(singular.html.includes(escaped(t("summary", { accounts: 1, entries: 1 }))));
     const multiple = generalLedgerUi({ ...ledger, accounts: [ledger.accounts[0], { ...ledger.accounts[0], accountId: "other" }] });
@@ -211,7 +214,8 @@ test("ledger load-more preserves snapshot checks, exact append, safe errors, and
       const data = generalLedgerUi({ ...ledger, dimension: "projectId", dimensionValue: "project" });
       const h = render("general-ledger", { ...ready, data, dimension: { projectId: "project" } }, locale);
       h.refs.reportRef.current = data;
-      const button = h.captured.find(c => c.props.children === translator(locale)("loadMore", { loaded: 1, total: 2 }))!;
+      const button = h.captured.find(c => c.kind === "Button" && (c.props.children as { props?: { children: unknown } })?.props?.children === translator(locale)("loadMore", { loaded: 1, total: 2 }));
+      assert.ok(button, "actual wrapped paging Button retains exact label");
       const pending = (button.props.onClick as () => Promise<void>)();
       if (mode === "obsolete") h.refs.requestVersion.current = 1;
       await pending;

@@ -1,7 +1,10 @@
 "use client";
 
+import { IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import { cashForecastUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -95,9 +98,9 @@ export default function CashFlowForecastPage() {
         description={t("forecastDescription")}
       />
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={String(weeksAhead)} onValueChange={(v) => setWeeksAhead(Number(v))}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger aria-label={t("forecastPeriodLabel")} className="w-[140px] data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -148,6 +151,7 @@ export default function CashFlowForecastPage() {
             <div>
               <p className="text-sm font-medium mb-3">{t("cumulativeCashFlow")}</p>
               <div className="rounded-lg border p-4">
+                <div dir="ltr" className="min-w-0 [&_text]:[unicode-bidi:plaintext] [&_.recharts-tooltip-wrapper]:max-w-full [&_.recharts-default-tooltip]:whitespace-normal [&_.recharts-default-tooltip]:[overflow-wrap:anywhere]">
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                     <defs>
@@ -160,7 +164,7 @@ export default function CashFlowForecastPage() {
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} className="text-muted-foreground" />
                     <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, presentation.locale)} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                     <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      contentStyle={{ fontSize: 12, borderRadius: 8, direction: localeDirection(presentation.locale) }}
                       formatter={(_value, name, item) => {
                         const minor = item.payload?.minor as ForecastWeek | undefined;
                         const value = item.dataKey === "inflows" ? minor?.inflows : item.dataKey === "outflows" ? minor?.outflows : minor?.cumulativeNet;
@@ -174,6 +178,7 @@ export default function CashFlowForecastPage() {
                     <Area type="monotone" dataKey="cumulative" name={t("cumulativeNet")} stroke="#3b82f6" fill="url(#cumGrad)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
@@ -184,35 +189,35 @@ export default function CashFlowForecastPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("weekOf")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("inflows")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("outflows")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("net")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("cumulative")}</th>
+                      <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("weekOf")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("inflows")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("outflows")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("net")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("cumulative")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {weeks.map((w) => (
                       <tr key={w.weekOf} className="border-b last:border-b-0">
-                        <td className="px-4 py-2">{w.weekOf}</td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums text-emerald-600">
+                        <td className="px-4 py-2"><IdentifierText>{w.weekOf}</IdentifierText></td>
+                        <td className="px-4 py-2 text-end font-mono tabular-nums text-emerald-600"><IdentifierText>
                           {w.inflows > 0 ? statementMoneyText(w.inflows, currencyCode, presentation) : "-"}
-                        </td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums text-red-600">
+                        </IdentifierText></td>
+                        <td className="px-4 py-2 text-end font-mono tabular-nums text-red-600"><IdentifierText>
                           {w.outflows > 0 ? statementMoneyText(w.outflows, currencyCode, presentation) : "-"}
-                        </td>
+                        </IdentifierText></td>
                         <td className={cn(
-                          "px-4 py-2 text-right font-mono tabular-nums font-medium",
+                          "px-4 py-2 text-end font-mono tabular-nums font-medium",
                           w.net >= 0 ? "text-emerald-600" : "text-red-600"
-                        )}>
+                        )}><IdentifierText>
                           {statementMoneyText(w.net, currencyCode, presentation)}
-                        </td>
+                        </IdentifierText></td>
                         <td className={cn(
-                          "px-4 py-2 text-right font-mono tabular-nums",
+                          "px-4 py-2 text-end font-mono tabular-nums",
                           w.cumulativeNet >= 0 ? "text-blue-600" : "text-red-600"
-                        )}>
+                        )}><IdentifierText>
                           {statementMoneyText(w.cumulativeNet, currencyCode, presentation)}
-                        </td>
+                        </IdentifierText></td>
                       </tr>
                     ))}
                   </tbody>

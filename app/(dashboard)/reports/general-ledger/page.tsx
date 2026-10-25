@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
@@ -44,13 +46,13 @@ export default function GeneralLedgerPage() {
   const t = useTranslations("LedgerReports");
   const ta = useTranslations("Accounts");
   const entryColumns: Column<LedgerEntryUi>[] = [
-    { key: "date", header: t("date"), className: "w-28", render: (r) => <span className="text-sm">{new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span> },
-    { key: "entry", header: t("entryNumber"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.entryNumber}</span> },
-    { key: "desc", header: t("description"), render: (r) => <span className="text-sm">{r.description}</span> },
-    { key: "ref", header: t("reference"), className: "w-28", render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span> },
-    { key: "debit", header: t("debit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.debit ? reportUiMoney(r.debit, r.currencyCode, presentation) : ""}</span> },
-    { key: "credit", header: t("credit"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{r.credit ? reportUiMoney(r.credit, r.currencyCode, presentation) : ""}</span> },
-    { key: "balance", header: t("runningBalance"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.runningBalance, r.currencyCode, presentation)}</span> },
+    { key: "date", header: t("date"), className: "w-28", render: (r) => <span className="text-sm"><IdentifierText>{new Date(r.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}</IdentifierText></span> },
+    { key: "entry", header: t("entryNumber"), className: "w-24", render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.entryNumber}</IdentifierText></span> },
+    { key: "desc", header: t("description"), render: (r) => <span className="text-sm"><BidiText>{r.description}</BidiText></span> },
+    { key: "ref", header: t("reference"), className: "w-28", render: (r) => <span className="text-sm text-muted-foreground"><IdentifierText>{r.reference || "-"}</IdentifierText></span> },
+    { key: "debit", header: t("debit"), className: "w-28 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{r.debit ? reportUiMoney(r.debit, r.currencyCode, presentation) : ""}</IdentifierText></span> },
+    { key: "credit", header: t("credit"), className: "w-28 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{r.credit ? reportUiMoney(r.credit, r.currencyCode, presentation) : ""}</IdentifierText></span> },
+    { key: "balance", header: t("runningBalance"), className: "w-28 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{reportUiMoney(r.runningBalance, r.currencyCode, presentation)}</IdentifierText></span> },
   ];
   const now = new Date();
   const [drilldown] = useState(readDrilldown);
@@ -176,7 +178,7 @@ export default function GeneralLedgerPage() {
       />
 
       {(dimension.costCenterId !== undefined || dimension.projectId !== undefined) && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] dark:border-emerald-800 dark:bg-emerald-950/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] dark:border-emerald-800 dark:bg-emerald-950/30">
           <span>
             {t(dimension.projectId !== undefined ? "projectFilter" : "departmentFilter")}
           </span>
@@ -203,15 +205,15 @@ export default function GeneralLedgerPage() {
       ) : (
         <ContentReveal>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 {t("summary", { accounts: accounts.length, entries: accounts.reduce((s, a) => s + a.totalEntries, 0) })}
               </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setExpandedAccounts(new Set(accounts.map((a) => a.accountId)))}>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="text-xs h-7 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={() => setExpandedAccounts(new Set(accounts.map((a) => a.accountId)))}>
                   {t("expandAll")}
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setExpandedAccounts(new Set())}>
+                <Button variant="outline" size="sm" className="text-xs h-7 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" onClick={() => setExpandedAccounts(new Set())}>
                   {t("collapseAll")}
                 </Button>
               </div>
@@ -225,23 +227,23 @@ export default function GeneralLedgerPage() {
                 <div id={`gl-${acct.accountId}`} key={acct.accountId} className="rounded-lg border overflow-hidden scroll-mt-4">
                   <button
                     onClick={() => toggleAccount(acct.accountId)}
-                    className="flex w-full items-center justify-between px-3 py-2.5 sm:px-4 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                    className="flex w-full items-center justify-between px-3 py-2.5 sm:px-4 bg-muted/30 hover:bg-muted/50 transition-colors text-start"
                   >
                     <div className="flex items-center gap-2">
-                      {isExpanded ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
+                      {isExpanded ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground [&:dir(rtl)]:rotate-180" />}
                       <h2 className="text-sm sm:text-base font-semibold">
-                        <span className="font-mono text-xs sm:text-sm text-muted-foreground mr-2">{acct.accountCode}</span>
-                        {acct.accountName}
+                        <span className="font-mono text-xs sm:text-sm text-muted-foreground me-2"><IdentifierText>{acct.accountCode}</IdentifierText></span>
+                        <BidiText>{acct.accountName}</BidiText>
                       </h2>
                       <span className="text-xs text-muted-foreground capitalize hidden sm:inline">{accountTypeLabel(ta, acct.accountType)}</span>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-6 font-mono tabular-nums text-xs sm:text-sm shrink-0">
-                      <span className="hidden sm:inline text-muted-foreground">{t("inAmount", { amount: formatMoney(acct.totalDebit) })}</span>
-                      <span className="hidden sm:inline text-muted-foreground">{t("outAmount", { amount: formatMoney(acct.totalCredit) })}</span>
-                      <span className="font-semibold">{t("balanceAmount", { amount: formatMoney(acct.balance) })}</span>
-                      <span className={cn("text-xs px-1.5 py-0.5 rounded-full", acct.totalEntries > 0 ? "bg-muted text-muted-foreground" : "text-muted-foreground/50")}>
+                      <span className="hidden sm:inline text-muted-foreground">{t.rich("inAmount", { amount: formatMoney(acct.totalDebit), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</span>
+                      <span className="hidden sm:inline text-muted-foreground">{t.rich("outAmount", { amount: formatMoney(acct.totalCredit), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</span>
+                      <span className="font-semibold">{t.rich("balanceAmount", { amount: formatMoney(acct.balance), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</span>
+                      <span className={cn("text-xs px-1.5 py-0.5 rounded-full", acct.totalEntries > 0 ? "bg-muted text-muted-foreground" : "text-muted-foreground/50")}><BidiText>
                         {acct.totalEntries}
-                      </span>
+                      </BidiText></span>
                     </div>
                   </button>
                   {isExpanded && (
@@ -249,9 +251,9 @@ export default function GeneralLedgerPage() {
                       <DataTable columns={entryColumns} data={acct.entries.map(entry => ({ ...entry, currencyCode: data!.currencyCode }))} emptyMessage={t("noEntries")} />
                       {hasMore && (
                         <div className="border-t px-4 py-2 text-center">
-                          <Button variant="ghost" size="sm" className="text-xs h-7" disabled={isLoading} onClick={() => loadMoreEntries(acct.accountId)}>
+                          <Button variant="ghost" size="sm" className="text-xs h-7 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" disabled={isLoading} onClick={() => loadMoreEntries(acct.accountId)}><BidiText>
                             {isLoading ? t("loading") : t("loadMore", { loaded: acct.entries.length, total: acct.totalEntries })}
-                          </Button>
+                          </BidiText></Button>
                         </div>
                       )}
                     </div>

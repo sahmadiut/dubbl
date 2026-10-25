@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -124,31 +126,31 @@ export default function TaxSummaryPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("taxRate")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("rate")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("salesBeforeTax")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("taxCharged")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("purchasesBeforeTax")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("taxPaid")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("oweRefund")}</th>
+                      <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("taxRate")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("rate")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("salesBeforeTax")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("taxCharged")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("purchasesBeforeTax")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("taxPaid")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("oweRefund")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rates.map((r) => (
                       <tr key={r.taxRateId} className="border-b last:border-b-0">
-                        <td className="px-4 py-2.5 font-medium">{r.taxRateName}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">
+                        <td className="px-4 py-2.5 font-medium"><BidiText>{r.taxRateName}</BidiText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums text-muted-foreground"><IdentifierText>
                           {(r.rate / 100).toFixed(2)}%
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.outputNet, data.currencyCode, presentation)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-blue-600">{reportResultMoney(r.outputTax, data.currencyCode, presentation)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums">{reportResultMoney(r.inputNet, data.currencyCode, presentation)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-orange-600">{reportResultMoney(r.inputTax, data.currencyCode, presentation)}</td>
+                        </IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(r.outputNet, data.currencyCode, presentation)}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums text-blue-600"><IdentifierText>{reportResultMoney(r.outputTax, data.currencyCode, presentation)}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(r.inputNet, data.currencyCode, presentation)}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums text-orange-600"><IdentifierText>{reportResultMoney(r.inputTax, data.currencyCode, presentation)}</IdentifierText></td>
                         <td className={cn(
-                          "px-4 py-2.5 text-right font-mono tabular-nums font-medium",
+                          "px-4 py-2.5 text-end font-mono tabular-nums font-medium",
                           r.netTax >= 0 ? "text-red-600" : "text-emerald-600"
                         )}>
-                          {t(r.netTax < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(r.netTax), data.currencyCode, presentation) })}
+                          {t.rich(r.netTax < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(r.netTax), data.currencyCode, presentation), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                         </td>
                       </tr>
                     ))}
@@ -156,14 +158,14 @@ export default function TaxSummaryPage() {
                   <tfoot>
                     <tr className="border-t bg-muted/30">
                       <td className="px-4 py-2.5 font-semibold" colSpan={3}>{t("total")}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-blue-600">{reportResultMoney(totalOutputTax, data.currencyCode, presentation)}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold" />
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-orange-600">{reportResultMoney(totalInputTax, data.currencyCode, presentation)}</td>
+                      <td className="px-4 py-2.5 text-end font-mono tabular-nums font-semibold text-blue-600"><IdentifierText>{reportResultMoney(totalOutputTax, data.currencyCode, presentation)}</IdentifierText></td>
+                      <td className="px-4 py-2.5 text-end font-mono tabular-nums font-semibold" />
+                      <td className="px-4 py-2.5 text-end font-mono tabular-nums font-semibold text-orange-600"><IdentifierText>{reportResultMoney(totalInputTax, data.currencyCode, presentation)}</IdentifierText></td>
                       <td className={cn(
-                        "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
+                        "px-4 py-2.5 text-end font-mono tabular-nums font-semibold",
                         netTaxPayable >= 0 ? "text-red-600" : "text-emerald-600"
                       )}>
-                        {t(netTaxPayable < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode, presentation) })}
+                        {t.rich(netTaxPayable < 0 ? "refundAmount" : "dueAmount", { amount: reportResultMoney(taxUiAbs(netTaxPayable), data.currencyCode, presentation), code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                       </td>
                     </tr>
                   </tfoot>

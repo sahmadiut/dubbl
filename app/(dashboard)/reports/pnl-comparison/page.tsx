@@ -1,7 +1,10 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { BackToReports } from "../_components";
@@ -82,9 +85,9 @@ export default function PnlComparisonPage() {
         description={t("comparisonDescription")}
       />
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={compareType} onValueChange={setCompareType}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger aria-label={t("comparisonTypeLabel")} className="w-[140px] data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -94,7 +97,7 @@ export default function PnlComparisonPage() {
           </SelectContent>
         </Select>
         <Select value={String(periodsCount)} onValueChange={(v) => setPeriodsCount(Number(v))}>
-          <SelectTrigger className="w-[130px]">
+          <SelectTrigger aria-label={t("comparisonPeriodsLabel")} className="w-[130px] data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -118,7 +121,8 @@ export default function PnlComparisonPage() {
           {/* Trend Chart */}
           <div className="space-y-6">
             <div className="rounded-lg border p-4">
-              <ResponsiveContainer width="100%" height={280}>
+              <div dir="ltr" className="min-w-0 [&_text]:[unicode-bidi:plaintext] [&_.recharts-tooltip-wrapper]:max-w-full [&_.recharts-default-tooltip]:whitespace-normal [&_.recharts-default-tooltip]:[overflow-wrap:anywhere]">
+                <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <defs>
                     <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
@@ -134,7 +138,7 @@ export default function PnlComparisonPage() {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                   <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, presentation.locale)} ${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
                   <Tooltip
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, direction: localeDirection(presentation.locale) }}
                     formatter={(_value, name, item) => [statementUiMoney(item.payload[item.dataKey === "revenue" ? "revenueExact" : "expensesExact"], currencyCode, presentation), name]}
                   />
                   <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -142,6 +146,7 @@ export default function PnlComparisonPage() {
                   <Area type="monotone" dataKey="expenses" name={t("expenses")} stroke="#ef4444" fill="url(#expensesGrad)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
+                </div>
             </div>
 
             {/* Comparison Table */}
@@ -149,28 +154,28 @@ export default function PnlComparisonPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
-                    <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30">{t("metric")}</th>
+                    <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground sticky start-0 bg-muted/30">{t("metric")}</th>
                     {periods.map((p) => (
-                      <th key={p.label} className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[120px]">
+                      <th key={p.label} className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[120px]"><BidiText>
                         {p.label}
-                      </th>
+                      </BidiText></th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {/* Revenue */}
                   <tr className="border-b">
-                    <td className="px-4 py-2.5 font-medium sticky left-0 bg-background">{t("revenue")}</td>
+                    <td className="px-4 py-2.5 font-medium sticky start-0 bg-background">{t("revenue")}</td>
                     {periods.map((p) => (
-                      <td key={p.label} className="px-4 py-2.5 text-right font-mono tabular-nums">
+                      <td key={p.label} className="px-4 py-2.5 text-end font-mono tabular-nums"><IdentifierText>
                         {formatMoney(p.totalRevenue)}
-                      </td>
+                      </IdentifierText></td>
                     ))}
                   </tr>
                   <tr className="border-b bg-muted/20">
-                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">{t("change")}</td>
+                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky start-0 bg-muted/20">{t("change")}</td>
                     {periods.map((p, i) => (
-                      <td key={p.label} className="px-4 py-1.5 text-right">
+                      <td key={p.label} className="px-4 py-1.5 text-end">
                         {i === 0 ? (
                           <span className="text-xs text-muted-foreground">-</span>
                         ) : (
@@ -181,17 +186,17 @@ export default function PnlComparisonPage() {
                   </tr>
                   {/* Expenses */}
                   <tr className="border-b">
-                    <td className="px-4 py-2.5 font-medium sticky left-0 bg-background">{t("expenses")}</td>
+                    <td className="px-4 py-2.5 font-medium sticky start-0 bg-background">{t("expenses")}</td>
                     {periods.map((p) => (
-                      <td key={p.label} className="px-4 py-2.5 text-right font-mono tabular-nums">
+                      <td key={p.label} className="px-4 py-2.5 text-end font-mono tabular-nums"><IdentifierText>
                         {formatMoney(p.totalExpenses)}
-                      </td>
+                      </IdentifierText></td>
                     ))}
                   </tr>
                   <tr className="border-b bg-muted/20">
-                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">{t("change")}</td>
+                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky start-0 bg-muted/20">{t("change")}</td>
                     {periods.map((p, i) => (
-                      <td key={p.label} className="px-4 py-1.5 text-right">
+                      <td key={p.label} className="px-4 py-1.5 text-end">
                         {i === 0 ? (
                           <span className="text-xs text-muted-foreground">-</span>
                         ) : (
@@ -202,20 +207,20 @@ export default function PnlComparisonPage() {
                   </tr>
                   {/* Net Income */}
                   <tr className="border-t-2">
-                    <td className="px-4 py-2.5 font-semibold sticky left-0 bg-background">{t("netIncome")}</td>
+                    <td className="px-4 py-2.5 font-semibold sticky start-0 bg-background">{t("netIncome")}</td>
                     {periods.map((p) => (
                       <td key={p.label} className={cn(
-                        "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
+                        "px-4 py-2.5 text-end font-mono tabular-nums font-semibold",
                         p.netIncome >= 0 ? "text-emerald-600" : "text-red-600"
-                      )}>
+                      )}><IdentifierText>
                         {formatMoney(p.netIncome)}
-                      </td>
+                      </IdentifierText></td>
                     ))}
                   </tr>
                   <tr className="bg-muted/20">
-                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky left-0 bg-muted/20">{t("change")}</td>
+                    <td className="px-4 py-1.5 text-xs text-muted-foreground sticky start-0 bg-muted/20">{t("change")}</td>
                     {periods.map((p, i) => (
-                      <td key={p.label} className="px-4 py-1.5 text-right">
+                      <td key={p.label} className="px-4 py-1.5 text-end">
                         {i === 0 ? (
                           <span className="text-xs text-muted-foreground">-</span>
                         ) : (
@@ -241,8 +246,8 @@ function ChangeCell({ amount, pct, inverted, currencyCode }: { amount: bigint; p
 
   return (
     <div className={cn("text-xs font-mono tabular-nums", color)}>
-      <span>{amount > 0 ? "+" : ""}{statementUiMoney(amount, currencyCode, presentation)}</span>
-      <span className="ml-1 text-[10px]">({pct > 0 ? "+" : ""}{pct}%)</span>
+      <IdentifierText>{amount > 0 ? "+" : ""}{statementUiMoney(amount, currencyCode, presentation)}</IdentifierText>
+      <IdentifierText className="ms-1 text-[10px]">({pct > 0 ? "+" : ""}{pct}%)</IdentifierText>
     </div>
   );
 }

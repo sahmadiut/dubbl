@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -199,9 +201,9 @@ export default function SavedReportsPage() {
       header: t("name"),
       render: (r) => (
         <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{r.name}</p>
+          <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{r.name}</BidiText></p>
           {r.description && (
-            <p className="text-xs text-muted-foreground truncate">{r.description}</p>
+            <p className="text-xs text-muted-foreground min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{r.description}</BidiText></p>
           )}
         </div>
       ),
@@ -211,15 +213,15 @@ export default function SavedReportsPage() {
       header: t("basedOn"),
       className: "w-40",
       render: (r) => (
-        <Badge variant="outline" className="text-[11px]">
+        <Badge variant="outline" className="text-[11px]"><BidiText>
           {sourceLabel(r.config.dataSource)}
-        </Badge>
+        </BidiText></Badge>
       ),
     },
     {
       key: "columns",
       header: t("columns"),
-      className: "w-24 text-right",
+      className: "w-24 text-end",
       render: (r) => (
         <span className="text-sm tabular-nums text-muted-foreground">
           {r.config.columns?.length ?? 0}
@@ -231,9 +233,9 @@ export default function SavedReportsPage() {
       header: t("lastRun"),
       className: "w-32",
       render: (r) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-muted-foreground"><IdentifierText>
           {formatDate(lastRunByReport[r.id] ?? null)}
-        </span>
+        </IdentifierText></span>
       ),
     },
     {
@@ -241,19 +243,19 @@ export default function SavedReportsPage() {
       header: t("updated"),
       className: "w-32",
       render: (r) => (
-        <span className="text-sm text-muted-foreground">{formatDate(r.updatedAt)}</span>
+        <span className="text-sm text-muted-foreground"><IdentifierText>{formatDate(r.updatedAt)}</IdentifierText></span>
       ),
     },
     {
       key: "actions",
       header: "",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <div className="flex items-center justify-end gap-1">
           <Button
             size="sm"
             variant="outline"
-            className="h-7 gap-1 text-xs"
+            className="h-7 gap-1 text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
             onClick={(e) => {
               e.stopPropagation();
               openRun(r);
@@ -295,7 +297,7 @@ export default function SavedReportsPage() {
         href="/reports"
         className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-3.5" /> {t("back")}
+        <ArrowLeft className="size-3.5 [&:dir(rtl)]:rotate-180" /> {t("back")}
       </Link>
 
       <PageHeader
@@ -340,11 +342,11 @@ export default function SavedReportsPage() {
       <Dialog open={runOpen} onOpenChange={setRunOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>{runReportItem?.name || t("report")}</DialogTitle>
+            <DialogTitle><BidiText>{runReportItem?.name || t("report")}</BidiText></DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 {runReportItem
                   ? t("sourceSummary", { source: sourceLabel(runReportItem.config.dataSource) })
@@ -354,7 +356,7 @@ export default function SavedReportsPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 gap-1 text-xs"
+                  className="h-7 gap-1 text-xs h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
                   onClick={() => handleExport(runReportItem)}
                 >
                   <Download className="size-3" /> {t("export")}
@@ -362,7 +364,7 @@ export default function SavedReportsPage() {
               )}
             </div>
 
-            {runError && <p role="alert" className="text-sm text-destructive">{runError}</p>}
+            {runError && <p role="alert" className="text-sm text-destructive"><BidiText>{runError}</BidiText></p>}
             <p className="text-xs text-muted-foreground">{t("units")}</p>
             {running ? (
               <BrandLoader className="h-48" />
@@ -374,10 +376,10 @@ export default function SavedReportsPage() {
                       {runReportItem.config.columns.map((col) => (
                         <th
                           key={col}
-                          className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap"
-                        >
+                          className="px-3 py-2 text-start text-xs font-medium text-muted-foreground whitespace-nowrap"
+                        ><IdentifierText>
                           {col}
-                        </th>
+                        </IdentifierText></th>
                       ))}
                     </tr>
                   </thead>
@@ -385,8 +387,8 @@ export default function SavedReportsPage() {
                     {results.slice(0, 50).map((row, i) => (
                       <tr key={i} className="border-b last:border-0">
                         {runReportItem.config.columns.map((col) => (
-                          <td key={col} className="px-3 py-2 text-xs whitespace-nowrap">
-                            {customReportCell(row, col)}
+                          <td key={col} className="px-3 py-2 text-xs whitespace-normal [overflow-wrap:anywhere]">
+                            <BidiText dir={col.endsWith("Minor") ? "ltr" : "auto"}>{customReportCell(row, col)}</BidiText>
                           </td>
                         ))}
                       </tr>

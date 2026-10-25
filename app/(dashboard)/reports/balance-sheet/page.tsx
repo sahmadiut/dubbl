@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -113,7 +115,7 @@ export default function BalanceSheetPage() {
             variant={showCompare ? "default" : "outline"}
             size="sm"
             onClick={() => setShowCompare((v) => !v)}
-            className={showCompare ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            className={[showCompare ? "bg-emerald-600 hover:bg-emerald-700" : "", "h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"].join(" ")}
           >
             {showCompare ? t("comparingEarlier") : t("compareEarlier")}
           </Button>
@@ -145,35 +147,35 @@ export default function BalanceSheetPage() {
                         <TableHead className="w-24">{t("code")}</TableHead>
                         <TableHead>{t("account")}</TableHead>
                         {dates.map((d) => (
-                          <TableHead key={d} className="w-36 text-right">{t("asOfDate", { date: d })}</TableHead>
+                          <TableHead key={d} className="w-36 text-end">{t.rich("asOfDate", { date: d, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}</TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {section.data.accounts.map((a) => (
                         <TableRow key={a.accountId}>
-                          <TableCell className="font-mono text-sm">{a.code}</TableCell>
+                          <TableCell className="font-mono text-sm"><IdentifierText>{a.code}</IdentifierText></TableCell>
                           <TableCell>
                             <Link
                               href={`/reports/general-ledger?${new URLSearchParams({ endDate: asAt }).toString()}#${a.accountId}`}
                               className="hover:text-emerald-600 hover:underline"
-                            >
+                            ><BidiText>
                               {a.name}
-                            </Link>
+                            </BidiText></Link>
                           </TableCell>
                           {balancesFor(a).map((bal, i) => (
-                            <TableCell key={i} className="text-right font-mono tabular-nums">
+                            <TableCell key={i} className="text-end font-mono tabular-nums"><IdentifierText>
                               {statementUiMoney(bal, data!.currencyCode, presentation)}
-                            </TableCell>
+                            </IdentifierText></TableCell>
                           ))}
                         </TableRow>
                       ))}
                       <TableRow className="bg-muted/30 font-bold">
                         <TableCell colSpan={2}>{t(`balanceTotal_${section.label}`)}</TableCell>
                         {totalsFor(section.data).map((t, i) => (
-                          <TableCell key={i} className="text-right font-mono tabular-nums">
+                          <TableCell key={i} className="text-end font-mono tabular-nums"><IdentifierText>
                             {statementUiMoney(t, data!.currencyCode, presentation)}
-                          </TableCell>
+                          </IdentifierText></TableCell>
                         ))}
                       </TableRow>
                     </TableBody>

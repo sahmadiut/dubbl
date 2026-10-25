@@ -30,7 +30,7 @@ const amount = 9007199254740001;
 const alias = String(amount);
 const escape = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("'", "&#x27;");
 
-test("combined reporting inventory has one owner per component and 654 paired Persian messages", () => {
+test("combined reporting inventory has one owner per component and 657 paired Persian messages", () => {
   function files(path: string): string[] {
     return readdirSync(path, { withFileTypes: true }).flatMap(e => e.isDirectory() ? files(`${path}/${e.name}`) : e.name.endsWith(".tsx") ? [`${path}/${e.name}`] : []);
   }
@@ -43,7 +43,7 @@ test("combined reporting inventory has one owner per component and 654 paired Pe
     count += Object.keys(en[namespace]).length;
     for (const [key, value] of Object.entries(fa[namespace])) assert.match(value, /[\u0600-\u06ff]/u, `${namespace}.${key}`);
   }
-  assert.equal(count, 654);
+  assert.equal(count, 657);
 });
 
 test("combined source audit rejects authored JSX, display attributes and literal toast/title copy", () => {

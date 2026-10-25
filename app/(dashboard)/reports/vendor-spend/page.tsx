@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { vendorSpendUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
@@ -83,10 +85,10 @@ export default function VendorSpendPage() {
 
       <DateRangeFilter startDate={startDate} endDate={endDate} onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }} />
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm">{t("documentCurrency")}</span>
         <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} compact />
-        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
+        {currencyFilter && <Button className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
       </div>
 
       {loading ? (
@@ -115,12 +117,12 @@ export default function VendorSpendPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/30">
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("vendor")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("totalSpend")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("bills")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("avgBill")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("lastBill")}</th>
-                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("percentage")}</th>
+                      <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("vendor")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("totalSpend")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("bills")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("avgBill")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("lastBill")}</th>
+                      <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("percentage")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -129,14 +131,14 @@ export default function VendorSpendPage() {
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <div className={cn("size-2.5 rounded-full shrink-0", BAR_COLORS[i % BAR_COLORS.length])} />
-                            <span className="font-medium">{v.contactName}</span>
+                            <span className="font-medium"><BidiText>{v.contactName}</BidiText></span>
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums font-medium">{formatMoney(v.totalSpend, currencyCode, presentation)}</td>
-                        <td className="px-4 py-2.5 text-right text-muted-foreground">{v.billCount}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(v.avgBillAmount, currencyCode, presentation)}</td>
-                        <td className="px-4 py-2.5 text-right text-muted-foreground">{new Date(v.lastBillDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
-                        <td className="px-4 py-2.5 text-right font-mono tabular-nums text-muted-foreground">{v.percentage}%</td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums font-medium"><IdentifierText>{formatMoney(v.totalSpend, currencyCode, presentation)}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end text-muted-foreground"><IdentifierText>{v.billCount}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums text-muted-foreground"><IdentifierText>{formatMoney(v.avgBillAmount, currencyCode, presentation)}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end text-muted-foreground"><IdentifierText>{new Date(v.lastBillDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</IdentifierText></td>
+                        <td className="px-4 py-2.5 text-end font-mono tabular-nums text-muted-foreground"><IdentifierText>{v.percentage}%</IdentifierText></td>
                       </tr>
                     ))}
                   </tbody>

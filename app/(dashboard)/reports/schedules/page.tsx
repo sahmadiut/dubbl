@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
@@ -85,10 +87,10 @@ export default function ReportSchedulesPage() {
     t("saturday"),
   ];
 
-  function describeTiming(s: ReportSchedule): string {
-    if (s.frequency === "weekly" && s.dayOfWeek != null) return t("weeklyTiming", { day: dayOfWeekLabels[s.dayOfWeek], time: s.timeOfDay });
-    if ((s.frequency === "monthly" || s.frequency === "quarterly") && s.dayOfMonth != null) return t("monthlyTiming", { day: String(s.dayOfMonth), time: s.timeOfDay });
-    return t("at", { time: s.timeOfDay });
+  function describeTiming(s: ReportSchedule) {
+    if (s.frequency === "weekly" && s.dayOfWeek != null) return t.rich("weeklyTiming", { day: dayOfWeekLabels[s.dayOfWeek], time: s.timeOfDay, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> });
+    if ((s.frequency === "monthly" || s.frequency === "quarterly") && s.dayOfMonth != null) return t.rich("monthlyTiming", { day: String(s.dayOfMonth), time: s.timeOfDay, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> });
+    return t.rich("at", { time: s.timeOfDay, code: (chunks) => <IdentifierText>{chunks}</IdentifierText> });
   }
 
   const [initialLoad, setInitialLoad] = useState(true);
@@ -236,10 +238,10 @@ export default function ReportSchedulesPage() {
             setDialogOpen(true);
           }}
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
           disabled={!hasSavedReports}
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("create")}
         </Button>
       </PageHeader>
@@ -274,9 +276,9 @@ export default function ReportSchedulesPage() {
               setDialogOpen(true);
             }}
             size="sm"
-            className="mt-4 bg-emerald-600 hover:bg-emerald-700"
+            className="mt-4 bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("create")}
           </Button>
         </div>
@@ -298,29 +300,29 @@ export default function ReportSchedulesPage() {
               <TableBody>
                 {schedules.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium"><BidiText>
                       {s.savedReport?.name || t("savedReport")}
-                    </TableCell>
-                    <TableCell className="text-sm">
+                    </BidiText></TableCell>
+                    <TableCell className="text-sm"><BidiText>
                       {frequencyLabels[s.frequency] || s.frequency}
-                    </TableCell>
+                    </BidiText></TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5">
                         <Clock className="size-3.5" />
-                        {describeTiming(s)}
+                        <BidiText>{describeTiming(s)}</BidiText>
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm"><BidiText>
                       {formatLabels[s.format] || s.format}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    </BidiText></TableCell>
+                    <TableCell className="text-sm text-muted-foreground"><IdentifierText>
                       {s.recipients.join(", ")}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    </IdentifierText></TableCell>
+                    <TableCell className="text-sm text-muted-foreground"><IdentifierText>
                       {s.nextRunAt
                         ? new Date(s.nextRunAt).toLocaleString()
                         : "—"}
-                    </TableCell>
+                    </IdentifierText></TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -352,16 +354,16 @@ export default function ReportSchedulesPage() {
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>{t("whichReport")}</Label>
+              <Label htmlFor="schedule-savedReportId">{t("whichReport")}</Label>
               <Select value={savedReportId} onValueChange={setSavedReportId}>
-                <SelectTrigger>
+                <SelectTrigger id="schedule-savedReportId" className="data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
                   <SelectValue placeholder={t("chooseReport")} />
                 </SelectTrigger>
                 <SelectContent>
                   {savedReports.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
+                    <SelectItem key={r.id} value={r.id}><BidiText>
                       {r.name}
-                    </SelectItem>
+                    </BidiText></SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -369,14 +371,14 @@ export default function ReportSchedulesPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>{t("frequency")}</Label>
+                <Label htmlFor="schedule-frequency">{t("frequency")}</Label>
                 <Select
                   value={frequency}
                   onValueChange={(v) =>
                     setFrequency(v as ReportSchedule["frequency"])
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="schedule-frequency" className="data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -389,14 +391,14 @@ export default function ReportSchedulesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label>{t("sendAs")}</Label>
+                <Label htmlFor="schedule-format">{t("sendAs")}</Label>
                 <Select
                   value={format}
                   onValueChange={(v) =>
                     setFormat(v as ReportSchedule["format"])
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="schedule-format" className="data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -410,16 +412,16 @@ export default function ReportSchedulesPage() {
 
             {frequency === "weekly" && (
               <div className="space-y-1.5">
-                <Label>{t("weekDay")}</Label>
+                <Label htmlFor="schedule-dayOfWeek">{t("weekDay")}</Label>
                 <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                  <SelectTrigger>
+                  <SelectTrigger id="schedule-dayOfWeek" className="data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {dayOfWeekLabels.map((d, i) => (
-                      <SelectItem key={i} value={String(i)}>
+                      <SelectItem key={i} value={String(i)}><BidiText>
                         {d}
-                      </SelectItem>
+                      </BidiText></SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -428,9 +430,9 @@ export default function ReportSchedulesPage() {
 
             {(frequency === "monthly" || frequency === "quarterly") && (
               <div className="space-y-1.5">
-                <Label>{t("monthDay")}</Label>
+                <Label htmlFor="schedule-dayOfMonth">{t("monthDay")}</Label>
                 <Select value={dayOfMonth} onValueChange={setDayOfMonth}>
-                  <SelectTrigger>
+                  <SelectTrigger id="schedule-dayOfMonth" className="data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -447,7 +449,7 @@ export default function ReportSchedulesPage() {
             <div className="space-y-1.5">
               <Label htmlFor="timeOfDay">{t("time")}</Label>
               <Input
-                id="timeOfDay"
+                id="timeOfDay" name="timeOfDay" dir="ltr"
                 type="time"
                 value={timeOfDay}
                 onChange={(e) => setTimeOfDay(e.target.value)}
@@ -457,7 +459,7 @@ export default function ReportSchedulesPage() {
             <div className="space-y-1.5">
               <Label htmlFor="recipients">{t("recipients")}</Label>
               <Input
-                id="recipients"
+                id="recipients" name="recipients" dir="ltr"
                 placeholder="name@example.com, another@example.com"
                 value={recipients}
                 onChange={(e) => setRecipients(e.target.value)}
@@ -470,13 +472,13 @@ export default function ReportSchedulesPage() {
             {formError && (
               <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
                 <X className="mt-0.5 size-3.5 shrink-0" />
-                <span>{formError}</span>
+                <span><BidiText>{formError}</BidiText></span>
               </div>
             )}
           </div>
 
           <DialogFooter>
-            <Button
+            <Button className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
               variant="outline"
               onClick={() => setDialogOpen(false)}
               disabled={submitting}
@@ -486,9 +488,9 @@ export default function ReportSchedulesPage() {
             <Button
               onClick={handleCreate}
               disabled={submitting}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"
             >
-              {submitting && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {submitting && <Loader2 className="me-2 size-4 animate-spin" />}
               {t("schedule")}
             </Button>
           </DialogFooter>

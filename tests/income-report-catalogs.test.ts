@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -26,7 +27,7 @@ const routes = ["profit-and-loss", "income-statement", "executive-summary"] as c
 type Route = typeof routes[number];
 const locales = ["en-US", "fa-IR"] as const;
 type Locale = typeof locales[number];
-const translator = (locale: Locale) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "IncomeReports" });
+const translator = (locale: Locale) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "IncomeReports" });
 const escaped = (v: string) => v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 const caller = "<script>account & label</script>";
 const amount = 9007199254740001, alias = String(amount);
@@ -128,7 +129,7 @@ test("executive production JSX localizes every known KPI and period/percent mess
   for (const locale of locales) {
     const t = translator(locale), h = render("executive-summary", { ...ready, ...executiveSummaryUi(executive) }, locale);
     for (const key of ["executiveTitle", "executiveDescription", "executiveHelp", "downloadPdf", "vsLastPeriod", "kpiRevenue", "kpiGrossProfit", "kpiExpenses", "kpiNetIncome", "kpiCash", "kpiReceivable", "kpiPayable"] as const) assert.ok(h.html.includes(escaped(t(key))), key);
-    assert.ok(h.html.includes(escaped(t("priorPeriod", { start: "2023-12-01", end: "2023-12-31" }))));
+    assert.ok(visibleText(h.html).includes(escaped(t("priorPeriod", { start: "2023-12-01", end: "2023-12-31" }))), "Isolated visible text or exact child: income-report-catalogs:132");
     for (const [sign, value] of [["+", "12.5"], ["", "-2"], ["+", "0"]]) assert.ok(h.html.includes(escaped(t("deltaPercent", { sign, value }))));
     assert.ok(h.html.includes(escaped(caller)) && !h.html.includes("<script>"));
     assert.ok(h.html.includes(`+${escaped(statementUiMoney(BigInt(amount), "KWD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))}`));

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import Link from "next/link";
 
@@ -105,7 +107,7 @@ export default function TrackingReportPage() {
             variant={dimension === "costCenterId" ? "default" : "outline"}
             size="sm"
             onClick={() => setDimension("costCenterId")}
-            className={dimension === "costCenterId" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            className={[dimension === "costCenterId" ? "bg-emerald-600 hover:bg-emerald-700" : "", "h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"].join(" ")}
           >
             {t("department")}
           </Button>
@@ -113,7 +115,7 @@ export default function TrackingReportPage() {
             variant={dimension === "projectId" ? "default" : "outline"}
             size="sm"
             onClick={() => setDimension("projectId")}
-            className={dimension === "projectId" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            className={[dimension === "projectId" ? "bg-emerald-600 hover:bg-emerald-700" : "", "h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]"].join(" ")}
           >
             {t("project")}
           </Button>
@@ -152,9 +154,9 @@ export default function TrackingReportPage() {
                 <TableRow className="bg-muted/50">
                   <TableHead>{t("account")}</TableHead>
                   {columns.map((c) => (
-                    <TableHead key={c.key} className="text-right">{c.dimensionValue === null ? t("unassigned") : c.label}</TableHead>
+                    <TableHead key={c.key} className="text-end"><BidiText>{c.dimensionValue === null ? t("unassigned") : c.label}</BidiText></TableHead>
                   ))}
-                  <TableHead className="text-right">{t("total")}</TableHead>
+                  <TableHead className="text-end">{t("total")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -171,13 +173,13 @@ export default function TrackingReportPage() {
                   <TableRow className="bg-emerald-50 dark:bg-emerald-950/30 font-bold">
                     <TableCell>{t("trackingProfit")}</TableCell>
                     {data.netIncome.byColumn.map((amt, i) => (
-                      <TableCell key={i} className="text-right font-mono tabular-nums">
+                      <TableCell key={i} className="text-end font-mono tabular-nums"><IdentifierText>
                         {reportResultMoney(amt, data!.currencyCode, presentation)}
-                      </TableCell>
+                      </IdentifierText></TableCell>
                     ))}
-                    <TableCell className="text-right font-mono tabular-nums">
+                    <TableCell className="text-end font-mono tabular-nums"><IdentifierText>
                       {reportResultMoney(data.netIncome.total, data!.currencyCode, presentation)}
-                    </TableCell>
+                    </IdentifierText></TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -212,29 +214,29 @@ function RenderSection({
       {section.accounts.map((a) => (
         <TableRow key={a.accountId}>
           <TableCell>
-            <span className="font-mono text-xs text-muted-foreground mr-2">{a.accountCode}</span>
-            {a.accountName}
+            <span className="font-mono text-xs text-muted-foreground me-2"><IdentifierText>{a.accountCode}</IdentifierText></span>
+            <BidiText>{a.accountName}</BidiText>
           </TableCell>
           {columns.map((c, i) => (
-            <TableCell key={c.key} className="text-right font-mono tabular-nums">
+            <TableCell key={c.key} className="text-end font-mono tabular-nums">
               {a.amounts[i] !== 0n ? (
-                <Link href={ledgerHref(a.accountId, c)} className="hover:text-emerald-600 hover:underline">
+                <Link href={ledgerHref(a.accountId, c)} className="hover:text-emerald-600 hover:underline"><IdentifierText>
                   {reportResultMoney(a.amounts[i], currencyCode, presentation)}
-                </Link>
+                </IdentifierText></Link>
               ) : (
-                <span className="text-muted-foreground/50">{reportResultMoney(0n, currencyCode, presentation)}</span>
+                <span className="text-muted-foreground/50"><IdentifierText>{reportResultMoney(0n, currencyCode, presentation)}</IdentifierText></span>
               )}
             </TableCell>
           ))}
-          <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(a.total, currencyCode, presentation)}</TableCell>
+          <TableCell className="text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(a.total, currencyCode, presentation)}</IdentifierText></TableCell>
         </TableRow>
       ))}
       <TableRow className="font-semibold">
         <TableCell>{t(section.label === "Revenue" ? "totalRevenue" : "totalExpenses")}</TableCell>
         {section.totals.map((t, i) => (
-          <TableCell key={i} className="text-right font-mono tabular-nums">{reportResultMoney(t, currencyCode, presentation)}</TableCell>
+          <TableCell key={i} className="text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(t, currencyCode, presentation)}</IdentifierText></TableCell>
         ))}
-        <TableCell className="text-right font-mono tabular-nums">{reportResultMoney(section.total, currencyCode, presentation)}</TableCell>
+        <TableCell className="text-end font-mono tabular-nums"><IdentifierText>{reportResultMoney(section.total, currencyCode, presentation)}</IdentifierText></TableCell>
       </TableRow>
     </>
   );

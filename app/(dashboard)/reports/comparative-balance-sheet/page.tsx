@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import React, { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -78,16 +80,16 @@ export default function ComparativeBalanceSheetPage() {
   return (
     <ContentReveal className="space-y-6">
       <Link href="/reports" className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="size-3.5" /> {navigation("backToReports")}
+        <ArrowLeft className="size-3.5 [&:dir(rtl)]:rotate-180" /> {navigation("backToReports")}
       </Link>
 
       <PageHeader title={t("comparativeTitle")} description={t("comparativeDescription")}>
         <ExportButton data={exportData} columns={["section", "code", "name", "currencyCode", ...periods.map((p) => p.label + "Minor")]} filename="comparative-balance-sheet" />
       </PageHeader>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={String(compareMonths)} onValueChange={(v) => setCompareMonths(Number(v))}>
-          <SelectTrigger className="w-[140px]" aria-label={t("periodCountLabel")}>
+          <SelectTrigger className="w-[140px] data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start" aria-label={t("periodCountLabel")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -113,14 +115,14 @@ export default function ComparativeBalanceSheetPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30 min-w-[200px]">{t("account")}</th>
+                  <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground sticky start-0 bg-muted/30 min-w-[200px]">{t("account")}</th>
                   {periods.map((p) => (
-                    <th key={p.label} className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[120px]">
+                    <th key={p.label} className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[120px]"><BidiText>
                       {p.label === "Current" ? t("current") : p.label}
-                    </th>
+                    </BidiText></th>
                   ))}
                   {periods.length >= 2 && (
-                    <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[100px]">{t("change")}</th>
+                    <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground min-w-[100px]">{t("change")}</th>
                   )}
                 </tr>
               </thead>
@@ -133,7 +135,7 @@ export default function ComparativeBalanceSheetPage() {
                   return (
                     <React.Fragment key={section}>
                       <tr className="bg-muted/20">
-                        <td className="px-4 py-2 font-semibold text-xs uppercase tracking-wide sticky left-0 bg-muted/20" colSpan={periods.length + 2}>
+                        <td className="px-4 py-2 font-semibold text-xs uppercase tracking-wide sticky start-0 bg-muted/20" colSpan={periods.length + 2}>
                           {t(`section_${section}`)}
                         </td>
                       </tr>
@@ -146,28 +148,28 @@ export default function ComparativeBalanceSheetPage() {
 
                         return (
                           <tr key={accountId} className="border-b last:border-b-0">
-                            <td className="px-4 py-2 sticky left-0 bg-background">
-                              <span className="text-muted-foreground font-mono text-xs mr-2">{info.code}</span>
-                              {info.name}
+                            <td className="px-4 py-2 sticky start-0 bg-background">
+                              <span className="text-muted-foreground font-mono text-xs me-2"><IdentifierText>{info.code}</IdentifierText></span>
+                              <BidiText>{info.name}</BidiText>
                             </td>
                             {values.map((v, i) => (
-                              <td key={i} className="px-4 py-2 text-right font-mono tabular-nums">{statementUiMoney(v, periods[i].currencyCode, presentation)}</td>
+                              <td key={i} className="px-4 py-2 text-end font-mono tabular-nums"><IdentifierText>{statementUiMoney(v, periods[i].currencyCode, presentation)}</IdentifierText></td>
                             ))}
                             {periods.length >= 2 && (
-                              <td className={cn("px-4 py-2 text-right font-mono tabular-nums text-xs", change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground")}>
+                              <td className={cn("px-4 py-2 text-end font-mono tabular-nums text-xs", change > 0 ? "text-emerald-600" : change < 0 ? "text-red-600" : "text-muted-foreground")}><IdentifierText>
                                 {change !== 0n ? `${change > 0 ? "+" : ""}${statementUiMoney(change, periods[0].currencyCode, presentation)}` : "-"}
-                              </td>
+                              </IdentifierText></td>
                             )}
                           </tr>
                         );
                       })}
                       {/* Section total */}
                       <tr className="border-b bg-muted/10">
-                        <td className="px-4 py-2 font-semibold sticky left-0 bg-muted/10">{t(`sectionTotal_${section}`)}</td>
+                        <td className="px-4 py-2 font-semibold sticky start-0 bg-muted/10">{t(`sectionTotal_${section}`)}</td>
                         {periods.map((p) => {
                           const total = section === "Assets" ? p.assets.total : section === "Liabilities" ? p.liabilities.total : p.equity.total;
                           return (
-                            <td key={p.label} className="px-4 py-2 text-right font-mono tabular-nums font-semibold">{statementUiMoney(total, p.currencyCode, presentation)}</td>
+                            <td key={p.label} className="px-4 py-2 text-end font-mono tabular-nums font-semibold"><IdentifierText>{statementUiMoney(total, p.currencyCode, presentation)}</IdentifierText></td>
                           );
                         })}
                         {periods.length >= 2 && <td />}

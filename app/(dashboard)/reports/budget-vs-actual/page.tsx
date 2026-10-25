@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -37,19 +39,19 @@ export default function BudgetVsActualPage() {
   const presentation = usePresentation();
   const t = useTranslations("AnalyticalReports");
   const columns: Column<Comparison>[] = [
-    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "budgeted", header: t("budgeted"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.budgeted, r.currencyCode, presentation)}</span> },
-    { key: "actual", header: t("actual"), className: "w-28 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{formatMoney(r.actual, r.currencyCode, presentation)}</span> },
-    { key: "variance", header: t("variance"), className: "w-28 text-right", render: (r) => (
-      <span className={`font-mono text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.accountCode}</IdentifierText></span> },
+    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium"><BidiText>{r.accountName}</BidiText></span> },
+    { key: "budgeted", header: t("budgeted"), className: "w-28 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{formatMoney(r.budgeted, r.currencyCode, presentation)}</IdentifierText></span> },
+    { key: "actual", header: t("actual"), className: "w-28 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{formatMoney(r.actual, r.currencyCode, presentation)}</IdentifierText></span> },
+    { key: "variance", header: t("variance"), className: "w-28 text-end", render: (r) => (
+      <span className={`font-mono text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}><IdentifierText>
         {formatMoney(r.variance, r.currencyCode, presentation)}
-      </span>
+      </IdentifierText></span>
     )},
-    { key: "pct", header: "%", className: "w-20 text-right", render: (r) => (
-      <span className={`text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+    { key: "pct", header: "%", className: "w-20 text-end", render: (r) => (
+      <span className={`text-sm tabular-nums ${r.variance >= 0 ? "text-emerald-600" : "text-red-600"}`}><IdentifierText>
         {r.variancePct}%
-      </span>
+      </IdentifierText></span>
     )},
   ];
   const [loadError, setLoadError] = useState(false);
@@ -144,14 +146,14 @@ export default function BudgetVsActualPage() {
       />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label className="text-sm font-medium">{t("budgetLabel")}</label>
+        <label htmlFor="report-budget" className="text-sm font-medium">{t("budgetLabel")}</label>
         <Select value={selectedBudgetId} onValueChange={setSelectedBudgetId}>
-          <SelectTrigger className="h-9 w-full sm:w-auto">
+          <SelectTrigger id="report-budget" className="h-9 w-full sm:w-auto data-[size=default]:h-auto min-h-9 max-w-full whitespace-normal [&_[data-slot=select-value]]:line-clamp-none [&_[data-slot=select-value]]:whitespace-normal [&_[data-slot=select-value]]:text-start">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {budgets.map((b) => (
-              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              <SelectItem key={b.id} value={b.id}><BidiText>{b.name}</BidiText></SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -194,11 +196,11 @@ export default function BudgetVsActualPage() {
             emptyMessage={t("noBudgetLines")}
           />
 
-          <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-muted/50 rounded-lg text-sm font-semibold mt-6">
+          <div className="flex flex-wrap gap-2 justify-between px-3 py-2 sm:px-4 sm:py-3 bg-muted/50 rounded-lg text-sm font-semibold mt-6">
             <span>{t("totalVariance")}</span>
-            <span className={`font-mono tabular-nums ${totalVariance >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            <span className={`font-mono tabular-nums ${totalVariance >= 0 ? "text-emerald-600" : "text-red-600"}`}><IdentifierText>
               {formatMoney(totalVariance, currencyCode, presentation)}
-            </span>
+            </IdentifierText></span>
           </div>
         </ContentReveal>
       )}

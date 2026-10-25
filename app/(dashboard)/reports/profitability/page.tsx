@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { profitabilityUi, analyticalReportJson } from "@/lib/money/analytical-report-ui";
 import { useState, useEffect } from "react";
@@ -85,10 +87,10 @@ export default function ProfitabilityPage() {
         onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }}
       />
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm">{t("documentCurrency")}</span>
         <CurrencySelect value={currencyFilter} onValueChange={setCurrencyFilter} compact />
-        {currencyFilter && <Button variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
+        {currencyFilter && <Button className="h-auto min-h-8 max-w-full whitespace-normal [overflow-wrap:anywhere]" variant="ghost" size="sm" onClick={() => setCurrencyFilter("")}>{t("clearFilter")}</Button>}
       </div>
 
       {!loading && !error && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -136,55 +138,55 @@ export default function ProfitabilityPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("contact")}</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("revenue")}</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("costs")}</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("profit")}</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("margin")}</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("invoices")}</th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("bills")}</th>
+                  <th className="text-start px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("contact")}</th>
+                  <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("revenue")}</th>
+                  <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("costs")}</th>
+                  <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("profit")}</th>
+                  <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("margin")}</th>
+                  <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("invoices")}</th>
+                  <th className="text-end px-4 py-2.5 text-xs font-medium text-muted-foreground">{t("bills")}</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((e) => (
                   <tr key={e.contactId} className="border-b last:border-b-0">
-                    <td className="px-4 py-2.5 font-medium">{e.contactName}</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums text-emerald-600">{statementMoneyText(e.revenue, currencyCode, presentation)}</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums text-red-600">{statementMoneyText(e.costs, currencyCode, presentation)}</td>
+                    <td className="px-4 py-2.5 font-medium"><BidiText>{e.contactName}</BidiText></td>
+                    <td className="px-4 py-2.5 text-end font-mono tabular-nums text-emerald-600"><IdentifierText>{statementMoneyText(e.revenue, currencyCode, presentation)}</IdentifierText></td>
+                    <td className="px-4 py-2.5 text-end font-mono tabular-nums text-red-600"><IdentifierText>{statementMoneyText(e.costs, currencyCode, presentation)}</IdentifierText></td>
                     <td className={cn(
-                      "px-4 py-2.5 text-right font-mono tabular-nums font-medium",
+                      "px-4 py-2.5 text-end font-mono tabular-nums font-medium",
                       e.profit >= 0 ? "text-emerald-600" : "text-red-600"
-                    )}>
+                    )}><IdentifierText>
                       {statementMoneyText(e.profit, currencyCode, presentation)}
-                    </td>
+                    </IdentifierText></td>
                     <td className={cn(
-                      "px-4 py-2.5 text-right font-mono tabular-nums",
+                      "px-4 py-2.5 text-end font-mono tabular-nums",
                       e.margin >= 0 ? "text-emerald-600" : "text-red-600"
-                    )}>
+                    )}><IdentifierText>
                       {e.margin}%
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-muted-foreground">{e.invoiceCount}</td>
-                    <td className="px-4 py-2.5 text-right text-muted-foreground">{e.billCount}</td>
+                    </IdentifierText></td>
+                    <td className="px-4 py-2.5 text-end text-muted-foreground"><IdentifierText>{e.invoiceCount}</IdentifierText></td>
+                    <td className="px-4 py-2.5 text-end text-muted-foreground"><IdentifierText>{e.billCount}</IdentifierText></td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/30">
                   <td className="px-4 py-2.5 font-semibold">{t("total")}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-emerald-600">{statementMoneyText(totalRevenue, currencyCode, presentation)}</td>
-                  <td className="px-4 py-2.5 text-right font-mono tabular-nums font-semibold text-red-600">{statementMoneyText(totalCosts, currencyCode, presentation)}</td>
+                  <td className="px-4 py-2.5 text-end font-mono tabular-nums font-semibold text-emerald-600"><IdentifierText>{statementMoneyText(totalRevenue, currencyCode, presentation)}</IdentifierText></td>
+                  <td className="px-4 py-2.5 text-end font-mono tabular-nums font-semibold text-red-600"><IdentifierText>{statementMoneyText(totalCosts, currencyCode, presentation)}</IdentifierText></td>
                   <td className={cn(
-                    "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
+                    "px-4 py-2.5 text-end font-mono tabular-nums font-semibold",
                     totalProfit >= 0 ? "text-emerald-600" : "text-red-600"
-                  )}>
+                  )}><IdentifierText>
                     {statementMoneyText(totalProfit, currencyCode, presentation)}
-                  </td>
+                  </IdentifierText></td>
                   <td className={cn(
-                    "px-4 py-2.5 text-right font-mono tabular-nums font-semibold",
+                    "px-4 py-2.5 text-end font-mono tabular-nums font-semibold",
                     overallMargin >= 0 ? "text-emerald-600" : "text-red-600"
-                  )}>
+                  )}><IdentifierText>
                     {overallMargin}%
-                  </td>
+                  </IdentifierText></td>
                   <td colSpan={2} />
                 </tr>
               </tfoot>

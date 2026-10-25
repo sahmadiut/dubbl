@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import { resolvePresentation } from "../i18n/locale";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -22,7 +23,7 @@ const selected = { ...ready, groups: [group], selectedGroupId: group.id };
 test("both consolidation tabs render translated production JSX and preserve exact raw-unit export", async () => {
   await withIO(async () => { throw new Error("render must not fetch"); }, async () => {
   for (const locale of ["en-US", "fa-IR"] as const) {
-    const t = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ConsolidationReports" });
+    const t = createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "ConsolidationReports" });
     assert.ok(render("consolidation", ready, locale).html.includes(t("emptyGroups")));
     for (const tab of ["pnl", "balance-sheet"] as const) {
       const h = render("consolidation", { ...selected, report, tab }, locale);
@@ -86,10 +87,10 @@ test("group creation preserves caller text and organization-scoped machine paylo
 
 test("pack content, date/basis callbacks and workbook URLs remain canonical in both locales", () => {
   for (const locale of ["en-US", "fa-IR"] as const) for (const basis of ["accrual", "cash"]) {
-    const t = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "ReportPack" });
+    const t = createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "ReportPack" });
     const h = render("pack", { ...ready, basis }, locale);
     for (const key of ["title", "contents", "download", "incomeName", "balanceName", "trialName", "cashName"] as const) assert.ok(h.html.replaceAll("&#x27;", "'").includes(t(key)), key);
-    assert.ok(h.html.includes(t("period", { startDate: ready.startDate, endDate: ready.endDate })));
+    assert.ok(visibleText(h.html).includes(t("period", { startDate: ready.startDate, endDate: ready.endDate })), "Isolated visible text or exact child: consolidation-pack-catalogs:93");
     assert.equal(h.captured.find(c => c.kind === "a")!.props.href, `/api/v1/reports/pack?startDate=2026-01-01&endDate=2026-10-23&basis=${basis}&format=xlsx`);
     (h.captured.find(c => c.kind === "BasisToggle")!.props.onChange as (v: string) => void)("cash");
     assert.ok(has(h, "basis", "cash"));

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -60,11 +62,11 @@ export default function AgedPayablesPage() {
   const formatMoney = (amount: bigint) => reportUiMoney(amount, data!.currencyCode, presentation);
 
   const columns: Column<DocumentRow>[] = [
-    { key: "number", header: t("bill"), className: "w-32", render: (r) => <span className="font-mono text-sm">{r.billNumber}</span> },
-    { key: "contact", header: t("supplier"), render: (r) => <span className="text-sm font-medium">{r.contactName}</span> },
-    { key: "due", header: t("dueDate"), className: "w-28", render: (r) => <span className="text-sm">{r.dueDate}</span> },
-    { key: "days", header: t("daysOverdue"), className: "w-28", render: (r) => <span className="text-sm tabular-nums">{r.daysOverdue}</span> },
-    { key: "amount", header: t("amountDue"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{reportUiMoney(r.amountDue, r.currencyCode, presentation)}</span> },
+    { key: "number", header: t("bill"), className: "w-32", render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.billNumber}</IdentifierText></span> },
+    { key: "contact", header: t("supplier"), render: (r) => <span className="text-sm font-medium"><BidiText>{r.contactName}</BidiText></span> },
+    { key: "due", header: t("dueDate"), className: "w-28", render: (r) => <span className="text-sm"><IdentifierText>{r.dueDate}</IdentifierText></span> },
+    { key: "days", header: t("daysOverdue"), className: "w-28", render: (r) => <span className="text-sm tabular-nums"><IdentifierText>{r.daysOverdue}</IdentifierText></span> },
+    { key: "amount", header: t("amountDue"), className: "w-32 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{reportUiMoney(r.amountDue, r.currencyCode, presentation)}</IdentifierText></span> },
   ];
 
   return (
@@ -107,7 +109,7 @@ export default function AgedPayablesPage() {
 
           <div className="rounded-lg border bg-card p-3 sm:p-4 mt-4">
             <p className="text-sm font-medium text-muted-foreground mb-1">{t("totalYouOwe")}</p>
-            <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums truncate">{formatMoney(grandTotal)}</p>
+            <p className="text-xl sm:text-2xl font-bold font-mono tabular-nums min-w-0 whitespace-normal [overflow-wrap:anywhere]"><IdentifierText>{formatMoney(grandTotal)}</IdentifierText></p>
           </div>
 
           <div className="mt-4">

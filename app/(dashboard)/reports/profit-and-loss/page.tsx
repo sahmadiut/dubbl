@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -30,9 +32,9 @@ export default function ProfitAndLossPage() {
   const [basis, setBasis] = useState<"accrual" | "cash">("accrual");
   const [currencyCode, setCurrencyCode] = useState("USD");
   const columns: Column<AccountRow>[] = [
-    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm">{r.accountCode}</span> },
-    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium">{r.accountName}</span> },
-    { key: "balance", header: t("amount"), className: "w-32 text-right", render: (r) => <span className="font-mono text-sm tabular-nums">{statementUiMoney(r.balance, currencyCode, presentation)}</span> },
+    { key: "code", header: t("code"), className: "w-24", render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.accountCode}</IdentifierText></span> },
+    { key: "name", header: t("account"), render: (r) => <span className="text-sm font-medium"><BidiText>{r.accountName}</BidiText></span> },
+    { key: "balance", header: t("amount"), className: "w-32 text-end", render: (r) => <span className="font-mono text-sm tabular-nums"><IdentifierText>{statementUiMoney(r.balance, currencyCode, presentation)}</IdentifierText></span> },
   ];
   const formatMoney = (value: bigint) => statementUiMoney(value, currencyCode, presentation);
   const [revenue, setRevenue] = useState<AccountRow[]>([]);
@@ -136,24 +138,24 @@ export default function ProfitAndLossPage() {
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">{t("moneyIn")}</h2>
               <DataTable columns={columns} data={revenue} loading={false} emptyMessage={t("emptyIncome")} />
-              <div className="flex justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
+              <div className="flex flex-wrap gap-2 justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
                 <span>{t("totalMoneyIn")}</span>
-                <span className="font-mono tabular-nums">{formatMoney(totalRevenue)}</span>
+                <span className="font-mono tabular-nums"><IdentifierText>{formatMoney(totalRevenue)}</IdentifierText></span>
               </div>
             </div>
 
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">{t("moneyOut")}</h2>
               <DataTable columns={columns} data={expenses} loading={false} emptyMessage={t("emptyCosts")} />
-              <div className="flex justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
+              <div className="flex flex-wrap gap-2 justify-between px-3 py-2 sm:px-4 bg-muted/50 rounded-lg text-sm font-semibold">
                 <span>{t("totalMoneyOut")}</span>
-                <span className="font-mono tabular-nums">{formatMoney(totalExpenses)}</span>
+                <span className="font-mono tabular-nums"><IdentifierText>{formatMoney(totalExpenses)}</IdentifierText></span>
               </div>
             </div>
 
-            <div className="flex justify-between px-3 py-2 sm:px-4 sm:py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg font-semibold text-sm sm:text-base">
+            <div className="flex flex-wrap gap-2 justify-between px-3 py-2 sm:px-4 sm:py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg font-semibold text-sm sm:text-base">
               <span>{t("profit")}</span>
-              <span className="font-mono tabular-nums">{formatMoney(netIncome)}</span>
+              <span className="font-mono tabular-nums"><IdentifierText>{formatMoney(netIncome)}</IdentifierText></span>
             </div>
           </div>
         </ContentReveal>

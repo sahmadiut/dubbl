@@ -404,7 +404,7 @@ export default function DashboardPage() {
             className="space-y-6"
           >
             {/* Section A: Greeting Banner */}
-            <div className="relative overflow-hidden rounded-2xl">
+            <div className="relative overflow-hidden rounded-2xl bg-emerald-300 bg-linear-to-br from-emerald-100 via-emerald-300 to-emerald-400">
               <GrainGradient
                 className="pointer-events-none !absolute !inset-0 !rounded-none"
                 width="100%"

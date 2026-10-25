@@ -12,7 +12,7 @@ export default function OnboardingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
+    <div className="relative flex min-h-screen min-w-0 flex-col bg-background">
       {/* Noise grain */}
       <div className="noise-overlay pointer-events-none fixed inset-0 z-0" />
 
@@ -43,7 +43,7 @@ export default function OnboardingLayout({
           >
             <Link href="/" className="inline-flex items-center gap-2">
               <Logo />
-              <span className="text-lg font-bold tracking-tight text-foreground">
+              <span dir="ltr" className="text-lg font-bold tracking-tight text-foreground [unicode-bidi:isolate]">
                 dubbl
               </span>
             </Link>
@@ -52,12 +52,12 @@ export default function OnboardingLayout({
       </header>
 
       {/* Main */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 pb-12">
+      <main className="relative z-10 flex min-w-0 flex-1 items-center justify-center px-4 pb-12">
         {children}
       </main>
 
       {/* Theme toggle */}
-      <div className="fixed bottom-4 right-4 z-20">
+      <div className="fixed bottom-4 end-4 z-20">
         <ThemeToggle />
       </div>
     </div>

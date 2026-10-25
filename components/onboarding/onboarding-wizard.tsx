@@ -1,6 +1,8 @@
 "use client";
 
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
+import { BidiText } from "@/components/ui/bidi-text";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
 import { authErrorMessage, AuthPresentationError } from "@/i18n/auth-errors";
@@ -48,6 +50,7 @@ interface OrgData {
 }
 
 export function OnboardingWizard() {
+  const readingDirection = localeDirection(usePresentation().locale);
   const t = useTranslations("Onboarding");
   const te = useTranslations("AuthErrors");
   const STEPS = [
@@ -232,16 +235,16 @@ export function OnboardingWizard() {
   }
 
   return (
-    <div className="w-full max-w-lg">
+    <div className="min-w-0 w-full max-w-lg">
       {hasOtherOrgs && (
         <button
           onClick={() => {
             setActiveOrganization(otherOrgId);
             window.location.href = "/dashboard";
           }}
-          className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          className="mb-4 flex min-w-0 items-center gap-1.5 text-start text-sm font-medium whitespace-normal text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowUpRight className="size-3.5" />
+          <ArrowUpRight className="size-3.5 shrink-0 [&:dir(rtl)]:-rotate-90" />
           {t("dashboard")}
         </button>
       )}
@@ -262,14 +265,14 @@ export function OnboardingWizard() {
             scale={3.5}
             speed={0.2}
           />
-          <div className="relative flex items-center justify-center gap-3 py-5">
-            <div className="flex items-center gap-2">
+          <div className="relative flex min-w-0 items-center justify-center gap-3 px-3 py-5">
+            <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
               {STEPS.map((s, i) => {
                 const Icon = s.icon;
                 return (
                   <div
                     key={i}
-                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all duration-300 ${
+                    className={`flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all duration-300 ${
                       i === step
                         ? "border border-white/25 bg-white/20 text-white backdrop-blur-sm"
                         : i < step
@@ -277,9 +280,9 @@ export function OnboardingWizard() {
                           : "text-white/30"
                     }`}
                   >
-                    <Icon className="size-3" />
+                    <Icon className="size-3 shrink-0" />
                     {i === step && (
-                      <span>{s.label}</span>
+                      <span className="[overflow-wrap:anywhere]">{s.label}</span>
                     )}
                   </div>
                 );
@@ -293,9 +296,9 @@ export function OnboardingWizard() {
             <motion.div
               key={step}
               custom={direction}
-              initial={{ opacity: 0, x: direction * 40 }}
+              initial={{ opacity: 0, x: direction * (readingDirection === "rtl" ? -40 : 40) }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -40 }}
+              exit={{ opacity: 0, x: direction * (readingDirection === "rtl" ? 40 : -40) }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
             >
               {step === 0 && (
@@ -346,20 +349,20 @@ export function OnboardingWizard() {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between border-t border-border px-6 py-4 sm:px-10">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4 sm:px-10">
           <Button
             variant="ghost"
             onClick={goBack}
             disabled={step === 0}
-            className="gap-1.5"
+            className="h-auto min-h-9 min-w-0 gap-1.5 whitespace-normal text-start"
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-4 [&:dir(rtl)]:rotate-180" />
             {t("back")}
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             {isOptionalStep() && (
-              <Button variant="ghost" onClick={goNext} className="text-muted-foreground">
+              <Button variant="ghost" onClick={goNext} className="h-auto min-h-9 min-w-0 whitespace-normal text-start text-muted-foreground">
                 {t("skip")}
               </Button>
             )}
@@ -367,16 +370,16 @@ export function OnboardingWizard() {
               <Button
                 onClick={goNext}
                 disabled={!canProceed()}
-                className="gap-1.5 bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
+                className="h-auto min-h-9 min-w-0 gap-1.5 whitespace-normal text-start bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
               >
                 {t("next")}
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4 [&:dir(rtl)]:rotate-180" />
               </Button>
             ) : (
               <Button
                 onClick={handleComplete}
                 disabled={submitting}
-                className="gap-1.5 bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
+                className="h-auto min-h-9 min-w-0 gap-1.5 whitespace-normal text-start bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
               >
                 {submitting ? t("settingUp") : t("complete")}
                 {!submitting && <Check className="size-4" />}
@@ -414,6 +417,7 @@ export function StepOrgName({
           </Label>
           <Input
             id="org-name"
+            dir="auto"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder={t("nameExample")}
@@ -457,12 +461,15 @@ export function StepCountry({
         {t("countryDescription")}
       </p>
       <div className="relative mt-5">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          type="search"
+          dir="auto"
+          aria-label={t("searchCountries")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("searchCountries")}
-          className="h-10 rounded-lg pl-9"
+          className="h-10 rounded-lg ps-9"
           autoFocus
         />
       </div>
@@ -470,18 +477,20 @@ export function StepCountry({
         {filtered.map((c) => (
           <button
             key={c.code}
+            type="button"
+            aria-pressed={selected === c.code}
             onClick={() => onSelect(c.code)}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+            className={`flex min-w-0 w-full flex-wrap items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm transition-colors ${
               selected === c.code
                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                 : "hover:bg-muted/60"
             }`}
           >
             <span className="text-lg">{c.flag}</span>
-            <span className="font-medium">{countryName(options, c)}</span>
-            <span className="ml-auto text-xs text-muted-foreground">
+            <BidiText className="min-w-0 font-medium">{countryName(options, c)}</BidiText>
+            <BidiText className="ms-auto min-w-0 text-xs text-muted-foreground">
               {currencyLabel(c.defaultCurrency, presentation.locale)}
-            </span>
+            </BidiText>
           </button>
         ))}
         {filtered.length === 0 && (
@@ -526,18 +535,20 @@ export function StepBusinessType({
         {types.map((t) => (
           <button
             key={t.code}
+            type="button"
+            aria-pressed={selected === t.code}
             onClick={() => onSelect(t.code)}
-            className={`flex w-full flex-col rounded-lg px-3 py-2.5 text-left transition-colors ${
+            className={`flex min-w-0 w-full flex-col rounded-lg px-3 py-2.5 text-start transition-colors ${
               selected === t.code
                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                 : "hover:bg-muted/60"
             }`}
           >
-            <span className="text-sm font-medium">{businessTypeName(options, t)}</span>
+            <BidiText className="min-w-0 text-sm font-medium">{businessTypeName(options, t)}</BidiText>
             {t.localName !== t.englishName && (
-              <span className="text-xs text-muted-foreground">
+              <BidiText dir="ltr" className="min-w-0 text-xs text-muted-foreground">
                 {t.englishName}
-              </span>
+              </BidiText>
             )}
           </button>
         ))}
@@ -565,12 +576,14 @@ export function StepIndustry({
       <p className="mt-1.5 text-sm text-muted-foreground">
         {t("industryDescription")}
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-2">
+      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {INDUSTRIES.map((ind) => (
           <button
             key={ind.code}
+            type="button"
+            aria-pressed={selected === ind.code}
             onClick={() => onSelect(selected === ind.code ? "" : ind.code)}
-            className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+            className={`min-w-0 rounded-lg px-3 py-2.5 text-start text-sm font-medium [overflow-wrap:anywhere] transition-colors ${
               selected === ind.code
                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                 : "hover:bg-muted/60"
@@ -607,12 +620,14 @@ export function StepReferral({
       <p className="mt-1.5 text-sm text-muted-foreground">
         {t("referralDescription")}
       </p>
-      <div className="mt-5 grid grid-cols-2 gap-2">
+      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {REFERRAL_SOURCES.map((src) => (
           <button
             key={src.code}
+            type="button"
+            aria-pressed={selected === src.code}
             onClick={() => onSelect(selected === src.code ? "" : src.code)}
-            className={`rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+            className={`min-w-0 rounded-lg px-3 py-2.5 text-start text-sm font-medium [overflow-wrap:anywhere] transition-colors ${
               selected === src.code
                 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                 : "hover:bg-muted/60"
@@ -629,6 +644,7 @@ export function StepReferral({
           </Label>
           <Input
             id="referral-other"
+            dir="auto"
             value={other}
             onChange={(e) => onOtherChange(e.target.value)}
             placeholder={t("more")}
@@ -697,12 +713,12 @@ export function StepReview({
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex items-center justify-between rounded-lg bg-muted/40 px-4 py-3"
+            className="flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-lg bg-muted/40 px-4 py-3"
           >
-            <span className="text-sm text-muted-foreground">{item.label}</span>
-            <span className="text-sm font-medium text-foreground">
+            <span className="min-w-0 text-sm text-muted-foreground [overflow-wrap:anywhere]">{item.label}</span>
+            <BidiText className="min-w-0 text-sm font-medium text-foreground">
               {item.value}
-            </span>
+            </BidiText>
           </div>
         ))}
       </div>

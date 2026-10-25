@@ -10,7 +10,7 @@ import { businessTypeName, countryName, industryName, referralName } from "@/i18
 
 import { setActiveOrganization } from "@/i18n/organization-client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { GrainGradient } from "@paper-design/shaders-react";
@@ -50,7 +50,9 @@ interface OrgData {
 }
 
 export function OnboardingWizard() {
-  const readingDirection = localeDirection(usePresentation().locale);
+  const presentation = usePresentation();
+  const isRtl = presentation.locale === "fa-IR";
+  const readingDirection = localeDirection(presentation.locale);
   const t = useTranslations("Onboarding");
   const te = useTranslations("AuthErrors");
   const STEPS = [
@@ -164,6 +166,34 @@ export function OnboardingWizard() {
     return step === 3 || step === 4;
   }
 
+  function handleWizardKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    if (event.key === "Enter" && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      if (target.closest("[data-onboarding-option]") && canProceed()) {
+        event.preventDefault();
+        goNext();
+        return;
+      }
+      if (target.closest("button") || (target instanceof HTMLInputElement && target.type === "search")) return;
+      if (step < STEPS.length - 1 && canProceed()) {
+        event.preventDefault();
+        goNext();
+      }
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    const option = target.closest<HTMLElement>("[data-onboarding-option]");
+    const group = option?.closest("[data-onboarding-group]");
+    if (!option || !group) return;
+    const options = Array.from(group.querySelectorAll<HTMLButtonElement>("[data-onboarding-option]"));
+    const index = options.indexOf(option as HTMLButtonElement);
+    const forward = event.key === "ArrowDown" || event.key === (isRtl ? "ArrowLeft" : "ArrowRight");
+    const delta = forward ? 1 : -1;
+    const nextIndex = (index + delta + options.length) % options.length;
+    event.preventDefault();
+    options[nextIndex]?.focus();
+  }
+
   async function handleComplete() {
     setSubmitting(true);
     try {
@@ -235,7 +265,7 @@ export function OnboardingWizard() {
   }
 
   return (
-    <div className="min-w-0 w-full max-w-lg">
+    <div className="min-w-0 w-full max-w-lg" onKeyDown={handleWizardKeyDown}>
       {hasOtherOrgs && (
         <button
           onClick={() => {
@@ -274,13 +304,13 @@ export function OnboardingWizard() {
                     key={i}
                     className={`flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all duration-300 ${
                       i === step
-                        ? "border border-white/25 bg-white/20 text-white backdrop-blur-sm"
+                        ? "border border-white/70 bg-white/90 text-emerald-950 backdrop-blur-sm"
                         : i < step
-                          ? "text-white/70"
-                          : "text-white/30"
+                          ? "text-emerald-950/85"
+                          : "text-emerald-950/60"
                     }`}
                   >
-                    <Icon className="size-3 shrink-0" />
+                    <Icon className="size-3 shrink-0 text-emerald-950/80" />
                     {i === step && (
                       <span className="[overflow-wrap:anywhere]">{s.label}</span>
                     )}
@@ -356,7 +386,7 @@ export function OnboardingWizard() {
             disabled={step === 0}
             className="h-auto min-h-9 min-w-0 gap-1.5 whitespace-normal text-start"
           >
-            <ArrowLeft className="size-4 [&:dir(rtl)]:rotate-180" />
+            {isRtl ? <ArrowRight className="size-4" /> : <ArrowLeft className="size-4" />}
             {t("back")}
           </Button>
 
@@ -372,8 +402,17 @@ export function OnboardingWizard() {
                 disabled={!canProceed()}
                 className="h-auto min-h-9 min-w-0 gap-1.5 whitespace-normal text-start bg-emerald-600 shadow-md shadow-emerald-600/15 hover:bg-emerald-500"
               >
-                {t("next")}
-                <ArrowRight className="size-4 [&:dir(rtl)]:rotate-180" />
+                {isRtl ? (
+                  <>
+                    <ArrowLeft className="size-4" style={{ rotate: "0deg" }} />
+                    {t("next")}
+                  </>
+                ) : (
+                  <>
+                    {t("next")}
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
               </Button>
             ) : (
               <Button
@@ -473,11 +512,12 @@ export function StepCountry({
           autoFocus
         />
       </div>
-      <div className="mt-3 max-h-[280px] space-y-1 overflow-y-auto rounded-lg">
+      <div data-onboarding-group className="mt-3 max-h-[280px] space-y-1 overflow-y-auto rounded-lg">
         {filtered.map((c) => (
           <button
             key={c.code}
             type="button"
+            data-onboarding-option
             aria-pressed={selected === c.code}
             onClick={() => onSelect(c.code)}
             className={`flex min-w-0 w-full flex-wrap items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm transition-colors ${
@@ -531,11 +571,12 @@ export function StepBusinessType({
       <p className="mt-1.5 text-sm text-muted-foreground">
         {t("availableTypes", { country: country ? countryName(options, country) : t("yourCountry") })}
       </p>
-      <div className="mt-5 max-h-[320px] space-y-1 overflow-y-auto rounded-lg">
+      <div data-onboarding-group className="mt-5 max-h-[320px] space-y-1 overflow-y-auto rounded-lg">
         {types.map((t) => (
           <button
             key={t.code}
             type="button"
+            data-onboarding-option
             aria-pressed={selected === t.code}
             onClick={() => onSelect(t.code)}
             className={`flex min-w-0 w-full flex-col rounded-lg px-3 py-2.5 text-start transition-colors ${
@@ -576,11 +617,12 @@ export function StepIndustry({
       <p className="mt-1.5 text-sm text-muted-foreground">
         {t("industryDescription")}
       </p>
-      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div data-onboarding-group className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {INDUSTRIES.map((ind) => (
           <button
             key={ind.code}
             type="button"
+            data-onboarding-option
             aria-pressed={selected === ind.code}
             onClick={() => onSelect(selected === ind.code ? "" : ind.code)}
             className={`min-w-0 rounded-lg px-3 py-2.5 text-start text-sm font-medium [overflow-wrap:anywhere] transition-colors ${
@@ -620,11 +662,12 @@ export function StepReferral({
       <p className="mt-1.5 text-sm text-muted-foreground">
         {t("referralDescription")}
       </p>
-      <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div data-onboarding-group className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {REFERRAL_SOURCES.map((src) => (
           <button
             key={src.code}
             type="button"
+            data-onboarding-option
             aria-pressed={selected === src.code}
             onClick={() => onSelect(selected === src.code ? "" : src.code)}
             className={`min-w-0 rounded-lg px-3 py-2.5 text-start text-sm font-medium [overflow-wrap:anywhere] transition-colors ${

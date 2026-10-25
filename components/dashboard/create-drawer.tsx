@@ -153,15 +153,15 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <EntryDrawer open={activeType === "entry"} onClose={close} />
       <InventoryDrawer open={activeType === "inventory"} onClose={close} />
       <QuoteDrawer open={activeType === "quote"} onClose={close} />
-      <SalesReceiptDrawer key={typeof window !== "undefined" ? localStorage.getItem("activeOrgId") || "" : ""} open={activeType === "salesReceipt"} onClose={close} />
-      <PurchaseOrderDrawer key={drawerOrgId} open={activeType === "purchaseOrder"} onClose={close} />
+      <SalesReceiptDrawer key={`salesReceipt-${drawerOrgId}`} open={activeType === "salesReceipt"} onClose={close} />
+      <PurchaseOrderDrawer key={`purchaseOrder-${drawerOrgId}`} open={activeType === "purchaseOrder"} onClose={close} />
       <ExpenseDrawer key={`expense-${drawerOrgId}-${activeType === "expense"}`} open={activeType === "expense"} onClose={close} />
       <FixedAssetDrawer open={activeType === "fixedAsset"} onClose={close} />
       <BudgetDrawer open={activeType === "budget"} onClose={close} />
       <EmployeeDrawer open={activeType === "employee"} onClose={close} />
       <CreditNoteDrawer open={activeType === "creditNote"} onClose={close} />
-      <RecurringDrawer key={drawerOrgId} open={activeType === "recurring"} onClose={close} />
-      <AccountDrawer key={drawerOrgId} open={activeType === "account"} onClose={close} />
+      <RecurringDrawer key={`recurring-${drawerOrgId}`} open={activeType === "recurring"} onClose={close} />
+      <AccountDrawer key={`account-${drawerOrgId}`} open={activeType === "account"} onClose={close} />
       <BankAccountDrawer open={activeType === "bankAccount"} onClose={close} />
       <WarehouseDrawer open={activeType === "warehouse"} onClose={close} />
       <StockTakeDrawer open={activeType === "stockTake"} onClose={close} />
@@ -170,7 +170,7 @@ export function CreateDrawerProvider({ children }: { children: React.ReactNode }
       <BankTransferDrawer open={activeType === "bankTransfer"} onClose={close} />
       <ContractorDrawer open={activeType === "contractor"} onClose={close} />
       <DealDrawer open={activeType === "deal"} onClose={close} initialData={initialData} />
-      <DebitNoteDrawer key={drawerOrgId} open={activeType === "debitNote"} onClose={close} />
+      <DebitNoteDrawer key={`debitNote-${drawerOrgId}`} open={activeType === "debitNote"} onClose={close} />
       <CustomerCreditDrawer open={activeType === "customerCredit"} onClose={close} />
       <LoanDrawer open={activeType === "loan"} onClose={close} />
       <OpeningBalanceDrawer open={activeType === "openingBalance"} onClose={close} />

@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback } from "react";
@@ -58,7 +60,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
@@ -83,7 +85,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Users}
             label={t("totalUsers")}
@@ -167,12 +169,12 @@ function StatCard({
   sub: string;
 }) {
   return (
-    <div className="rounded-lg border p-4 space-y-2">
+    <div className="min-w-0 rounded-lg border p-4 space-y-2 [overflow-wrap:anywhere]">
       <div className="flex items-center gap-2">
         <Icon className="size-4 text-muted-foreground" />
         <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
-      <p className="text-2xl font-semibold tabular-nums">{value.toLocaleString()}</p>
+      <p className="text-2xl font-semibold tabular-nums"><BidiText dir="ltr">{value.toLocaleString()}</BidiText></p>
       <p className="text-[11px] text-muted-foreground">{sub}</p>
     </div>
   );

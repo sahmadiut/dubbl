@@ -51,14 +51,14 @@ export function SiteSettingsForm({ settings, stripeConfigured, saving, save, onS
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-medium">{t("registrationMode")}</Label>
+              <Label htmlFor="admin-registration-mode" className="text-xs font-medium">{t("registrationMode")}</Label>
               <Select
                 value={settings.registration_mode}
                 onValueChange={(v) =>
                   save({ registration_mode: v })
                 }
               >
-                <SelectTrigger className="w-48">
+                <SelectTrigger id="admin-registration-mode" aria-label={t("registrationMode")} className="w-full sm:w-48 data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -73,10 +73,10 @@ export function SiteSettingsForm({ settings, stripeConfigured, saving, save, onS
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-medium">
+              <Label htmlFor="admin-email-domains" className="text-xs font-medium">
                 {t("allowedEmailDomains")}
               </Label>
-              <Textarea
+              <Textarea id="admin-email-domains" aria-label={t("allowedEmailDomains")} dir="ltr"
                 value={settings.allowed_email_domains}
                 onChange={(e) =>
                   onSettingsChange({
@@ -107,16 +107,16 @@ export function SiteSettingsForm({ settings, stripeConfigured, saving, save, onS
             <h3 className="text-sm font-semibold">{t("organizations")}</h3>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <Label className="text-xs font-medium">
+              <Label htmlFor="admin-org-creation" className="text-xs font-medium">
                 {t("allowUsersToCreateOrganizations")}
               </Label>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {t("whenDisabledOnlySiteAdminsCanCreateNewOrganizations")}
               </p>
             </div>
-            <Switch
+            <Switch id="admin-org-creation"
               aria-label={t("allowUsersToCreateOrganizations")}
               checked={settings.allow_user_org_creation === "true"}
               onCheckedChange={(checked) =>
@@ -189,7 +189,7 @@ export function SiteSettingsForm({ settings, stripeConfigured, saving, save, onS
       </div>
 
       {saving && (
-        <div className="fixed bottom-4 right-4 rounded-lg border bg-card px-4 py-2 text-xs text-muted-foreground shadow-lg">
+        <div className="fixed bottom-4 end-4 rounded-lg border bg-card px-4 py-2 text-xs text-muted-foreground shadow-lg">
           {t("saving")}
         </div>
       )}

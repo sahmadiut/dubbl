@@ -1085,7 +1085,7 @@
     "membersCount": "اعضا ({count, number})",
     "filteredCount": "{count, number} از {total, number}",
     "defaultLimit": "پیش‌فرض: {value}",
-    "created": "ایجادشده در {date}",
+    "created": "ایجادشده در <code>{date}</code>",
     "recentCount": "+{count, number} در ۳۰ روز گذشته",
     "freePrice": "۰ دلار در ماه",
     "proPrice": "۱۲ دلار برای هر کاربر در ماه",
@@ -1102,7 +1102,9 @@
     "invoicesMo": "فاکتورها در ماه",
     "projects": "پروژه‌ها",
     "bankAccounts": "حساب‌های بانکی",
-    "entriesMo": "اسناد در ماه"
+    "entriesMo": "اسناد در ماه",
+    "sortBy": "مرتب‌سازی بر اساس",
+    "userActions": "عملیات کاربر"
   },
   "Teams": {
     "teams": "تیم‌ها",

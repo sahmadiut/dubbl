@@ -1,5 +1,5 @@
 {
-  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work. RTL-010 dashboard ownership subdivided after source audit into RTL-012 through RTL-021; intermediate and root parents retain independent acceptance. RTL-011 public/shared/output ownership subdivided after source audit into RTL-022 through RTL-029; the parent retains independent combined acceptance. RTL-014 accounting/tax ownership subdivided after source audit into RTL-030 through RTL-034; the parent retains independent integration acceptance. RTL-015 sales/purchase ownership subdivided after source audit into RTL-035 through RTL-042; parent retains independent integration acceptance.",
+  "scope": "Exhaustive app/components/lib TSX census at RTL-008 split. Ownership is audit responsibility, not a pass. Imported non-TSX output builders belong with their consuming surface; new files require classification. Shared inherited foundation does not constitute dedicated provider work. RTL-010 dashboard ownership subdivided after source audit into RTL-012 through RTL-021; intermediate and root parents retain independent acceptance. RTL-011 public/shared/output ownership subdivided after source audit into RTL-022 through RTL-029; the parent retains independent combined acceptance. RTL-014 accounting/tax ownership subdivided after source audit into RTL-030 through RTL-034; the parent retains independent integration acceptance. RTL-015 sales/purchase ownership subdivided after source audit into RTL-035 through RTL-042; parent retains independent integration acceptance. RTL-021 shared dashboard ownership subdivided after source audit into RTL-043 through RTL-050; parent retains independent integration acceptance. Existing staged drawer operation edits remain separately preserved.",
   "files": [
     {
       "path": "app/(admin)/admin/email-preview/page.tsx",
@@ -251,11 +251,11 @@
     },
     {
       "path": "app/(dashboard)/documents/loading.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "app/(dashboard)/documents/page.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "app/(dashboard)/inventory/[id]/history/page.tsx",
@@ -331,15 +331,15 @@
     },
     {
       "path": "app/(dashboard)/invite/[token]/page.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-045"
     },
     {
       "path": "app/(dashboard)/layout.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "app/(dashboard)/notifications/page.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-045"
     },
     {
       "path": "app/(dashboard)/payroll/analytics/page.tsx",
@@ -1015,63 +1015,63 @@
     },
     {
       "path": "components/dashboard/account-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/activity-feed.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-045"
     },
     {
       "path": "components/dashboard/approval-notification-text.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-045"
     },
     {
       "path": "components/dashboard/audit-timeline.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-045"
     },
     {
       "path": "components/dashboard/bill-currency-amounts.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/brand-loader.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/budget-progress-bar.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-050"
     },
     {
       "path": "components/dashboard/cash-flow-widget.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-050"
     },
     {
       "path": "components/dashboard/category-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/command-palette.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/contact-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/create-drawer.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-049"
     },
     {
       "path": "components/dashboard/create-org-dialog.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/credit-note-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/customer-prepayment-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/data-table-advanced.tsx",
@@ -1083,23 +1083,23 @@
     },
     {
       "path": "components/dashboard/date-range-filter.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/debit-note-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/debit-note-overview.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/edit-profile-dialog.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/email-history.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "components/dashboard/empty-state.tsx",
@@ -1107,7 +1107,7 @@
     },
     {
       "path": "components/dashboard/entry-form.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/error-state.tsx",
@@ -1115,55 +1115,55 @@
     },
     {
       "path": "components/dashboard/expense-amount-input.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/export-button.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "components/dashboard/file-uploader.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "components/dashboard/inline-edit.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/inventory-item-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/invoice-amount-input.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/line-items-editor.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/money-input.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/notification-dropdown.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-045"
     },
     {
       "path": "components/dashboard/opening-balance-form.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/opening-balance-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/org-loader.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/org-switcher.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/page-header.tsx",
@@ -1171,35 +1171,35 @@
     },
     {
       "path": "components/dashboard/page-skeleton.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/payment-amount-preview.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/procurement-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/quote-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/receipt-attachments.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "components/dashboard/recurring-invoice-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/requisition-line-editor.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-047"
     },
     {
       "path": "components/dashboard/sales-receipt-money-details.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/section.tsx",
@@ -1207,15 +1207,15 @@
     },
     {
       "path": "components/dashboard/send-document-dialog.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-044"
     },
     {
       "path": "components/dashboard/sidebar.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/sparkline.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-050"
     },
     {
       "path": "components/dashboard/stat-card.tsx",
@@ -1223,7 +1223,7 @@
     },
     {
       "path": "components/dashboard/status-dot.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/tab-layout.tsx",
@@ -1231,35 +1231,35 @@
     },
     {
       "path": "components/dashboard/tag-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/tax-settlement-preview.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-048"
     },
     {
       "path": "components/dashboard/team-fields.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/time-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/topbar.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/tracking-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/dashboard/user-menu.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-043"
     },
     {
       "path": "components/dashboard/warehouse-picker.tsx",
-      "owner": "RTL-021"
+      "owner": "RTL-046"
     },
     {
       "path": "components/landing/bento-features.tsx",

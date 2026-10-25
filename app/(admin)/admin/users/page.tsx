@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -147,10 +149,10 @@ export default function AdminUsersPage() {
             value={search}
             onChange={setSearch}
             placeholder={t("searchNameOrEmail")}
-            className="w-56"
+            className="min-w-0 w-full sm:w-56"
           />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-[120px] h-8 text-xs">
+            <SelectTrigger aria-label={t("role")} className="w-[120px]  text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
               <SelectValue placeholder={t("role")} />
             </SelectTrigger>
             <SelectContent>
@@ -165,8 +167,8 @@ export default function AdminUsersPage() {
             setSortBy(key);
             setSortAsc(dir === "asc");
           }}>
-            <SelectTrigger className="w-[140px] h-8 text-xs">
-              <ArrowUpDown className="size-3 mr-1" />
+            <SelectTrigger aria-label={t("sortBy")} className="w-[140px]  text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
+              <ArrowUpDown className="size-3 me-1" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -180,13 +182,13 @@ export default function AdminUsersPage() {
             </SelectContent>
           </Select>
           {hasFilters && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] text-xs gap-1" onClick={clearFilters}>
               <X className="size-3" />
               {t("clear")}
             </Button>
           )}
           {!loading && (
-            <Badge variant="secondary" className="text-xs ml-auto">
+            <Badge variant="secondary" className="text-xs ms-auto">
               {t("filteredCount", { count: filtered.length, total: platformUsers.length })}
             </Badge>
           )}
@@ -203,25 +205,25 @@ export default function AdminUsersPage() {
             {filtered.map((u) => (
               <div
                 key={u.id}
-                className="flex items-center gap-3 px-4 py-3"
+                className="flex flex-wrap items-center gap-3 px-4 py-3"
               >
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
                   {(u.name || u.email).charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {u.name || u.email}
+                  <p className="min-w-0 text-sm font-medium [overflow-wrap:anywhere]">
+                    <BidiText>{u.name || u.email}</BidiText>
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {u.email}
+                  <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                    <IdentifierText>{u.email}</IdentifierText>
                   </p>
                 </div>
                 <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
                   <Building2 className="size-3" />
-                  {u.orgCount}
+                  <BidiText dir="ltr">{u.orgCount}</BidiText>
                 </div>
                 <p className="hidden md:block text-xs text-muted-foreground tabular-nums">
-                  {new Date(u.createdAt).toLocaleDateString()}
+                  <BidiText>{new Date(u.createdAt).toLocaleDateString()}</BidiText>
                 </p>
                 {u.isSiteAdmin ? (
                   <Badge
@@ -242,7 +244,7 @@ export default function AdminUsersPage() {
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-7">
+                    <Button aria-label={t("userActions")} variant="ghost" size="icon" className="size-7">
                       <MoreHorizontal className="size-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -250,12 +252,12 @@ export default function AdminUsersPage() {
                     <DropdownMenuItem onClick={() => toggleAdmin(u.id, u.isSiteAdmin)}>
                       {u.isSiteAdmin ? (
                         <>
-                          <ShieldOff className="size-3.5 mr-2" />
+                          <ShieldOff className="size-3.5 me-2" />
                           {t("revokeAdmin")}
                         </>
                       ) : (
                         <>
-                          <Shield className="size-3.5 mr-2" />
+                          <Shield className="size-3.5 me-2" />
                           {t("grantAdmin")}
                         </>
                       )}

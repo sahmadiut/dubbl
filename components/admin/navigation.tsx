@@ -75,7 +75,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
             {t("thePageYouAreLookingForDoesNotExistOrYouDoNotHavePermissionToAccessIt")}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => router.push("/dashboard")}>
+        <Button variant="outline" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" onClick={() => router.push("/dashboard")}>
           <ArrowLeft className="size-3.5 me-1.5" />
           {t("backToHome")}
         </Button>
@@ -89,7 +89,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
     ALL_ITEMS.some((t) => pathname.startsWith(t.href + "/"));
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-col md:flex-row">
       {/* Left sidebar */}
       {!isDetailPage && (
         <aside className="hidden md:flex w-60 shrink-0 flex-col border-e bg-sidebar">
@@ -118,13 +118,13 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                          "flex items-center gap-2.5 [overflow-wrap:anywhere] rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
                             : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                         )}
                       >
-                        <Icon className="size-3.5" />
+                        <Icon className="size-3.5 shrink-0" />
                         {item.label}
                       </Link>
                     );
@@ -139,19 +139,20 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
               href="/dashboard"
               className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
             >
-              <ArrowLeft className="size-3.5" />
+              <ArrowLeft className="size-3.5 shrink-0" />
               {t("backToApp")}
             </Link>
           </div>
         </aside>
       )}
 
+      <div className="sticky top-0 z-50 md:hidden">
       {/* Mobile header */}
-      <div className="md:hidden fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b bg-background px-4">
+      <div className="flex min-h-14 flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-2">
         <div className="flex items-center gap-2">
           {isDetailPage ? (
-            <Button variant="ghost" size="sm" className="gap-1 -ms-2" onClick={() => router.back()}>
-              <ArrowLeft className="size-3.5" />
+            <Button variant="ghost" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] gap-1 -ms-2" onClick={() => router.back()}>
+              <ArrowLeft className="size-3.5 shrink-0" />
               {t("back")}
             </Button>
           ) : (
@@ -163,7 +164,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle className="[&_button]:size-6 [&_button_svg]:size-3" />
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" asChild>
             <Link href="/dashboard">
               <ArrowLeft className="size-3.5 me-1" />
               {t("app")}
@@ -174,7 +175,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
 
       {/* Mobile tabs */}
       {!isDetailPage && (
-        <nav className="md:hidden fixed inset-x-0 top-14 z-40 flex items-center gap-1 overflow-x-auto border-b bg-background px-4 scrollbar-none">
+        <nav className="flex items-center gap-1 overflow-x-auto border-b bg-background px-4 scrollbar-none">
           {ALL_ITEMS.map((item) => {
             const isActive = item.exact
               ? pathname === item.href
@@ -191,13 +192,15 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-3.5 shrink-0" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
       )}
+
+      </div>
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
@@ -208,8 +211,8 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
         )}
         {isDetailPage && (
           <div className="hidden md:flex h-14 items-center gap-3 border-b px-6">
-            <Button variant="ghost" size="sm" className="gap-1.5 -ms-2" onClick={() => router.back()}>
-              <ArrowLeft className="size-3.5" />
+            <Button variant="ghost" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] gap-1.5 -ms-2" onClick={() => router.back()}>
+              <ArrowLeft className="size-3.5 shrink-0" />
               {t("back")}
             </Button>
             <div className="flex-1" />
@@ -218,8 +221,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
         )}
         <div className={cn(
           "mx-auto w-full max-w-[1000px] px-4 py-6 sm:px-8 sm:py-8",
-          !isDetailPage && "md:mt-0 mt-24",
-          isDetailPage && "md:mt-0 mt-14"
+          "[overflow-wrap:anywhere]"
         )}>
           <BlurReveal key={pathname}>{children}</BlurReveal>
         </div>

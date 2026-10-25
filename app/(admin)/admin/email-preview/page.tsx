@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { adminTemplateLabel } from "@/i18n/admin-labels";
 import { useTranslations } from "next-intl";
 
@@ -76,15 +78,15 @@ export default function AdminEmailPreviewPage() {
         {loadingTemplates ? (
           <Skeleton className="h-10 w-full rounded-lg" />
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={selectedTemplate} onValueChange={loadPreview}>
-              <SelectTrigger className="w-64">
+              <SelectTrigger aria-label={t("selectATemplate")} className="w-full sm:w-64 data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
                 <SelectValue placeholder={t("selectATemplate")} />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
-                    {adminTemplateLabel(t, template.id, template.name)}
+                    <BidiText>{adminTemplateLabel(t, template.id, template.name)}</BidiText>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -93,7 +95,7 @@ export default function AdminEmailPreviewPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 shrink-0"
+                className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] gap-1.5 shrink-0"
                 onClick={() => {
                   const win = window.open("", "_blank");
                   if (win) {

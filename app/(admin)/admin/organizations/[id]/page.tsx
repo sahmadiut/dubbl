@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { adminPlanLabel, adminStatusLabel, adminRoleLabel } from "@/i18n/admin-labels";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
@@ -309,18 +311,18 @@ export default function AdminOrgDetailPage({
     <ContentReveal>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-xl bg-muted">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
               {org.logo ? (
                 <Image src={org.logo} alt="" width={44} height={44} className="size-11 rounded-xl object-cover" />
               ) : (
                 <Building2 className="size-5 text-muted-foreground" />
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">{org.name}</h2>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="min-w-0 text-lg font-semibold [overflow-wrap:anywhere]"><BidiText>{org.name}</BidiText></h2>
                 <Badge
                   variant="outline"
                   className={cn("text-[11px] capitalize", isEnterprise ? "text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-950/50" : STATUS_COLORS[sub.status] || "")}
@@ -329,7 +331,7 @@ export default function AdminOrgDetailPage({
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">
-                {org.slug} · <bdi>{currencyLabel(org.defaultCurrency, presentation.locale)}</bdi> · {t("created", { date: new Date(org.createdAt).toLocaleDateString() })}
+                <IdentifierText>{org.slug}</IdentifierText> · <bdi>{currencyLabel(org.defaultCurrency, presentation.locale)}</bdi> · {t.rich("created", { date: new Date(org.createdAt).toLocaleDateString(), code: chunks => <BidiText>{chunks}</BidiText> })}
               </p>
             </div>
           </div>
@@ -560,20 +562,20 @@ export default function AdminOrgDetailPage({
               {members.map((m) => {
                 const RoleIcon = ROLE_ICONS[m.role] || User;
                 return (
-                  <div key={m.id} className="flex items-center gap-3 px-4 py-3">
+                  <div key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-medium">
                       {(m.userName || m.userEmail).charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{m.userName || m.userEmail}</p>
-                      <p className="truncate text-xs text-muted-foreground">{m.userEmail}</p>
+                      <p className="text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{m.userName || m.userEmail}</BidiText></p>
+                      <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]"><IdentifierText>{m.userEmail}</IdentifierText></p>
                     </div>
                     <p className="hidden sm:block text-xs text-muted-foreground">
-                      {new Date(m.createdAt).toLocaleDateString()}
+                      <BidiText>{new Date(m.createdAt).toLocaleDateString()}</BidiText>
                     </p>
                     <Badge variant="outline" className={cn("gap-1 text-[11px]", ROLE_COLORS[m.role] || "")}>
                       <RoleIcon className="size-3" />
-                      {adminRoleLabel(t, m.role)}
+                      <BidiText>{adminRoleLabel(t, m.role)}</BidiText>
                     </Badge>
                   </div>
                 );
@@ -586,7 +588,7 @@ export default function AdminOrgDetailPage({
 
           {/* Notes tab */}
           <TabsContent value="notes" className="mt-6 space-y-4">
-            <Textarea
+            <Textarea id="admin-org-notes" aria-label={t("notes")} dir="auto"
               placeholder={t("internalNotesAboutThisOrganizationEnterpriseDealTermsContacts")}
               value={editNotes}
               onChange={(e) => { setEditNotes(e.target.value); markDirty(); }}
@@ -594,7 +596,7 @@ export default function AdminOrgDetailPage({
               className="text-sm"
             />
             {dirty && (
-              <Button size="sm" className="gap-1.5 text-xs" onClick={handleSave} disabled={saving}>
+              <Button size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] gap-1.5 text-xs" onClick={handleSave} disabled={saving}>
                 <Save className="size-3" />
                 {saving ? t("saving") : t("saveNotes")}
               </Button>

@@ -643,3 +643,16 @@ All 31 original sources are assigned once. Independent account, journal, budget/
 - [RTL-042](../tasks/RTL-042.md): Adopt bidi across procurement and landed costs; RTL-015 child.
 
 All 36 original sources are assigned once. Document, allocation, recurrence and procurement contracts retain independent RTL-015/010/008/002 acceptance. Equal child priorities preserve live scheduler order.
+
+## RTL-021 shared dashboard adoption children
+
+- [RTL-043](../tasks/RTL-043.md): Adopt bidi across dashboard shell and account controls; RTL-021 child.
+- [RTL-044](../tasks/RTL-044.md): Adopt bidi across dashboard documents and delivery controls; RTL-021 child.
+- [RTL-045](../tasks/RTL-045.md): Adopt bidi across invitations and dashboard notifications; RTL-021 child.
+- [RTL-046](../tasks/RTL-046.md): Adopt bidi across shared dashboard pickers and field controls; RTL-021 child.
+- [RTL-047](../tasks/RTL-047.md): Adopt bidi across shared exact-money editors; RTL-021 child.
+- [RTL-048](../tasks/RTL-048.md): Adopt bidi across shared saved-money detail surfaces; RTL-021 child.
+- [RTL-049](../tasks/RTL-049.md): Adopt bidi across creation drawers; RTL-021 child.
+- [RTL-050](../tasks/RTL-050.md): Adopt bidi across shared dashboard chart widgets; RTL-021 child.
+
+All 59 original sources are assigned once. Shell/account, document, notification, picker, editor, saved-money, drawer and chart contracts retain independent RTL-021/010/008/002 acceptance. Equal priorities preserve scheduler ordering. Concurrent drawer operation changes remain separately owned.

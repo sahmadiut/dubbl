@@ -1085,7 +1085,7 @@
     "membersCount": "Members ({count, number})",
     "filteredCount": "{count, number} of {total, number}",
     "defaultLimit": "Default: {value}",
-    "created": "Created {date}",
+    "created": "Created <code>{date}</code>",
     "recentCount": "+{count, number} last 30d",
     "freePrice": "$0/mo",
     "proPrice": "$12/seat/mo",
@@ -1102,7 +1102,9 @@
     "invoicesMo": "Invoices / mo",
     "projects": "Projects",
     "bankAccounts": "Bank Accounts",
-    "entriesMo": "Entries / mo"
+    "entriesMo": "Entries / mo",
+    "sortBy": "Sort by",
+    "userActions": "User actions"
   },
   "Teams": {
     "teams": "Teams",

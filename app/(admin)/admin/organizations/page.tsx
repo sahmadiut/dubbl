@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { adminPlanLabel } from "@/i18n/admin-labels";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
@@ -143,10 +145,10 @@ export default function AdminOrganizationsPage() {
             value={search}
             onChange={setSearch}
             placeholder={t("searchNameOrSlug")}
-            className="w-56"
+            className="min-w-0 w-full sm:w-56"
           />
           <Select value={planFilter} onValueChange={setPlanFilter}>
-            <SelectTrigger className="w-[110px] h-8 text-xs">
+            <SelectTrigger aria-label={t("plan")} className="w-[110px]  text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
               <SelectValue placeholder={t("plan")} />
             </SelectTrigger>
             <SelectContent>
@@ -156,7 +158,7 @@ export default function AdminOrganizationsPage() {
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[120px] h-8 text-xs">
+            <SelectTrigger aria-label={t("status")} className="w-[120px]  text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
               <SelectValue placeholder={t("status")} />
             </SelectTrigger>
             <SelectContent>
@@ -183,8 +185,8 @@ export default function AdminOrganizationsPage() {
             setSortBy(key);
             setSortAsc(dir === "asc");
           }}>
-            <SelectTrigger className="w-[140px] h-8 text-xs">
-              <ArrowUpDown className="size-3 mr-1" />
+            <SelectTrigger aria-label={t("sortBy")} className="w-[140px]  text-xs data-[size=default]:h-auto data-[size=sm]:h-auto min-h-8 whitespace-normal *:data-[slot=select-value]:line-clamp-none *:data-[slot=select-value]:whitespace-normal">
+              <ArrowUpDown className="size-3 me-1" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -197,13 +199,13 @@ export default function AdminOrganizationsPage() {
             </SelectContent>
           </Select>
           {hasFilters && (
-            <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere] text-xs gap-1" onClick={clearFilters}>
               <X className="size-3" />
               {t("clear")}
             </Button>
           )}
           {!loading && (
-            <Badge variant="secondary" className="text-xs ml-auto">
+            <Badge variant="secondary" className="text-xs ms-auto">
               {t("filteredCount", { count: filtered.length, total: orgs.length })}
             </Badge>
           )}
@@ -224,7 +226,7 @@ export default function AdminOrganizationsPage() {
                 <Link
                   key={o.id}
                   href={`/admin/organizations/${o.id}`}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+                  className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold">
                     {o.logo ? (
@@ -234,19 +236,19 @@ export default function AdminOrganizationsPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium">{o.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="min-w-0 text-sm font-medium [overflow-wrap:anywhere]"><BidiText>{o.name}</BidiText></p>
                       {o.deletedAt && (
                         <Badge variant="outline" className="text-[10px] text-red-500">{t("deleted")}</Badge>
                       )}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {o.slug} · <bdi>{currencyLabel(o.defaultCurrency, presentation.locale)}</bdi>
+                    <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+                      <IdentifierText>{o.slug}</IdentifierText> · <bdi>{currencyLabel(o.defaultCurrency, presentation.locale)}</bdi>
                     </p>
                   </div>
                   <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
                     <Users className="size-3" />
-                    {o.memberCount}
+                    <BidiText dir="ltr">{o.memberCount}</BidiText>
                   </div>
                   <Badge
                     variant="outline"
@@ -254,7 +256,7 @@ export default function AdminOrganizationsPage() {
                   >
                     {isEnterprise ? displayPlan : adminPlanLabel(t, o.plan)}
                   </Badge>
-                  <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0" />
+                  <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0 rtl:rotate-180" />
                 </Link>
               );
             })}

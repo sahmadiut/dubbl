@@ -11,6 +11,7 @@ import { PresentationProvider, usePresentation } from "../i18n/provider";
 import { resolvePresentation, type Presentation } from "../i18n/locale";
 import { currencyLabel } from "../i18n/currency-labels";
 import { formatExactMoney } from "../i18n/numbers";
+import { BidiText, IdentifierText } from "../components/ui/bidi-text";
 import { CurrencyInput } from "../components/ui/currency-input";
 import { DualAmount } from "../components/ui/dual-amount";
 import { payrollMoneyDisplay } from "../lib/money/payroll-display";
@@ -93,7 +94,7 @@ test("actual admin organization header localizes metadata independently of froze
   const require = createRequire(import.meta.url);
   for (const presentation of preferences) {
     const t = nextIntl.createTranslator({ locale: presentation.locale, messages: presentation.locale === "fa-IR" ? fa : en, namespace: "Admin" });
-    const View = new Function("require", "exports", "org", "presentation", "currencyLabel", "t", `${jsx};return View;`)(require, {}, org, presentation, currencyLabel, t);
+    const View = new Function("require", "exports", "org", "presentation", "currencyLabel", "t", "BidiText", "IdentifierText", `${jsx};return View;`)(require, {}, org, presentation, currencyLabel, t, BidiText, IdentifierText);
     const html = render(React.createElement(View), presentation);
     assert.ok(html.includes(`<bdi>${presentation.locale === "fa-IR" ? "ریال" : "IRR"}</bdi>`));
     assert.ok(html.includes("caller-slug"));

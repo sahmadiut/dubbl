@@ -12,6 +12,7 @@ import { motion, MotionConfig } from "motion/react";
 import { DataTable, type Column } from "@/components/dashboard/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
@@ -46,7 +47,7 @@ export default function AccountLedgerPage() {
           href={`/accounting/${r.entryId}`}
           className="font-mono text-xs text-emerald-600 hover:underline"
         >
-          {r.entryNumber}
+          <IdentifierText>{r.entryNumber}</IdentifierText>
         </a>
       ),
     },
@@ -54,41 +55,41 @@ export default function AccountLedgerPage() {
       key: "date",
       header: t("date"),
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.date}</span>,
+      render: (r) => <IdentifierText className="text-sm">{r.date}</IdentifierText>,
     },
     {
       key: "description",
       header: t("description"),
-      render: (r) => <span className="text-sm">{r.description}</span>,
+      render: (r) => <BidiText className="text-sm whitespace-normal">{r.description}</BidiText>,
     },
     {
       key: "debit",
       header: t("debit"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
+        <BidiText className="font-mono text-sm tabular-nums">
           {r.debitAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.debitAmount, r.debitAmountMinor), r.amountCurrencyCode, unitPresentation) : ""}
-        </span>
+        </BidiText>
       ),
     },
     {
       key: "credit",
       header: t("credit"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">
+        <BidiText className="font-mono text-sm tabular-nums">
           {r.creditAmountMinor !== "0" ? journalMoney(coreStoredMinor(r.creditAmount, r.creditAmountMinor), r.amountCurrencyCode, unitPresentation) : ""}
-        </span>
+        </BidiText>
       ),
     },
     {
       key: "balance",
       header: t("balance"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
-        <span className="font-mono text-sm font-medium tabular-nums">
+        <BidiText className="font-mono text-sm font-medium tabular-nums">
           {journalMoney(coreStoredMinor(r.balance, r.balanceMinor), r.amountCurrencyCode, unitPresentation)}
-        </span>
+        </BidiText>
       ),
     },
   ];
@@ -205,13 +206,13 @@ export default function AccountLedgerPage() {
   return (
     <div className="space-y-3">
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">{t("transactions")}</h3>
         <span className="text-xs text-muted-foreground tabular-nums">{t("entryCount", { count: total })}</span>
       </div>
 
-      <Tabs value={entryType} onValueChange={setEntryType}>
-        <TabsList>
+      <Tabs dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} value={entryType} onValueChange={setEntryType}>
+        <TabsList aria-label={t("transactions")} className="h-auto max-w-full flex-wrap group-data-[orientation=horizontal]/tabs:h-auto [&_[role=tab]]:h-auto [&_[role=tab]]:whitespace-normal">
           <TabsTrigger value="all">{t("all")}</TabsTrigger>
           <TabsTrigger
             value="debits"
@@ -230,34 +231,36 @@ export default function AccountLedgerPage() {
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder={t("searchLedger")}
+            aria-label={t("searchLedger")}
+            dir="auto"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
-        <div className="flex items-center gap-1.5">
+        <div role="group" aria-label={t("startDate")} className="flex max-w-full flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
           <DatePicker
             value={dateFrom}
             onChange={(v) => setDateFrom(v)}
             placeholder={t("startDate")}
-            className="h-8 w-40 text-xs"
+            className="h-8 w-40 max-w-full text-xs"
           />
         </div>
-        <div className="flex items-center gap-1.5">
+        <div role="group" aria-label={t("endDate")} className="flex max-w-full flex-wrap items-center gap-1.5">
           <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
           <DatePicker
             value={dateTo}
             onChange={(v) => setDateTo(v)}
             placeholder={t("endDate")}
-            className="h-8 w-40 text-xs"
+            className="h-8 w-40 max-w-full text-xs"
           />
         </div>
         <Select value={sort} onValueChange={setSort}>
-          <SelectTrigger className="h-8 w-44 text-xs">
+          <SelectTrigger aria-label={t("sortBy")} className="min-h-8 h-auto max-w-full w-44 text-xs whitespace-normal data-[size=default]:h-auto *:data-[slot=select-value]:line-clamp-none">
             <SelectValue placeholder={t("sortBy")} />
           </SelectTrigger>
           <SelectContent>
@@ -273,7 +276,7 @@ export default function AccountLedgerPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 text-xs text-muted-foreground"
+            className="h-auto min-h-8 max-w-full whitespace-normal text-xs text-muted-foreground"
             onClick={() => {
               setSearch("");
               setDateFrom("");
@@ -281,7 +284,7 @@ export default function AccountLedgerPage() {
               setEntryType("all");
             }}
           >
-            <X className="mr-1 size-3" />
+            <X className="me-1 size-3" />
             {t("clearFilters")}
           </Button>
         )}

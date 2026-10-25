@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { BidiText } from "@/components/ui/bidi-text";
 import {
   Select,
   SelectContent,
@@ -142,7 +143,7 @@ export default function AccountSettingsPage() {
 
   return (
     <>
-      <form onSubmit={handleSave} className="space-y-10">
+      <form onSubmit={handleSave} className="space-y-10 [overflow-wrap:anywhere]">
         {isSystem && (
           <div className="flex items-start gap-2.5 rounded-md border border-border bg-muted/40 px-4 py-3">
             <Lock className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
@@ -153,7 +154,7 @@ export default function AccountSettingsPage() {
         )}
 
         {/* General */}
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10 [&>div]:min-w-0">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("general")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
@@ -163,24 +164,24 @@ export default function AccountSettingsPage() {
           <div className="min-w-0 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("accountCode")}</Label>
-                <Input name="code" required defaultValue={account.code} className="font-mono" readOnly={isSystem} disabled={isSystem} />
+                <Label htmlFor="account-code" className="text-xs">{t("accountCode")}</Label>
+                <Input id="account-code" aria-label={t("accountCode")} dir="ltr" name="code" required defaultValue={account.code} className="font-mono" readOnly={isSystem} disabled={isSystem} />
                 <p className="text-[11px] text-muted-foreground">
                   {isSystem ? t("systemCodeNotice") : t("codeNotice")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("accountName")}</Label>
-                <Input name="name" required defaultValue={accountDisplayName(names, account)} readOnly={isSystem} disabled={isSystem} />
+                <Label htmlFor="account-name" className="text-xs">{t("accountName")}</Label>
+                <Input id="account-name" aria-label={t("accountName")} dir="auto" name="name" required defaultValue={accountDisplayName(names, account)} readOnly={isSystem} disabled={isSystem} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("subType")}</Label>
-              <Input name="subType" defaultValue={account.subType || ""} placeholder={t("subTypePlaceholder")} />
+              <Label htmlFor="account-subType" className="text-xs">{t("subType")}</Label>
+              <Input id="account-subType" aria-label={t("subType")} dir="auto" name="subType" defaultValue={account.subType || ""} placeholder={t("subTypePlaceholder")} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("description")}</Label>
-              <Textarea name="description" defaultValue={account.description || ""} placeholder={t("notesPlaceholder")} rows={3} />
+              <Label htmlFor="account-description" className="text-xs">{t("description")}</Label>
+              <Textarea id="account-description" aria-label={t("description")} dir="auto" name="description" defaultValue={account.description || ""} placeholder={t("notesPlaceholder")} rows={3} />
             </div>
           </div>
         </div>
@@ -188,14 +189,14 @@ export default function AccountSettingsPage() {
         <div className="h-px bg-border" />
 
         {/* Status */}
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10 [&>div]:min-w-0">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("status")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("statusDescription")}</p>
           </div>
           <div className="min-w-0">
             <Select name="isActive" defaultValue={account.isActive === false ? "false" : "true"} key={String(account.isActive)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("status")} className="h-auto min-h-9 max-w-full whitespace-normal data-[size=default]:h-auto *:data-[slot=select-value]:line-clamp-none"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="true">{t("active")}</SelectItem>
                 <SelectItem value="false">{t("inactive")}</SelectItem>
@@ -207,7 +208,7 @@ export default function AccountSettingsPage() {
         <div className="h-px bg-border" />
 
         {/* Read-only info */}
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10 [&>div]:min-w-0">
           <div className="shrink-0">
             <p className="text-sm font-medium">{t("info")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("infoDescription")}</p>
@@ -219,15 +220,15 @@ export default function AccountSettingsPage() {
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground">{t("currency")}</p>
-              <p className="text-sm mt-0.5">{currencyLabel(cur, unitPresentation.locale)}</p>
+              <p className="text-sm mt-0.5"><BidiText>{currencyLabel(cur, unitPresentation.locale)}</BidiText></p>
             </div>
           </div>
         </div>
 
         <div className="h-px bg-border" />
 
-        <div className="flex justify-end">
-          <Button type="submit" size="sm" loading={saving} className="bg-emerald-600 hover:bg-emerald-700">
+        <div className="flex flex-wrap justify-end">
+          <Button type="submit" size="sm" loading={saving} className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700">
             {t("saveChanges")}
           </Button>
         </div>
@@ -235,13 +236,13 @@ export default function AccountSettingsPage() {
         <div className="h-px bg-border" />
 
         {/* Danger zone */}
-        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10">
+        <div className="grid gap-6 sm:grid-cols-[200px_1fr] sm:gap-10 [&>div]:min-w-0">
           <div className="shrink-0">
             <p className="text-sm font-medium text-red-600">{t("dangerZone")}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{t("irreversible")}</p>
           </div>
           <div className="min-w-0 space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
               <div>
                 <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
                   {account.isActive !== false ? t("deactivateAccount") : t("reactivateAccount")}
@@ -257,27 +258,27 @@ export default function AccountSettingsPage() {
                 size="sm"
                 type="button"
                 onClick={handleDeactivate}
-                className="border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950"
+                className="h-auto min-h-8 max-w-full whitespace-normal border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950"
               >
                 {account.isActive !== false ? t("deactivate") : t("reactivate")}
               </Button>
             </div>
 
             {isSystem ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border px-4 py-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between rounded-md border px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">{t("deleteAccount")}</p>
                   <p className="text-[12px] text-muted-foreground">{t("systemDeleteNotice")}</p>
                 </div>
-                <Button variant="outline" size="sm" type="button" disabled>{t("delete")}</Button>
+                <Button variant="outline" size="sm" type="button" className="h-auto min-h-8 max-w-full whitespace-normal" disabled>{t("delete")}</Button>
               </div>
             ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900/50 dark:bg-red-950/20">
                 <div>
                   <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteAccount")}</p>
                   <p className="text-[12px] text-muted-foreground">{t("transactionsPreventDelete")}</p>
                 </div>
-                <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
+                <Button variant="destructive" size="sm" type="button" className="h-auto min-h-8 max-w-full whitespace-normal" onClick={handleDelete}>{t("delete")}</Button>
               </div>
             )}
           </div>

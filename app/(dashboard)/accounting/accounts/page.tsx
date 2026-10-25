@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Lock, Plus, Search, X } from "lucide-react";
 import { useCreateDrawer } from "@/components/dashboard/create-drawer";
 import { Button } from "@/components/ui/button";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -158,8 +159,8 @@ export default function AccountsPage() {
 
     return (
       <ContentReveal className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <h2 className="text-lg font-semibold tracking-tight">{t("chartOfAccounts")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
               {t("chartDescription")}
@@ -168,18 +169,18 @@ export default function AccountsPage() {
           <Button
             onClick={() => openDrawer("account")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newAccount")}
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {ALL_TYPES.map((type) => (
             <div
               key={type}
-              className={`rounded-xl ${TYPE_BG[type]} p-4 space-y-3`}
+              className={`min-w-0 rounded-xl ${TYPE_BG[type]} p-4 space-y-3 [overflow-wrap:anywhere]`}
             >
               <div className="flex items-center gap-2">
                 <span className={`size-2 rounded-full ${TYPE_DOT[type]}`} />
@@ -187,7 +188,7 @@ export default function AccountsPage() {
               </div>
               <div className="space-y-1">
                 {TYPE_EXAMPLES[type].map((ex) => (
-                  <p key={ex} className="text-[12px] text-muted-foreground font-mono">{ex}</p>
+                  <p key={ex} className="text-[12px] text-muted-foreground font-mono"><BidiText>{ex}</BidiText></p>
                 ))}
               </div>
             </div>
@@ -202,8 +203,8 @@ export default function AccountsPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0 [overflow-wrap:anywhere]">
           <h2 className="text-lg font-semibold tracking-tight">{t("chartOfAccounts")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("chartDescription")}{" "}{t("accountSummary", { count: accounts.length, active: activeCount })}
@@ -212,9 +213,9 @@ export default function AccountsPage() {
         <Button
           onClick={() => openDrawer("account")}
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("newAccount")}
         </Button>
       </div>
@@ -228,7 +229,7 @@ export default function AccountsPage() {
             return (
               <div
                 key={type}
-                className={`${TYPE_META[type].dot} first:rounded-l-full last:rounded-r-full`}
+                className={TYPE_META[type].dot}
                 style={{ flex: count }}
               />
             );
@@ -241,7 +242,7 @@ export default function AccountsPage() {
               <div key={type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className={`size-2 rounded-full ${TYPE_META[type].dot}`} />
                 <span className="capitalize">{accountTypeLabel(t, type)}</span>
-                <span className="tabular-nums font-medium text-foreground">{count}</span>
+                <BidiText dir="ltr" className="tabular-nums font-medium text-foreground">{count}</BidiText>
               </div>
             );
           })}
@@ -250,8 +251,8 @@ export default function AccountsPage() {
 
       {/* Filters */}
       <div className="space-y-3">
-        <Tabs value={typeFilter} onValueChange={setTypeFilter}>
-          <TabsList>
+        <Tabs dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} value={typeFilter} onValueChange={setTypeFilter}>
+          <TabsList aria-label={t("type")} className="h-auto max-w-full flex-wrap group-data-[orientation=horizontal]/tabs:h-auto [&_[role=tab]]:h-auto [&_[role=tab]]:whitespace-normal">
             <TabsTrigger value="all">{t("all")}</TabsTrigger>
             <TabsTrigger value="asset">{t("asset")}</TabsTrigger>
             <TabsTrigger value="liability">{t("liability")}</TabsTrigger>
@@ -263,16 +264,18 @@ export default function AccountsPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search aria-hidden="true" className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder={t("searchAccounts")}
+              aria-label={t("searchAccounts")}
+              dir="auto"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
           <Select value={sort} onValueChange={setSort}>
-            <SelectTrigger className="h-9 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="min-h-9 h-auto max-w-full w-44 text-xs whitespace-normal data-[size=default]:h-auto *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -288,13 +291,13 @@ export default function AccountsPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto min-h-8 max-w-full whitespace-normal text-xs text-muted-foreground"
               onClick={() => {
                 setSearch("");
                 setTypeFilter("all");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}
@@ -325,10 +328,10 @@ export default function AccountsPage() {
             const meta = TYPE_META[type];
             return (
               <div key={type} className={`rounded-xl border ${meta.border} overflow-hidden`}>
-                <div className={`${meta.bg} px-4 py-2.5 flex items-center gap-2`}>
+                <div className={`${meta.bg} px-4 py-2.5 flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]`}>
                   <span className={`size-2 rounded-full ${meta.dot}`} />
                   <h3 className={`text-sm font-semibold capitalize ${meta.text}`}>{accountTypeLabel(t, type)}</h3>
-                  <span className="text-xs text-muted-foreground ml-auto tabular-nums">
+                  <span className="text-xs text-muted-foreground ms-auto tabular-nums">
                     {t("accountCount", { count: items.length })}
                   </span>
                 </div>
@@ -336,13 +339,14 @@ export default function AccountsPage() {
                   {items.map((account) => (
                     <button
                       key={account.id}
+                      type="button"
                       onClick={() => router.push(`/accounting/accounts/${account.id}`)}
-                      className="w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-muted/50 transition-colors group"
+                      className="w-full flex flex-wrap sm:flex-nowrap items-center gap-3 px-4 py-3 text-start hover:bg-muted/50 transition-colors group"
                     >
-                      <span className="font-mono text-xs text-muted-foreground w-14 shrink-0">{account.code}</span>
+                      <IdentifierText className="text-xs text-muted-foreground w-14 max-w-full shrink-0">{account.code}</IdentifierText>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate">{accountDisplayName(names, account)}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="min-w-0 text-sm font-medium"><BidiText>{accountDisplayName(names, account)}</BidiText></p>
                           {account.isSystem && (
                             <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                               <Lock className="size-2.5" />
@@ -351,14 +355,14 @@ export default function AccountsPage() {
                           )}
                         </div>
                         {account.description && (
-                          <p className="text-xs text-muted-foreground truncate">{account.description}</p>
+                          <p className="text-xs text-muted-foreground"><BidiText>{account.description}</BidiText></p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0">{currencyLabel(account.currencyCode, unitPresentation.locale)}</span>
+                      <BidiText className="max-w-full text-xs text-muted-foreground">{currencyLabel(account.currencyCode, unitPresentation.locale)}</BidiText>
                       {!account.isActive && (
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{t("inactive")}</span>
                       )}
-                      <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      <ChevronRight aria-hidden="true" className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 rtl:rotate-180" />
                     </button>
                   ))}
                 </div>

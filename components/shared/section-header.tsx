@@ -17,8 +17,8 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "mb-10 md:mb-14",
-        align === "center" && "text-center",
+        "mb-10 min-w-0 [overflow-wrap:anywhere] md:mb-14",
+        align === "center" ? "text-center" : "text-start",
         className
       )}
     >

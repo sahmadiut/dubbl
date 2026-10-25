@@ -30,7 +30,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
           <br />
           Registered office: 71-75 Shelton Street, London, England, WC2H 9JQ
           <br />
-          Contact: <a href="mailto:team@dubbl.dev">team@dubbl.dev</a>
+          Contact: <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">team@dubbl.dev</a>
         </p>
         <p>{t("thisInformationIsProvidedInComplianceWithThe")}</p>
       </>
@@ -57,7 +57,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
           <li>{t("provideAccurateAndCompleteRegistrationInformation")}</li>
           <li>{t("keepYourAccountCredentialsSecureYouAreResponsible")}</li>
         </ul>
-        <p>{t.rich("youMustNotifyUsImmediatelyAtTeamDubbl", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("youMustNotifyUsImmediatelyAtTeamDubbl", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -150,7 +150,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
     content: (
       <>
         <p>{t.rich("ourProcessingOfYourPersonalDataIsGoverned", {em: (chunks) => <a href="/privacy">{chunks}</a>})}</p>
-        <p>{t.rich("forBookkeepingDataYouEnterIntoTheService", {strong: (chunks) => <strong>{chunks}</strong>, em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("forBookkeepingDataYouEnterIntoTheService", {strong: (chunks) => <strong>{chunks}</strong>, em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -183,7 +183,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
           <li>{t("fitForAParticularPurpose")}</li>
           <li>{t("asDescribed")}</li>
         </ul>
-        <p>{t.rich("ifTheDigitalContentIsFaultyOrDoes", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("ifTheDigitalContentIsFaultyOrDoes", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -206,7 +206,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
     title: t("disputeResolution"),
     content: (
       <>
-        <p>{t.rich("ifADisputeArisesWeEncourageYouTo", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("ifADisputeArisesWeEncourageYouTo", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
         <p>{t("ifInformalResolutionIsUnsuccessfulEitherPartyMay")}</p>
       </>
     ),

@@ -1,3 +1,5 @@
+
+import { BidiText } from "@/components/ui/bidi-text";
 import { useTranslations } from "next-intl";
 
 import { Calendar, type LucideIcon } from "lucide-react";
@@ -44,34 +46,34 @@ export function LegalPageLayout({
           <p className="mt-2 max-w-xl text-base text-muted-foreground">
             {subtitle}
           </p>
-          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="size-4" />
-            <span>{t("lastUpdated", {date: lastUpdated})}</span>
+            <span>{t.rich("lastUpdated", {date: lastUpdated, code: chunks => <BidiText>{chunks}</BidiText>})}</span>
           </div>
         </Container>
       </section>
 
       {/* Two-column content */}
       <Container className="py-12">
-        <div className="grid gap-10 lg:grid-cols-[260px_1fr]">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
           <LegalToc items={tocItems} />
 
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             {sections.map((section, i) => (
               <div
                 key={section.id}
                 id={section.id}
                 className="scroll-mt-24 border-b border-border pb-8 mb-8 last:border-0 last:pb-0 last:mb-0"
               >
-                <div className="mb-4 flex items-center gap-3">
+                <div className="mb-4 flex min-w-0 items-start gap-3">
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
                     {i + 1}
                   </span>
                   <h2 className="text-xl font-semibold text-foreground">
-                    {section.title}
+                    <BidiText>{section.title}</BidiText>
                   </h2>
                 </div>
-                <div className="text-[15px] leading-relaxed text-muted-foreground [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ol]:mb-3 [&_ol]:ml-5 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_strong]:font-semibold [&_strong]:text-foreground [&_a]:text-emerald-600 [&_a]:underline [&_a]:underline-offset-2 dark:[&_a]:text-emerald-400">
+                <div className="text-[15px] leading-relaxed text-muted-foreground [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ms-5 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ol]:mb-3 [&_ol]:ms-5 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_strong]:font-semibold [&_strong]:text-foreground [&_a]:text-emerald-600 [&_a]:underline [&_a]:underline-offset-2 dark:[&_a]:text-emerald-400">
                   {section.content}
                 </div>
               </div>
@@ -100,7 +102,7 @@ export function Callout({
           {title}
         </span>
       </div>
-      <div className="text-[14px] leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:ml-5 [&_ul]:list-disc [&_ul]:space-y-1 last:[&_p]:mb-0 last:[&_ul]:mb-0">
+      <div className="text-[14px] leading-relaxed text-muted-foreground [&_p]:mb-2 [&_ul]:mb-2 [&_ul]:ms-5 [&_ul]:list-disc [&_ul]:space-y-1 last:[&_p]:mb-0 last:[&_ul]:mb-0">
         {children}
       </div>
     </div>

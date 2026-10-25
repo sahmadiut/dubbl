@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { authoredUsdText } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
@@ -102,9 +104,9 @@ function MissingRecordsMockup() {
         transition={{ duration: 4, ease: "easeInOut" }}
       />
       <div className="grid grid-cols-4 border-b border-border bg-muted/60 text-[10px] font-semibold text-muted-foreground">
-        <div className="border-r border-border px-3 py-1.5">{t("invoice")}</div>
-        <div className="border-r border-border px-3 py-1.5">{t("vendor")}</div>
-        <div className="border-r border-border px-3 py-1.5">{t("amount")}</div>
+        <div className="border-e border-border px-3 py-1.5">{t("invoice")}</div>
+        <div className="border-e border-border px-3 py-1.5">{t("vendor")}</div>
+        <div className="border-e border-border px-3 py-1.5">{t("amount")}</div>
         <div className="px-3 py-1.5">{t("status")}</div>
       </div>
       {rows.map((row, i) => (
@@ -116,24 +118,24 @@ function MissingRecordsMockup() {
             row.status !== "ok" && "bg-amber-500/5"
           )}
         >
-          <div className="border-r border-border px-3 py-1.5 font-mono text-foreground">
-            {row.id}
+          <div className="border-e border-border px-3 py-1.5 font-mono text-foreground">
+            <IdentifierText>{row.id}</IdentifierText>
           </div>
           <div
             className={cn(
-              "border-r border-border px-3 py-1.5",
+              "border-e border-border px-3 py-1.5",
               row.vendor === "—" ? "text-muted-foreground/40" : "text-foreground"
             )}
           >
-            {row.vendor}
+            <BidiText>{row.vendor}</BidiText>
           </div>
           <div
             className={cn(
-              "border-r border-border px-3 py-1.5",
+              "border-e border-border px-3 py-1.5",
               row.amount === "—" ? "text-muted-foreground/40" : "text-foreground"
             )}
           >
-            {authoredUsdText(row.amount, presentation.locale)}
+            <IdentifierText>{authoredUsdText(row.amount, presentation.locale)}</IdentifierText>
           </div>
           <div className="px-3 py-1.5">
             {row.status === "ok" ? (
@@ -239,7 +241,7 @@ function ProblemSection() {
                             animate={{ opacity: [1, 0.4, 1] }}
                             transition={{ duration: 2 + (i % 3), delay: (i % 5) * 0.4, ease: "easeInOut" }}
                           >
-                            {cell}
+                            <IdentifierText>{cell}</IdentifierText>
                           </motion.span>
                         ) : (
                           cell
@@ -427,7 +429,7 @@ function MarqueeView({ active = false }: { active?: boolean }) {
                         : "bg-white/10"
                     )}
                   >
-                    {authoredUsdText(pill.label, presentation.locale)}
+                    <IdentifierText>{authoredUsdText(pill.label, presentation.locale)}</IdentifierText>
                   </span>
                 );
               })}
@@ -566,14 +568,14 @@ function ReceiptView() {
             <div className="flex size-4 items-center justify-center rounded-full bg-white/20">
               <Check className="size-2.5 text-white" />
             </div>
-            <span className="truncate text-[9px] text-white/70">{card.desc}</span>
+            <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere] text-[9px] text-white/70"><BidiText>{card.desc}</BidiText></span>
           </div>
           <div className="flex items-center justify-between">
             <span className={cn(
-              "text-xs font-bold",
+              "text-xs font-bold tabular-nums",
               card.amount.startsWith("+") ? "text-emerald-200" : "text-white"
             )}>
-              {authoredUsdText(card.amount, presentation.locale)}
+              <IdentifierText>{authoredUsdText(card.amount, presentation.locale)}</IdentifierText>
             </span>
             <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[8px] font-medium text-white">
               {card.status}

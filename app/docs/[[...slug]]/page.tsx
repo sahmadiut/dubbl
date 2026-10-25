@@ -31,7 +31,7 @@ export default async function Page(props: {
     >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsBody>
+      <DocsBody className="min-w-0 [overflow-wrap:anywhere] [&_pre]:[direction:ltr] [&_pre]:text-left [&_pre]:[unicode-bidi:isolate] [&_code]:[unicode-bidi:isolate]">
         <MDX components={getMDXComponents()} />
       </DocsBody>
     </DocsPage>

@@ -1,5 +1,9 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
+
 import { useTranslations } from "next-intl";
 
 import { useState } from "react";
@@ -101,7 +105,7 @@ function ComparisonValue({ value }: { value: boolean | string }) {
   }
   return (
     <span className="font-mono text-sm font-medium tabular-nums text-foreground">
-      {value}
+      <BidiText>{value}</BidiText>
     </span>
   );
 }
@@ -124,6 +128,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function PricingPage() {
   const t = useTranslations("PublicPricingLegal");
+  const direction = localeDirection(usePresentation().locale);
   const comparisonRows = getComparisonRows(t);
   const featureRows = getFeatureRows(t);
   const [interval, setInterval] = useState<"monthly" | "annual">("annual");
@@ -151,11 +156,11 @@ export default function PricingPage() {
           <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground">
             {t("twoSimplePlansStorageAddOnsWhenYou")}</p>
 
-          <div className="relative mt-8 grid grid-cols-2 rounded-full border bg-muted/50 p-1 w-fit mx-auto">
+          <div className="relative mt-8 grid max-w-full grid-cols-2 rounded-full border bg-muted/50 p-1 w-fit mx-auto">
             <motion.div
-              className="absolute inset-y-1 w-[calc(50%-2px)] rounded-full bg-background shadow-sm"
+              className="absolute inset-y-1 start-0 w-[calc(50%-2px)] rounded-full bg-background shadow-sm"
               initial={false}
-              animate={{ x: interval === "monthly" ? 4 : "calc(100% + 4px)" }}
+              animate={{ x: interval === "monthly" ? (direction === "rtl" ? -4 : 4) : (direction === "rtl" ? "calc(-100% - 4px)" : "calc(100% + 4px)") }}
               transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
             />
             <button
@@ -175,7 +180,7 @@ export default function PricingPage() {
                 interval === "annual" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {t("annual")}<span className="ml-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{t("save17")}</span>
+              {t("annual")}<span className="ms-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{t("save17")}</span>
             </button>
           </div>
         </motion.div>
@@ -204,7 +209,7 @@ export default function PricingPage() {
                 </div>
 
                 <div className="mt-8 flex items-baseline gap-2">
-                  <span className="font-mono text-6xl font-bold tracking-tighter text-foreground">
+                  <span dir="ltr" className="[unicode-bidi:isolate] font-mono text-6xl font-bold tracking-tighter text-foreground">
                     $0
                   </span>
                   <span className="text-sm text-muted-foreground">{t("forever")}</span>
@@ -248,7 +253,7 @@ export default function PricingPage() {
             {/* Pro */}
             <div className="group relative flex flex-col rounded-2xl border-2 border-emerald-500/40 bg-card transition-shadow hover:shadow-lg hover:shadow-emerald-500/10 dark:border-emerald-500/30">
               {/* Badge */}
-              <div className="absolute right-6 top-6">
+              <div className="absolute end-6 top-6">
                 <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 dark:border-emerald-800 dark:bg-emerald-950">
                   <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
@@ -275,7 +280,7 @@ export default function PricingPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.2 }}
-                      className="font-mono text-6xl font-bold tracking-tighter text-foreground"
+                      dir="ltr" className="[unicode-bidi:isolate] font-mono text-6xl font-bold tracking-tighter text-foreground"
                     >
                       ${price("pro")}
                     </motion.span>
@@ -285,7 +290,7 @@ export default function PricingPage() {
                     <motion.span
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-sm text-muted-foreground line-through"
+                      dir="ltr" className="[unicode-bidi:isolate] text-sm text-muted-foreground line-through"
                     >
                       ${PLAN_PRICES.pro.monthly}
                     </motion.span>
@@ -338,7 +343,7 @@ export default function PricingPage() {
                     asChild
                   >
                     <a href="/sign-up?plan=pro">
-                      {t("startFreeTrial")}<ArrowRight className="ml-1.5 size-4" />
+                      {t("startFreeTrial")}<ArrowRight className="ms-1.5 size-4 shrink-0 [&:dir(rtl)]:rotate-180" />
                     </a>
                   </Button>
                 </div>
@@ -389,7 +394,7 @@ export default function PricingPage() {
 
                     <div className="mt-3 flex items-baseline gap-1">
                       {currentPrice === 0 ? (
-                        <span className="font-mono text-3xl font-bold tracking-tighter">$0</span>
+                        <span dir="ltr" className="[unicode-bidi:isolate] font-mono text-3xl font-bold tracking-tighter">$0</span>
                       ) : (
                         <>
                           <AnimatePresence mode="wait">
@@ -399,7 +404,7 @@ export default function PricingPage() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
-                              className="font-mono text-3xl font-bold tracking-tighter"
+                              dir="ltr" className="[unicode-bidi:isolate] font-mono text-3xl font-bold tracking-tighter"
                             >
                               ${currentPrice}
                             </motion.span>
@@ -409,7 +414,7 @@ export default function PricingPage() {
                             <motion.span
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              className="text-sm text-muted-foreground line-through"
+                              dir="ltr" className="[unicode-bidi:isolate] text-sm text-muted-foreground line-through"
                             >
                               ${plan.monthly}
                             </motion.span>
@@ -427,14 +432,14 @@ export default function PricingPage() {
                           <FileBox className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span className="text-xs text-muted-foreground">{t("files")}</span>
                         </div>
-                        <span className="font-mono text-sm font-semibold tabular-nums">{files}</span>
+                        <span className="font-mono text-sm font-semibold tabular-nums"><IdentifierText>{files}</IdentifierText></span>
                       </div>
                       <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                         <div className="flex items-center gap-2">
                           <Mail className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                           <span className="text-xs text-muted-foreground">{t("emails")}</span>
                         </div>
-                        <span className="font-mono text-sm font-semibold tabular-nums">{emails}</span>
+                        <span className="font-mono text-sm font-semibold tabular-nums"><IdentifierText>{emails}</IdentifierText></span>
                       </div>
 
                       <p className="text-[11px] leading-relaxed text-muted-foreground/70 px-1">
@@ -493,7 +498,7 @@ export default function PricingPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Github className="mr-2 size-4" />
+                  <Github className="me-2 size-4" />
                   {t("viewOnGitHub")}</a>
               </Button>
             </div>
@@ -514,21 +519,21 @@ export default function PricingPage() {
               {t("everyDetailSideBySide")}</h2>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <table className="w-full">
+          <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+            <table className="w-full min-w-[32rem]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="py-4 pl-6 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[55%]">
+                  <th className="py-4 ps-6 pe-4 text-start text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[55%]">
                     {t("feature")}</th>
                   <th className="py-4 text-center w-[22.5%]">
                     <span className="text-sm font-semibold text-foreground">{t("free")}</span>
                   </th>
-                  <th className="py-4 pr-6 text-center w-[22.5%]">
+                  <th className="py-4 pe-6 text-center w-[22.5%]">
                     <div className="inline-flex items-center gap-1.5">
                       <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                         {t("pro")}</span>
                       <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                        ${price("pro")}{t("seat")}</span>
+                        <IdentifierText>${price("pro")}</IdentifierText>{t("seat")}</span>
                     </div>
                   </th>
                 </tr>
@@ -550,11 +555,11 @@ export default function PricingPage() {
                       i < comparisonRows.length - 1 && "border-b border-border/40"
                     )}
                   >
-                    <td className="py-3 pl-6 pr-4 text-sm text-foreground">{row.label}</td>
+                    <td className="py-3 ps-6 pe-4 text-sm text-foreground">{row.label}</td>
                     <td className="py-3 text-center">
                       <ComparisonValue value={row.free} />
                     </td>
-                    <td className="py-3 pr-6 text-center">
+                    <td className="py-3 pe-6 text-center">
                       <ComparisonValue value={row.pro} />
                     </td>
                   </tr>
@@ -576,11 +581,11 @@ export default function PricingPage() {
                       i < featureRows.length - 1 && "border-b border-border/40"
                     )}
                   >
-                    <td className="py-3 pl-6 pr-4 text-sm text-foreground">{row.label}</td>
+                    <td className="py-3 ps-6 pe-4 text-sm text-foreground">{row.label}</td>
                     <td className="py-3 text-center">
                       <ComparisonValue value={row.free} />
                     </td>
-                    <td className="py-3 pr-6 text-center">
+                    <td className="py-3 pe-6 text-center">
                       <ComparisonValue value={row.pro} />
                     </td>
                   </tr>

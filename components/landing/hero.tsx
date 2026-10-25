@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { authoredUsdText } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { useLocale, useTranslations } from "next-intl";
@@ -61,7 +63,7 @@ function DataVisuals() {
           <span
             className="font-mono text-[11px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400"
           >
-            {authoredUsdText("$48,250", presentation.locale)}
+            <IdentifierText>{authoredUsdText("$48,250", presentation.locale)}</IdentifierText>
           </span>
         </div>
         <svg viewBox="0 0 180 50" className="h-10 w-full">
@@ -159,12 +161,12 @@ function DataVisuals() {
             key={tx.desc}
             className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0"
           >
-            <span className="text-[11px] text-foreground">{tx.desc}</span>
+            <span className="text-[11px] text-foreground"><BidiText>{tx.desc}</BidiText></span>
             <span className={cn(
               "font-mono text-[11px] tabular-nums font-semibold",
               tx.positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
             )}>
-              {authoredUsdText(tx.amount, presentation.locale)}
+              <IdentifierText>{authoredUsdText(tx.amount, presentation.locale)}</IdentifierText>
             </span>
           </div>
         ))}
@@ -218,7 +220,7 @@ function DataVisuals() {
               <div key={s.label} className="flex items-center gap-1.5">
                 <div className={cn("size-1.5 rounded-full", s.color)} />
                 <span className="text-[9px] text-muted-foreground">{s.label}</span>
-                <span className="font-mono text-[9px] font-semibold text-foreground">{s.pct}</span>
+                <span className="font-mono text-[9px] font-semibold text-foreground"><IdentifierText>{s.pct}</IdentifierText></span>
               </div>
             ))}
           </div>
@@ -242,7 +244,7 @@ function DataVisuals() {
           <div key={s.label} className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-0">
             <div>
               <p className="text-[9px] text-muted-foreground">{s.label}</p>
-              <p className="font-mono text-[12px] font-bold tabular-nums text-foreground">{authoredUsdText(s.value, presentation.locale)}</p>
+              <p className="font-mono text-[12px] font-bold tabular-nums text-foreground"><IdentifierText>{authoredUsdText(s.value, presentation.locale)}</IdentifierText></p>
             </div>
             <svg viewBox="0 0 24 10" className="h-3 w-8">
               <path
@@ -273,7 +275,7 @@ function DataVisuals() {
         ].map((inv) => (
           <div key={inv.id} className="border-b border-border/30 py-1.5 last:border-0">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-muted-foreground">{inv.id}</span>
+              <span className="font-mono text-[10px] text-muted-foreground"><IdentifierText>{inv.id}</IdentifierText></span>
               <span className={cn("text-[10px] font-semibold", inv.text)}>{inv.status}</span>
             </div>
             <div className="mt-1 h-1 overflow-hidden rounded-full bg-border/50">
@@ -301,7 +303,7 @@ function DataVisuals() {
             item.y
           )}
         >
-          {item.val}
+          <IdentifierText>{item.val}</IdentifierText>
         </span>
       ))}
     </>
@@ -398,14 +400,14 @@ function LiveTicker() {
   const t = useTranslations("LandingShell");
   const { ref, isActive } = useLandingActivity();
   const tickerEvents = [
-    t("tickerInvoice", { number: "INV-048", amount: authoredUsdText("$4,200", presentation.locale) }),
+    t.rich("tickerInvoice", { number: "INV-048", amount: authoredUsdText("$4,200", presentation.locale), code: chunks => <IdentifierText>{chunks}</IdentifierText> }),
     t("tickerAccount"),
-    t("tickerJournal", { number: "JE-102" }),
-    t("tickerReconciliation", { period: "Dec 2025" }),
-    t("tickerRevenue", { amount: authoredUsdText("$12,500", presentation.locale) }),
-    t("tickerExpense", { amount: authoredUsdText("$240", presentation.locale) }),
+    t.rich("tickerJournal", { number: "JE-102", code: chunks => <IdentifierText>{chunks}</IdentifierText> }),
+    t.rich("tickerReconciliation", { period: "Dec 2025", code: chunks => <IdentifierText>{chunks}</IdentifierText> }),
+    t.rich("tickerRevenue", { amount: authoredUsdText("$12,500", presentation.locale), code: chunks => <IdentifierText>{chunks}</IdentifierText> }),
+    t.rich("tickerExpense", { amount: authoredUsdText("$240", presentation.locale), code: chunks => <IdentifierText>{chunks}</IdentifierText> }),
     t("tickerTrialBalance"),
-    t("tickerApi", { request: "POST /v1/transactions" }),
+    t.rich("tickerApi", { request: "POST /v1/transactions", code: chunks => <IdentifierText>{chunks}</IdentifierText> }),
   ];
 
   return (
@@ -420,11 +422,11 @@ function LiveTicker() {
         WebkitMaskImage: "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
       }}
     >
-      <div className="flex w-max animate-marquee items-center gap-8" style={{ animationPlayState: isActive ? "running" : "paused" }}>
+      <div dir="ltr" className="flex w-max animate-marquee items-center gap-8" style={{ animationPlayState: isActive ? "running" : "paused" }}>
         {[...tickerEvents, ...tickerEvents].map((event, i) => (
           <div key={i} className="flex shrink-0 items-center gap-2 text-[12px] text-muted-foreground/60">
             <span className="size-1 rounded-full bg-emerald-500/50" />
-            <span className="whitespace-nowrap font-mono">{event}</span>
+            <BidiText className="whitespace-nowrap font-mono">{event}</BidiText>
           </div>
         ))}
       </div>
@@ -495,7 +497,7 @@ export function Hero() {
               transition={{ duration: 0.6, delay: 0.1 }}
             >
               {t.rich("heroHeading", {
-                em: (chunks) => <em className="pr-1 italic bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-300 decoration-clone">{chunks}</em>,
+                em: (chunks) => <em className="pe-1 italic bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 bg-clip-text text-transparent dark:from-emerald-400 dark:via-emerald-300 dark:to-teal-300 decoration-clone">{chunks}</em>,
               })}
             </motion.h1>
           </div>
@@ -548,7 +550,7 @@ export function Hero() {
                 className={cn(
                   "group relative inline-flex h-13 items-center justify-center gap-2 overflow-hidden rounded-xl px-6",
                   "bg-emerald-950 text-emerald-100",
-                  "font-mono text-sm font-medium",
+                  "font-mono text-sm font-medium h-auto min-h-12 whitespace-normal [overflow-wrap:anywhere] py-3",
                   "shadow-lg shadow-emerald-950/25",
                   "transition-all duration-200 hover:bg-emerald-900 hover:shadow-xl hover:shadow-emerald-950/30",
                   "active:scale-[0.98]",
@@ -572,7 +574,7 @@ export function Hero() {
             </div>
 
             {/* Trust signals — terminal style */}
-            <div className="mt-12 flex items-center gap-3 font-mono text-[11px] text-muted-foreground sm:gap-5">
+            <div className="mt-12 flex min-w-0 flex-wrap items-center gap-3 font-mono text-[11px] text-muted-foreground sm:gap-5">
               {[
                 { icon: "Apache-2.0", label: t("licensed") },
                 { icon: t("selfHost"), label: t("ready") },

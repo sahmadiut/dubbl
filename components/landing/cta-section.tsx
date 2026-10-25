@@ -60,14 +60,14 @@ export function CTASection() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/sign-up"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-8 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+                className="inline-flex h-auto min-h-12 whitespace-normal [overflow-wrap:anywhere] py-3 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-8 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
               >
                 {t("getStarted")}
-                <ArrowRight className="size-4" />
+                <ArrowRight className="size-4 shrink-0 [&:dir(rtl)]:rotate-180" />
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/20 px-8 text-sm font-medium text-white transition-colors hover:bg-white/5"
+                className="inline-flex h-auto min-h-12 whitespace-normal [overflow-wrap:anywhere] py-3 items-center justify-center gap-2 rounded-xl border border-white/20 px-8 text-sm font-medium text-white transition-colors hover:bg-white/5"
               >
                 {t("contactSales")}
               </Link>

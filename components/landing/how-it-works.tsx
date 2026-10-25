@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { authoredUsdText } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
@@ -122,7 +124,7 @@ function ConnectVisual() {
                 <div
                   className={cn(
                     "absolute top-0.5 size-3 rounded-full bg-card shadow-sm transition-transform",
-                    item.status === "connected" ? "left-3.5" : "left-0.5"
+                    item.status === "connected" ? "start-3.5" : "start-0.5"
                   )}
                 />
               </div>
@@ -177,10 +179,10 @@ function CategorizeVisual() {
       >
         <div>
           <p className="text-xs font-semibold text-foreground">{t("aWSCloudServices")}</p>
-          <p className="text-[10px] text-muted-foreground">Mar 1, 2026</p>
+          <p className="text-[10px] text-muted-foreground"><IdentifierText>Mar 1, 2026</IdentifierText></p>
         </div>
         <span className="text-sm font-bold tabular-nums text-foreground">
-          {authoredUsdText("-$2,450.00", presentation.locale)}
+          <IdentifierText>{authoredUsdText("-$2,450.00", presentation.locale)}</IdentifierText>
         </span>
       </motion.div>
 
@@ -246,7 +248,7 @@ function CategorizeVisual() {
       >
         <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
         <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-          {authoredUsdText(t("balanced245000"), presentation.locale)}
+          <BidiText>{authoredUsdText(t("balanced245000"), presentation.locale)}</BidiText>
         </span>
       </motion.div>
     </div>
@@ -329,7 +331,7 @@ function InsightsVisual() {
               </span>
             </div>
             <p className="text-sm font-bold tabular-nums text-foreground leading-none">
-              {authoredUsdText(kpi.value, presentation.locale)}
+              <IdentifierText>{authoredUsdText(kpi.value, presentation.locale)}</IdentifierText>
             </p>
             <div className="mt-1 flex items-center gap-0.5">
               {kpi.trend === "up" ? (
@@ -345,7 +347,7 @@ function InsightsVisual() {
                     : "text-rose-500"
                 )}
               >
-                {kpi.change}
+                <IdentifierText>{kpi.change}</IdentifierText>
               </span>
             </div>
           </motion.div>
@@ -372,7 +374,7 @@ function InsightsVisual() {
         </div>
 
         {/* Chart area */}
-        <div className="flex items-end gap-1.5 h-16">
+        <div dir="ltr" className="flex items-end gap-1.5 h-16">
           {chartBars.map((bar, i) => (
             <div key={bar.month} className="flex flex-1 flex-col items-center gap-0.5">
               <div className="flex w-full items-end justify-center gap-px h-12">
@@ -401,7 +403,7 @@ function InsightsVisual() {
                   className="w-[5px] rounded-t-sm bg-rose-400"
                 />
               </div>
-              <span className="text-[8px] text-muted-foreground">{bar.month}</span>
+              <span className="text-[8px] text-muted-foreground"><IdentifierText>{bar.month}</IdentifierText></span>
             </div>
           ))}
         </div>
@@ -466,7 +468,7 @@ function DashedConnectors() {
           style={{ left: `${pct}%` }}
         >
           <div className="flex size-7 items-center justify-center rounded-full border-2 border-dashed border-emerald-300 bg-background dark:border-emerald-800">
-            <ArrowRight className="size-3 text-emerald-500 dark:text-emerald-400" />
+            <ArrowRight className="size-3 [&:dir(rtl)]:rotate-180 text-emerald-500 dark:text-emerald-400" />
           </div>
         </div>
       ))}
@@ -516,7 +518,7 @@ export function HowItWorks() {
                   </div>
 
                   <h3 className="text-lg font-semibold text-foreground">
-                    {item.title}
+                    <BidiText>{item.title}</BidiText>
                   </h3>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     {item.subtitle}

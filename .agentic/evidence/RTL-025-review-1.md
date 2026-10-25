@@ -1,0 +1,9 @@
+# RTL-025 self-review
+
+Reviewer: codex-batch05-task2. Kind: self; this is not independent human/native acceptance.
+
+Reviewed all 35 assigned public marketing/legal/docs/shared sources, 23 presentation repairs, tag-only paired catalogs and the exact old/new diff. Caller/demonstration values remain escaped and independently isolated. Prices/limits/storage calculations, plan/country/currency codes, legal facts, links, code commands, timer/observer/visibility behavior and metadata/source selection remain unchanged. Legal active tracks/list margins and table padding follow inline direction; translated actions/nav/headers can grow or reflow. Price highlight motion follows language independently of numeral preference. SVG/code/chronology boundaries retain original physical geometry; decorative branding remains unchanged. Frozen provider prose/integration records remain exact, with no dedicated Stripe work.
+
+Final regressions pass 32/32, including eight actual four-presentation/CSS tests. Final typecheck and scoped lint pass without diagnostics/warnings; full lint has zero errors/20 existing warnings. Catalog keys/wording are exact after approved structural-tag removal; 10,720-key validation, nine legacy gates, 417-column/1,883-consumer verification, all-35 AST/event/route/coordinate invariants, controller structural and task whitespace checks pass as recorded. Early assertion/import/SVG typing issues and final audited cell fixes are covered by the final frozen rerun. No unperformed native/browser/chart/output or parent acceptance is asserted.
+
+Scope excludes concurrent drawer/onboarding staging and their generated records, schema/provider work and integration-parent acceptance. A private-index candidate blob/hash guard and guarded same-drive index merge are required before advancing the task commit; supervisor owns paired push. Result: approve bounded RTL-025 source/callback presentation scope; no unresolved assigned defect found.

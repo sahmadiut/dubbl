@@ -23,7 +23,7 @@ function APICodeCard() {
         <span className="font-mono text-[11px] text-white/40">index.ts</span>
       </div>
       {/* Code body */}
-      <div className="flex-1 px-5 py-5 font-mono text-[13px] leading-relaxed">
+      <div dir="ltr" className="flex-1 overflow-x-auto text-left px-5 py-5 font-mono text-[13px] leading-relaxed">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -90,7 +90,7 @@ function DockerCard() {
         <span className="font-mono text-[11px] text-white/40">self-host</span>
       </div>
       {/* Body */}
-      <div className="flex-1 px-5 py-5 font-mono text-[13px] leading-loose">
+      <div dir="ltr" className="flex-1 overflow-x-auto text-left px-5 py-5 font-mono text-[13px] leading-loose">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -124,7 +124,7 @@ function SDKCard() {
         <span className="font-mono text-[11px] text-white/40">sdk</span>
       </div>
       {/* Body */}
-      <div className="flex-1 px-5 py-5 font-mono text-[13px] leading-loose">
+      <div dir="ltr" className="flex-1 overflow-x-auto text-left px-5 py-5 font-mono text-[13px] leading-loose">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}

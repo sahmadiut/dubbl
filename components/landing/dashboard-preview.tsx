@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { authoredUsdText } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
@@ -125,7 +127,7 @@ export function DashboardPreview() {
                       <Sparkline trend={kpi.trend} />
                     </div>
                     <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-foreground">
-                      {authoredUsdText(kpi.value, presentation.locale)}
+                      <IdentifierText>{authoredUsdText(kpi.value, presentation.locale)}</IdentifierText>
                     </p>
                     <div className="mt-1.5 flex items-center gap-1.5">
                       {kpi.up ? (
@@ -141,7 +143,7 @@ export function DashboardPreview() {
                             : "text-red-500 dark:text-red-400"
                         )}
                       >
-                        {kpi.change}
+                        <IdentifierText>{kpi.change}</IdentifierText>
                       </span>
                     </div>
                   </motion.div>
@@ -167,6 +169,7 @@ export function DashboardPreview() {
                     </span>
                   </div>
                   <svg
+                    style={{ direction: "ltr", unicodeBidi: "isolate" }}
                     viewBox="0 0 360 100"
                     className="h-36 w-full"
                     preserveAspectRatio="none"
@@ -256,10 +259,10 @@ export function DashboardPreview() {
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-[11px] font-mono text-muted-foreground w-12 shrink-0">
-                            {tx.date}
+                            <IdentifierText>{tx.date}</IdentifierText>
                           </span>
                           <span className="text-sm text-foreground">
-                            {tx.desc}
+                            <BidiText>{tx.desc}</BidiText>
                           </span>
                         </div>
                         <span
@@ -270,7 +273,7 @@ export function DashboardPreview() {
                               : "text-foreground"
                           )}
                         >
-                          {authoredUsdText(tx.amount, presentation.locale)}
+                          <IdentifierText>{authoredUsdText(tx.amount, presentation.locale)}</IdentifierText>
                         </span>
                       </motion.div>
                     ))}

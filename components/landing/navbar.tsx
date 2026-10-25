@@ -48,7 +48,7 @@ export function Navbar() {
       )}
     >
       <Container>
-        <nav className="flex h-16 items-center justify-between">
+        <nav className="flex min-h-16 min-w-0 flex-wrap items-center gap-2 py-2 justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
             <Logo />
@@ -58,7 +58,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop navigation - center */}
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden min-w-0 flex-wrap items-center gap-1 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -71,7 +71,7 @@ export function Navbar() {
           </div>
 
           {/* Desktop right actions */}
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden min-w-0 flex-wrap items-center gap-3 lg:flex">
             <ThemeToggle />
             <div className="h-4 w-px bg-border" />
             <Link
@@ -93,7 +93,7 @@ export function Navbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             <ThemeToggle />
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -106,8 +106,8 @@ export function Navbar() {
                   <Menu className="size-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="end" className="w-72 p-0">
-                <div className="flex flex-col h-full">
+              <SheetContent side="end" className="w-72 max-w-full p-0">
+                <div className="flex min-w-0 flex-col h-full overflow-y-auto">
                   {/* Sheet header */}
                   <div className="flex items-center gap-2.5 px-6 pt-6 pb-4">
                     <Logo />

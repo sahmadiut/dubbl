@@ -55,7 +55,7 @@ test("landing shell renders real bilingual templates and retains destinations an
       assert.ok(html[locale].includes(headings[file]), `${file}: ${locale}`);
       if (file === "hero") {
         for (const value of [m.revenue, m.monthlyProfitLoss, m.liveFeed, m.clientPayment, m.assetAllocation, m.accounts, m.paid, m.getStartedFree, "$48,250", "+$12,500", "-$240", "+$5,000", "58%", "INV-012", "INV-048", "JE-102", "Dec 2025", "POST /v1/transactions", "> git clone"]) assert.ok(html[locale].includes(sampleUnit(value, locale).replaceAll("&", "&amp;").replaceAll(">", "&gt;")), value);
-        assert.match(html[locale], /<em class="pr-1 italic bg-gradient-to-r/);
+        assert.match(html[locale], /<em class="pe-1 italic bg-gradient-to-r/);
         assert.ok(hrefs(html[locale]).includes("/sign-up"));
       }
       if (file === "footer") {

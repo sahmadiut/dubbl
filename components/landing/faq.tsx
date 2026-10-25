@@ -93,7 +93,7 @@ export function FAQ() {
                   value={`item-${i}`}
                   className="border-b border-border"
                 >
-                  <AccordionTrigger className="py-5 text-left text-base font-medium text-foreground hover:no-underline md:text-lg">
+                  <AccordionTrigger className="py-5 text-start text-base font-medium text-foreground hover:no-underline md:text-lg">
                     {faq.question}
                   </AccordionTrigger>
                   <AccordionContent className="pb-5 text-muted-foreground">

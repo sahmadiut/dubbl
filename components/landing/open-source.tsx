@@ -62,7 +62,7 @@ function TerminalBlock() {
         <span className="ml-2 text-[11px] text-white/30 font-mono">terminal</span>
       </div>
       {/* Terminal body */}
-      <div className="px-5 py-4 font-mono text-[13px] leading-loose">
+      <div dir="ltr" className="overflow-x-auto whitespace-pre text-left px-5 py-4 font-mono text-[13px] leading-loose">
         {lines.map((line, i) => (
           <motion.p
             key={i}

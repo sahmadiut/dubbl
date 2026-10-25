@@ -31,7 +31,7 @@ export function TrustBar() {
             "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
         }}
       >
-        <div className="flex w-max animate-marquee items-center gap-16">
+        <div dir="ltr" className="flex w-max animate-marquee items-center gap-16">
           {[...technologies, ...technologies].map((name, i) => (
             <div
               key={i}

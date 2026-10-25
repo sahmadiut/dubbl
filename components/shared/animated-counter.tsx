@@ -47,7 +47,7 @@ export function AnimatedCounter({
   }, [target, duration, hasAnimated]);
 
   return (
-    <span ref={ref} className={cn("tabular-nums", className)}>
+    <span ref={ref} dir="ltr" className={cn("tabular-nums [unicode-bidi:isolate]", className)}>
       {prefix}
       {count.toLocaleString()}
       {suffix}

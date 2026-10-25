@@ -51,6 +51,7 @@ export function ThemeOptions({ className, theme, onSelect }: {
               : "text-muted-foreground hover:text-foreground"
           )}
           aria-label={t("theme", { theme: opt.value })}
+          aria-pressed={theme === opt.value}
         >
           <opt.icon className="size-3.5" />
         </button>

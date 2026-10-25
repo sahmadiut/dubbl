@@ -152,7 +152,7 @@ export default function NotFound() {
           <Link
             href="/"
             className={cn(
-              "group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-xl bg-emerald-600 px-8",
+              "group relative inline-flex min-h-12 h-auto whitespace-normal [overflow-wrap:anywhere] py-3 items-center justify-center gap-2 overflow-hidden rounded-xl bg-emerald-600 px-8",
               "text-sm font-semibold text-white shadow-lg shadow-emerald-600/25",
               "transition-all duration-200 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-600/30",
               "active:scale-[0.98]"
@@ -170,7 +170,7 @@ export default function NotFound() {
                 ease: "easeInOut",
               }}
             />
-            <ArrowLeft className="relative size-4 transition-transform group-hover:-translate-x-0.5 [&:dir(rtl)]:group-hover:translate-x-0.5" />
+            <ArrowLeft className="relative size-4 shrink-0 [&:dir(rtl)]:rotate-180 transition-transform group-hover:-translate-x-0.5 [&:dir(rtl)]:group-hover:translate-x-0.5" />
             <span className="relative">{t("backHome")}</span>
           </Link>
         </motion.div>

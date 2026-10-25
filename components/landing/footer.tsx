@@ -59,7 +59,7 @@ export function Footer() {
     <footer className="bg-[#0a0a0a] pt-16 pb-8 text-white">
       <Container>
         {/* Top section */}
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-6 md:gap-8">
+        <div className="grid min-w-0 grid-cols-2 [overflow-wrap:anywhere] gap-10 md:grid-cols-6 md:gap-8">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export function Footer() {
         <Separator className="my-8 bg-white/10" />
 
         {/* Bottom row */}
-        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+        <div className="flex min-w-0 flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex flex-col gap-1">
             <p className="text-xs text-white/40">
               {t("copyright", { year: "2026" })}

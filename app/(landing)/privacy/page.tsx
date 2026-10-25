@@ -32,7 +32,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
           <br />
           ICO Registration: ZB958997
         </p>
-        <p>{t.rich("forDataProtectionEnquiriesContactUsAtTeam", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("forDataProtectionEnquiriesContactUsAtTeam", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -154,7 +154,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
             <li>{t("rightToWithdrawConsentAtAnyTime")}</li>
           </ul>
         </Callout>
-        <p>{t.rich("toExerciseAnyOfTheseRightsContactUs", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("toExerciseAnyOfTheseRightsContactUs", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -180,7 +180,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
             ico.org.uk
           </a>
         </p>
-        <p>{t.rich("weEncourageYouToContactUsFirstAt", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("weEncourageYouToContactUsFirstAt", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -213,7 +213,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
     title: t("childrenSData"),
     content: (
       <>
-        <p>{t.rich("dubblIsNotDirectedAtIndividualsUnderThe", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("dubblIsNotDirectedAtIndividualsUnderThe", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },
@@ -229,7 +229,7 @@ const getSections = (t: LegalTranslator): LegalSection[] => [
           <li>{t("accessControlsEnsuringOnlyAuthorisedPersonnelCanAccess")}</li>
           <li>{t("regularSecurityReviewsAndMonitoring")}</li>
         </ul>
-        <p>{t.rich("noSystemIs100SecureIfYouDiscover", {em: (chunks) => <a href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
+        <p>{t.rich("noSystemIs100SecureIfYouDiscover", {em: (chunks) => <a dir="ltr" className="[unicode-bidi:isolate] [overflow-wrap:anywhere]" href="mailto:team@dubbl.dev">{chunks}</a>})}</p>
       </>
     ),
   },

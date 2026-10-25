@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { authoredUsdText } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
@@ -67,9 +69,9 @@ function LedgerMockup() {
 
   return (
     <WindowChrome title={t("generalLedgerMarch2026")}>
-      <div className="overflow-hidden rounded-md border border-border">
+      <div className="overflow-x-auto rounded-md border border-border">
         {/* Table header */}
-        <div className="grid grid-cols-[60px_1fr_80px_80px] bg-muted/80 px-3 py-2">
+        <div className="grid min-w-[20rem] grid-cols-[60px_minmax(0,1fr)_80px_80px] bg-muted/80 px-3 py-2">
           {columns.map((col) => (
             <span key={col} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {col}
@@ -85,17 +87,17 @@ function LedgerMockup() {
             viewport={{ once: true }}
             transition={{ delay: 0.2 + i * 0.08, duration: 0.3, ease: "easeOut" }}
             className={cn(
-              "grid grid-cols-[60px_1fr_80px_80px] px-3 py-2 text-[11px]",
+              "grid min-w-[20rem] grid-cols-[60px_minmax(0,1fr)_80px_80px] px-3 py-2 text-[11px]",
               i % 2 === 0 ? "bg-card" : "bg-muted/30"
             )}
           >
-            <span className="text-muted-foreground">{row.date}</span>
-            <span className="font-medium text-foreground">{row.account}</span>
+            <span className="text-muted-foreground"><IdentifierText>{row.date}</IdentifierText></span>
+            <span className="font-medium text-foreground"><BidiText>{row.account}</BidiText></span>
             <span className={cn("tabular-nums", row.debit !== "—" ? "text-foreground font-medium" : "text-muted-foreground/40")}>
-              {row.debit}
+              <IdentifierText>{row.debit}</IdentifierText>
             </span>
             <span className={cn("tabular-nums", row.credit !== "—" ? "text-foreground font-medium" : "text-muted-foreground/40")}>
-              {row.credit}
+              <IdentifierText>{row.credit}</IdentifierText>
             </span>
           </motion.div>
         ))}
@@ -105,12 +107,12 @@ function LedgerMockup() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.6, duration: 0.3 }}
-          className="grid grid-cols-[60px_1fr_80px_80px] border-t border-border bg-muted/50 px-3 py-2 text-[11px]"
+          className="grid min-w-[20rem] grid-cols-[60px_minmax(0,1fr)_80px_80px] border-t border-border bg-muted/50 px-3 py-2 text-[11px]"
         >
           <span />
           <span className="font-semibold text-muted-foreground">{t("total")}</span>
-          <span className="font-bold tabular-nums text-foreground">15,650.00</span>
-          <span className="font-bold tabular-nums text-foreground">15,650.00</span>
+          <span className="font-bold tabular-nums text-foreground"><IdentifierText>15,650.00</IdentifierText></span>
+          <span className="font-bold tabular-nums text-foreground"><IdentifierText>15,650.00</IdentifierText></span>
         </motion.div>
       </div>
       {/* Balance confirmation */}
@@ -191,14 +193,14 @@ function ReportsMockup() {
             className="rounded-md border border-border bg-muted/40 px-2.5 py-2"
           >
             <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">{kpi.label}</p>
-            <p className="mt-0.5 text-sm font-bold tabular-nums text-foreground">{authoredUsdText(kpi.value, presentation.locale)}</p>
+            <p className="mt-0.5 text-sm font-bold tabular-nums text-foreground"><IdentifierText>{authoredUsdText(kpi.value, presentation.locale)}</IdentifierText></p>
             <p
               className={cn(
                 "mt-0.5 text-[10px] font-semibold tabular-nums",
                 kpi.positive ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
               )}
             >
-              {kpi.change}
+              <IdentifierText>{kpi.change}</IdentifierText>
             </p>
           </motion.div>
         ))}
@@ -212,7 +214,7 @@ function ReportsMockup() {
         transition={{ delay: 0.4, duration: 0.5 }}
         className="rounded-md border border-border bg-muted/20 p-2"
       >
-        <svg viewBox={`0 0 ${chartW} ${chartH + 16}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <svg style={{ direction: "ltr", unicodeBidi: "isolate" }} viewBox={`0 0 ${chartW} ${chartH + 16}`} className="w-full" preserveAspectRatio="xMidYMid meet">
           {/* Horizontal grid lines */}
           {[0.25, 0.5, 0.75].map((frac) => {
             const y = chartH - padY - frac * (chartH - padY * 2);
@@ -345,7 +347,7 @@ function ReconciliationMockup() {
                 className="rounded-md border border-border bg-card px-2 py-1.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-foreground">{item.desc}</span>
+                  <span className="text-[10px] font-semibold text-foreground"><BidiText>{item.desc}</BidiText></span>
                   <span
                     className={cn(
                       "size-2 shrink-0 rounded-full",
@@ -356,8 +358,8 @@ function ReconciliationMockup() {
                   />
                 </div>
                 <div className="mt-0.5 flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground">{item.id}</span>
-                  <span className="text-[10px] font-medium tabular-nums text-foreground">{item.amount}</span>
+                  <span className="text-[9px] text-muted-foreground"><IdentifierText>{item.id}</IdentifierText></span>
+                  <span className="text-[10px] font-medium tabular-nums text-foreground"><IdentifierText>{item.amount}</IdentifierText></span>
                 </div>
               </motion.div>
             ))}
@@ -413,7 +415,7 @@ function ReconciliationMockup() {
                       item.status === "matched" ? "text-foreground" : "text-amber-600 dark:text-amber-400"
                     )}
                   >
-                    {item.desc}
+                    <BidiText>{item.desc}</BidiText>
                   </span>
                   <span
                     className={cn(
@@ -425,8 +427,8 @@ function ReconciliationMockup() {
                   />
                 </div>
                 <div className="mt-0.5 flex items-center justify-between">
-                  <span className="text-[9px] text-muted-foreground">{item.id}</span>
-                  <span className="text-[10px] font-medium tabular-nums text-foreground">{item.amount}</span>
+                  <span className="text-[9px] text-muted-foreground"><IdentifierText>{item.id}</IdentifierText></span>
+                  <span className="text-[10px] font-medium tabular-nums text-foreground"><IdentifierText>{item.amount}</IdentifierText></span>
                 </div>
               </motion.div>
             ))}
@@ -525,7 +527,7 @@ function AuditTrailMockup() {
       {/* Timeline feed */}
       <div className="relative space-y-0">
         {/* Timeline vertical line */}
-        <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" />
+        <div className="absolute start-[15px] top-2 bottom-2 w-px bg-border" />
 
         {events.map((evt, i) => (
           <motion.div
@@ -544,8 +546,8 @@ function AuditTrailMockup() {
             {/* Content */}
             <div className="min-w-0 flex-1 rounded-md border border-border bg-card px-3 py-2">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 truncate">
-                  <span className="text-[11px] font-semibold text-foreground">{evt.name}</span>
+                <div className="flex flex-wrap items-center gap-1.5 min-w-0 whitespace-normal [overflow-wrap:anywhere]">
+                  <span className="text-[11px] font-semibold text-foreground"><BidiText>{evt.name}</BidiText></span>
                   <span className="text-[10px] text-muted-foreground">{evt.action}</span>
                 </div>
                 <span className="shrink-0 text-[9px] text-muted-foreground/60">{evt.time}</span>
@@ -553,7 +555,7 @@ function AuditTrailMockup() {
               <div className="mt-1 flex items-center gap-1.5">
                 <div className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium", evt.color)}>
                   <evt.icon className="size-2.5" />
-                  {evt.entity}
+                  <BidiText>{evt.entity}</BidiText>
                 </div>
               </div>
             </div>

@@ -6,7 +6,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./layout";
+import { EmailLayout, EmailValue, emailRichText } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface MemberInviteEmailProps {
@@ -30,28 +30,28 @@ export function MemberInviteEmail({
   return (
     <EmailLayout locale={locale} preview={t("invitePreview", { orgName })}>
       <Section style={content}>
-        <Text style={heading}>{t("inviteHeading", { orgName })}</Text>
+        <Text style={heading}>{t.rich("inviteHeading", { orgName, ...emailRichText })}</Text>
         <Text style={subtext}>
-          {t.rich("inviteIntro", { inviterName, orgName, role, strong: (chunks) => <strong>{chunks}</strong> })}
+          {t.rich("inviteIntro", { inviterName, orgName, role, ...emailRichText })}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={infoTable}>
           <tr>
             <td style={infoRow}>
               <Text style={infoLabel}>{t("organization")}</Text>
-              <Text style={infoValue}>{orgName}</Text>
+              <Text style={infoValue}><EmailValue>{orgName}</EmailValue></Text>
             </td>
           </tr>
           <tr>
             <td style={infoRow}>
               <Text style={infoLabel}>{t("yourRole")}</Text>
-              <Text style={infoValue}>{role}</Text>
+              <Text style={infoValue}><EmailValue>{role}</EmailValue></Text>
             </td>
           </tr>
           <tr>
             <td style={{ ...infoRow, borderBottom: "none", paddingBottom: 0 }}>
               <Text style={infoLabel}>{t("invitedBy")}</Text>
-              <Text style={infoValue}>{inviterName}</Text>
+              <Text style={infoValue}><EmailValue>{inviterName}</EmailValue></Text>
             </td>
           </tr>
         </table>

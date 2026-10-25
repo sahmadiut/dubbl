@@ -7,7 +7,7 @@ import {
   Hr,
 } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./layout";
+import { EmailLayout, EmailValue, emailRichText } from "./layout";
 
 export interface DocumentSentEmailProps {
   locale?: AppLocale;
@@ -47,21 +47,21 @@ export function DocumentSentEmail({
       <Section style={content}>
         {/* Heading */}
         <Text style={heading}>
-          {t(`${kind}Heading`, { organizationName })}
+          {t.rich(`${kind}Heading`, { organizationName, ...emailRichText })}
         </Text>
 
         {/* Document number */}
-        <Text style={docNumber}>{documentNumber}</Text>
+        <Text style={docNumber}><EmailValue dir="ltr">{documentNumber}</EmailValue></Text>
 
         {personalMessage && (
-          <Text style={message}>{personalMessage}</Text>
+          <Text style={message}><EmailValue>{personalMessage}</EmailValue></Text>
         )}
 
         {/* Amount block */}
         {amountFormatted && (
           <Section style={amountBlock}>
             <Text style={amountLabelStyle}>{amountLabel}</Text>
-            <Text style={amountValue}>{amountFormatted}</Text>
+            <Text style={amountValue}><EmailValue dir="ltr">{amountFormatted}</EmailValue></Text>
           </Section>
         )}
 
@@ -70,15 +70,15 @@ export function DocumentSentEmail({
           <table cellPadding="0" cellSpacing="0" role="presentation" style={metaTable}>
             <tr>
               {issueDateFormatted && (
-                <td style={metaCell}>
+                <td style={{ ...metaCell, ...(locale === "fa-IR" ? { paddingLeft: "24px" } : { paddingRight: "24px" }) }}>
                   <Text style={metaLabel}>{t("issued")}</Text>
-                  <Text style={metaValue}>{issueDateFormatted}</Text>
+                  <Text style={metaValue}><EmailValue>{issueDateFormatted}</EmailValue></Text>
                 </td>
               )}
               {dueDateFormatted && (
-                <td style={metaCell}>
+                <td style={{ ...metaCell, ...(locale === "fa-IR" ? { paddingLeft: "24px" } : { paddingRight: "24px" }) }}>
                   <Text style={metaLabel}>{dateLabel}</Text>
-                  <Text style={metaValue}>{dueDateFormatted}</Text>
+                  <Text style={metaValue}><EmailValue>{dueDateFormatted}</EmailValue></Text>
                 </td>
               )}
             </tr>
@@ -89,7 +89,7 @@ export function DocumentSentEmail({
         {viewUrl && (
           <Section style={buttonWrap}>
             <Button style={button} href={viewUrl}>
-              {buttonLabel || t(`${kind}Button`)}
+              {buttonLabel ? <EmailValue>{buttonLabel}</EmailValue> : t(`${kind}Button`)}
             </Button>
           </Section>
         )}
@@ -97,7 +97,7 @@ export function DocumentSentEmail({
         <Hr style={hr} />
 
         <Text style={footer}>
-          {organizationName}
+          <EmailValue>{organizationName}</EmailValue>
         </Text>
       </Section>
     </EmailLayout>
@@ -161,7 +161,7 @@ const metaTable: React.CSSProperties = {
 };
 
 const metaCell: React.CSSProperties = {
-  paddingRight: "24px",
+  verticalAlign: "top",
 };
 
 const metaLabel: React.CSSProperties = {

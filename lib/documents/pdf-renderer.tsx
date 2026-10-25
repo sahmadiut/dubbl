@@ -107,7 +107,7 @@ const s = StyleSheet.create({
   metaBlock: { marginBottom: 20 },
   metaRow: { flexDirection: "row", marginBottom: 2 },
   metaLabel: { width: 80, fontSize: 9, color: gray },
-  metaValue: { fontSize: 9, fontFamily: "Helvetica-Bold" },
+  metaValue: { flex: 1, minWidth: 0, fontSize: 9, fontFamily: "Helvetica-Bold" },
   // Parties
   partiesRow: { flexDirection: "row", marginBottom: 20 },
   sellerCol: { width: 200, marginRight: 40 },
@@ -122,7 +122,7 @@ const s = StyleSheet.create({
   tableHeader: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: dark, paddingBottom: 6, marginBottom: 4 },
   th: { fontSize: 8, color: gray },
   tableRow: { flexDirection: "row", paddingVertical: 4 },
-  cellDesc: { flex: 3 },
+  cellDesc: { flex: 3, minWidth: 0, paddingRight: 8 },
   cellQty: { flex: 0.6, textAlign: "right" },
   cellPrice: { flex: 1.2, textAlign: "right" },
   cellDiscount: { flex: 0.8, textAlign: "right" },
@@ -142,7 +142,7 @@ const s = StyleSheet.create({
   infoText: { fontSize: 9, color: gray, lineHeight: 1.4 },
   // Footer
   footer: { position: "absolute", bottom: 20, left: 40, right: 40, borderTopWidth: 0.5, borderTopColor: lightGray, paddingTop: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  footerText: { fontSize: 8, color: gray },
+  footerText: { fontSize: 8, color: gray, maxWidth: 300 },
 });
 
 export interface PdfDocumentLabels {
@@ -337,7 +337,7 @@ function InvoiceDocument({ invoice: inv, org, contact, template, labels }: Invoi
 
         {/* Footer */}
         <View style={s.footer} fixed>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", maxWidth: 450, alignItems: "center", gap: 6 }}>
             <Text style={s.footerText}>{inv.invoiceNumber}</Text>
             <Text style={s.footerText}>{summaryText}</Text>
             {footerText && <Text style={s.footerText}>{footerText}</Text>}

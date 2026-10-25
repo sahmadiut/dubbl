@@ -6,7 +6,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./layout";
+import { EmailLayout, emailRichText } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface WelcomeEmailProps {
@@ -25,7 +25,7 @@ export function WelcomeEmail({
   return (
     <EmailLayout locale={locale} preview={t("welcomePreview")}>
       <Section style={content}>
-        <Text style={heading}>{t("welcomeHeading", { userName })}</Text>
+        <Text style={heading}>{t.rich("welcomeHeading", { userName, ...emailRichText })}</Text>
         <Text style={subtext}>
           {t("welcomeIntro")}
         </Text>

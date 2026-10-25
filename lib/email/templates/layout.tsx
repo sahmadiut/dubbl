@@ -24,19 +24,29 @@ interface LayoutProps {
 
 const APP_URL = getPublicAppUrl();
 
+/** Inline styles travel with the email; web-app utility classes do not. */
+export function EmailValue({ children, dir = "auto" }: { children: React.ReactNode; dir?: "auto" | "ltr" }) {
+  return <span dir={dir} style={{ unicodeBidi: "isolate", overflowWrap: "anywhere" }}>{children}</span>;
+}
+
+export const emailRichText = {
+  em: (chunks: React.ReactNode) => <EmailValue>{chunks}</EmailValue>,
+  strong: (chunks: React.ReactNode) => <strong>{chunks}</strong>,
+};
+
 export function EmailLayout({ preview, children, unsubscribeUrl, locale = "en-US" }: LayoutProps) {
   const t = outputTranslator(locale);
   return (
     <Html lang={locale} dir={locale === "fa-IR" ? "rtl" : "ltr"}>
       <Head />
       <Preview>{preview}</Preview>
-      <Body style={body}>
+      <Body style={{ ...body, textAlign: locale === "fa-IR" ? "right" : "left", overflowWrap: "anywhere" }}>
         <Container style={container}>
           {/* Logo header */}
           <Section style={logoSection}>
             <table cellPadding="0" cellSpacing="0" role="presentation">
               <tr>
-                <td style={{ verticalAlign: "middle", paddingRight: "10px" }}>
+                <td style={{ verticalAlign: "middle", ...(locale === "fa-IR" ? { paddingLeft: "10px" } : { paddingRight: "10px" }) }}>
                   <Img
                     src={`${APP_URL}/logo.png`}
                     width="32"
@@ -46,7 +56,7 @@ export function EmailLayout({ preview, children, unsubscribeUrl, locale = "en-US
                   />
                 </td>
                 <td style={{ verticalAlign: "middle" }}>
-                  <Text style={logoText}>dubbl</Text>
+                  <Text dir="ltr" style={logoText}>dubbl</Text>
                 </td>
               </tr>
             </table>
@@ -74,10 +84,10 @@ export function EmailLayout({ preview, children, unsubscribeUrl, locale = "en-US
                 </>
               )}
             </Text>
-            <Text style={companyText}>
+            <Text dir="ltr" style={companyText}>
               Mindroot Ltd · Company No. 16543299
             </Text>
-            <Text style={companyText}>
+            <Text dir="ltr" style={companyText}>
               Registered in England and Wales · 71-75 Shelton Street, London, WC2H 9JQ
             </Text>
           </Section>

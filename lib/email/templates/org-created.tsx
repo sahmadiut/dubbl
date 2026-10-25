@@ -6,7 +6,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./layout";
+import { EmailLayout, emailRichText } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface OrgCreatedEmailProps {
@@ -28,9 +28,9 @@ export function OrgCreatedEmail({
   return (
     <EmailLayout locale={locale} preview={t("orgPreview", { orgName })}>
       <Section style={content}>
-        <Text style={heading}>{t("orgHeading", { orgName })}</Text>
+        <Text style={heading}>{t.rich("orgHeading", { orgName, ...emailRichText })}</Text>
         <Text style={subtext}>
-          {t("orgIntro", { userName })}
+          {t.rich("orgIntro", { userName, ...emailRichText })}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>

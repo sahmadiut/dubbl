@@ -52,7 +52,7 @@ for (const locale of ["en-US", "fa-IR"] as const) {
       assert.match(html, /Mindroot Ltd/);
     }
     const invite = await render(fixtures[2][0]);
-    assert.match(invite, /<strong>custom_role<\/strong>/);
+    assert.match(invite, /<strong><span dir="auto"[^>]*>custom_role<\/span><\/strong>/);
     const alert = await render(fixtures[3][0]);
     assert.match(alert, /192\.0\.2\.1/);
     assert.match(alert, /credentials/);

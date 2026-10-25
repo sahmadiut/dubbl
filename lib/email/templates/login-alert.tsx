@@ -6,7 +6,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./layout";
+import { EmailLayout, EmailValue, emailRichText } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface LoginAlertEmailProps {
@@ -37,26 +37,26 @@ export function LoginAlertEmail({
       <Section style={content}>
         <Text style={heading}>{t("loginHeading")}</Text>
         <Text style={subtext}>
-          {t("loginIntro", { userName })}
+          {t.rich("loginIntro", { userName, ...emailRichText })}
         </Text>
 
         <div style={detailsCard}>
           <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
             <tr>
-              <td style={detailLabel}>{t("ip")}</td>
-              <td style={detailValue}>{ipAddress}</td>
+              <td style={{ ...detailLabel, ...(locale === "fa-IR" ? { paddingLeft: "16px" } : { paddingRight: "16px" }) }}>{t("ip")}</td>
+              <td style={detailValue}><EmailValue dir="ltr">{ipAddress}</EmailValue></td>
             </tr>
             <tr>
-              <td style={detailLabel}>{t("browser")}</td>
-              <td style={detailValue}>{userAgent}</td>
+              <td style={{ ...detailLabel, ...(locale === "fa-IR" ? { paddingLeft: "16px" } : { paddingRight: "16px" }) }}>{t("browser")}</td>
+              <td style={detailValue}><EmailValue>{userAgent}</EmailValue></td>
             </tr>
             <tr>
-              <td style={detailLabel}>{t("method")}</td>
-              <td style={detailValue}>{provider}</td>
+              <td style={{ ...detailLabel, ...(locale === "fa-IR" ? { paddingLeft: "16px" } : { paddingRight: "16px" }) }}>{t("method")}</td>
+              <td style={detailValue}><EmailValue dir="ltr">{provider}</EmailValue></td>
             </tr>
             <tr>
-              <td style={detailLabel}>{t("time")}</td>
-              <td style={detailValue}>{timestamp}</td>
+              <td style={{ ...detailLabel, ...(locale === "fa-IR" ? { paddingLeft: "16px" } : { paddingRight: "16px" }) }}>{t("time")}</td>
+              <td style={detailValue}><EmailValue>{timestamp}</EmailValue></td>
             </tr>
           </table>
         </div>
@@ -101,7 +101,7 @@ const detailLabel: React.CSSProperties = {
   fontSize: "13px",
   fontWeight: 600,
   color: "#6b7280",
-  padding: "4px 16px 4px 0",
+  padding: "4px 0",
   verticalAlign: "top",
   whiteSpace: "nowrap",
 };
@@ -110,7 +110,7 @@ const detailValue: React.CSSProperties = {
   color: "#111827",
   padding: "4px 0",
   verticalAlign: "top",
-  wordBreak: "break-all",
+  overflowWrap: "anywhere",
 };
 const warningText: React.CSSProperties = {
   fontSize: "14px",

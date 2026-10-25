@@ -6,7 +6,7 @@ import {
   Button,
 } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./layout";
+import { EmailLayout, EmailValue, emailRichText } from "./layout";
 import { toAppUrl } from "@/lib/public-url";
 
 interface DigestNotification {
@@ -58,7 +58,7 @@ export function NotificationDigestEmail({
           {t("digestHeading", { count })}
         </Text>
         <Text style={subtext}>
-          {t("digestIntro", { userName, orgName })}
+          {t.rich("digestIntro", { userName, orgName, ...emailRichText })}
         </Text>
 
         <table cellPadding="0" cellSpacing="0" role="presentation" style={{ width: "100%" }}>
@@ -79,9 +79,9 @@ export function NotificationDigestEmail({
                       }} />
                     </td>
                     <td style={{ verticalAlign: "top" }}>
-                      <Text style={notifTitle}>{n.title}</Text>
-                      {n.body && <Text style={notifBody}>{n.body}</Text>}
-                      <Text style={notifTime}>{n.createdAt}</Text>
+                      <Text style={notifTitle}><EmailValue>{n.title}</EmailValue></Text>
+                      {n.body && <Text style={notifBody}><EmailValue>{n.body}</EmailValue></Text>}
+                      <Text style={notifTime}><EmailValue>{n.createdAt}</EmailValue></Text>
                     </td>
                   </tr>
                 </table>

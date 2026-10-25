@@ -1,4 +1,7 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import { useTranslations } from "next-intl";
 import { requireJournalResponse, journalFailureMessage, type JournalTranslate } from "@/i18n/journal-presentation";
 
@@ -70,7 +73,7 @@ function buildColumns(t: JournalTranslate): Column<RecurringJournal>[] {
       key: "name",
       header: t("name"),
       sortKey: "name",
-      render: (r) => <span className="text-sm font-medium">{r.name}</span>,
+      render: (r) => <span className="text-sm font-medium"><BidiText>{r.name}</BidiText></span>,
     },
     {
       key: "frequency",
@@ -79,7 +82,7 @@ function buildColumns(t: JournalTranslate): Column<RecurringJournal>[] {
       className: "w-32",
       render: (r) => (
         <span className="text-sm">
-          {Object.hasOwn(frequencyLabels, r.frequency) ? frequencyLabels[r.frequency] : r.frequency}
+          <BidiText>{Object.hasOwn(frequencyLabels, r.frequency) ? frequencyLabels[r.frequency] : r.frequency}</BidiText>
         </span>
       ),
     },
@@ -88,7 +91,7 @@ function buildColumns(t: JournalTranslate): Column<RecurringJournal>[] {
       header: t("nextEntry"),
       sortKey: "nextRun",
       className: "w-32",
-      render: (r) => <span className="text-sm">{r.nextRunDate || "-"}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.nextRunDate || "-"}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -96,14 +99,14 @@ function buildColumns(t: JournalTranslate): Column<RecurringJournal>[] {
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {Object.hasOwn(statusLabels, r.status) ? statusLabels[r.status] : r.status}
+          <BidiText>{Object.hasOwn(statusLabels, r.status) ? statusLabels[r.status] : r.status}</BidiText>
         </Badge>
       ),
     },
     {
       key: "occurrences",
       header: t("postedColumn"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
           {r.occurrencesGenerated} / {r.maxOccurrences ?? "∞"}
@@ -114,6 +117,7 @@ function buildColumns(t: JournalTranslate): Column<RecurringJournal>[] {
 }
 
 export default function RecurringJournalsPage() {
+  const direction = localeDirection(usePresentation().locale);
   const t = useTranslations("Journals");
   const errors = useTranslations("JournalErrors");
 
@@ -284,16 +288,17 @@ export default function RecurringJournalsPage() {
               <p className="mt-1 text-sm text-muted-foreground max-w-md">{t("recurringDescription")}</p>
             </div>
             <Button
+              type="button"
               onClick={() => openDrawer("recurringJournal")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="h-auto max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />{t("newRecurring")}</Button>
+              <Plus className="me-2 size-4" />{t("newRecurring")}</Button>
           </div>
 
           <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-[1fr_1fr] items-start">
             {/* Left: Calendar */}
             <div className="rounded-xl border bg-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+              <div className="flex flex-wrap items-center justify-between px-4 py-3 border-b bg-muted/30">
                 <p className="text-sm font-medium">{monthName}</p>
                 <RefreshCw className="size-3.5 text-indigo-500" />
               </div>
@@ -332,14 +337,14 @@ export default function RecurringJournalsPage() {
             </div>
 
             {/* Right: Mock template + frequency options */}
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               {/* Mock template card */}
               <div className="rounded-xl border bg-card overflow-hidden">
                 <div className="bg-muted/30 px-3 sm:px-5 py-3 border-b">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("exampleSchedule")}</p>
                 </div>
-                <div className="p-3 sm:p-5 space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="p-3 sm:p-5 space-y-3 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{t("rentExample")}</p>
                       <p className="text-xs text-muted-foreground">REF-RENT</p>
@@ -396,10 +401,10 @@ export default function RecurringJournalsPage() {
       <div className="h-px bg-border" />
 
       {/* Template table */}
-      <div className="space-y-4">
+      <div className="space-y-4 min-w-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={direction} value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList aria-label={t("status")} className="h-auto flex-wrap [&_[role=tab]]:whitespace-normal">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="active" className="whitespace-nowrap">{t("on")}</TabsTrigger>
               <TabsTrigger value="paused" className="whitespace-nowrap">{t("paused")}</TabsTrigger>
@@ -408,28 +413,30 @@ export default function RecurringJournalsPage() {
           </Tabs>
 
           <Button
+
+            type="button"
             onClick={() => openDrawer("recurringJournal")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />{t("newRecurring")}</Button>
+            <Plus className="me-2 size-4" />{t("newRecurring")}</Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative min-w-0 max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder={t("searchRecurring")}
+              placeholder={t("searchRecurring")} aria-label={t("searchRecurring")} dir="auto"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
           <Select
             value={frequencyFilter}
             onValueChange={setFrequencyFilter}
           >
-            <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectTrigger aria-label={t("howOftenPlaceholder")} className="h-8 w-40 max-w-full text-xs data-[size=default]:h-auto whitespace-normal *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("howOftenPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
@@ -450,7 +457,7 @@ export default function RecurringJournalsPage() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-44 max-w-full text-xs data-[size=default]:h-auto whitespace-normal *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -463,12 +470,13 @@ export default function RecurringJournalsPage() {
           </Select>
           {hasFilters && (
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setFrequencyFilter("all"); }}
             >
-              <X className="mr-1 size-3" />{t("clearFilters")}</Button>
+              <X className="me-1 size-3" />{t("clearFilters")}</Button>
           )}
         </div>
 
@@ -492,7 +500,7 @@ export default function RecurringJournalsPage() {
         {/* Infinite scroll sentinel & count */}
         {!refetching && !pendingSearch && filteredTemplates.length > 0 && (
           <>
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
                 {t("showingRecurring", { shown: templates.length, count: totalCount })}
               </p>

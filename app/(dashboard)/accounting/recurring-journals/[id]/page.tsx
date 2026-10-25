@@ -1,4 +1,5 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
@@ -198,52 +199,53 @@ export default function RecurringJournalDetailPage() {
     <div className="space-y-6">
       <PageHeader title={rj.name} description={t("recurringDetailDescription")}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/accounting/recurring-journals"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+          <Link href="/accounting/recurring-journals"><ArrowLeft className="me-2 size-4 rtl:rotate-180" />{t("back")}</Link>
         </Button>
         {rj.status !== "completed" && (
           <Button
+            type="button"
             size="sm"
             onClick={handlePostNow}
             loading={posting}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             title={t("postNowHint")}
           >
-            <Zap className="mr-2 size-4" />{t("postNow")}</Button>
+            <Zap className="me-2 size-4" />{t("postNow")}</Button>
         )}
         {rj.status === "active" && (
-          <Button variant="outline" size="sm" onClick={handleToggle} loading={toggling} title={t("pauseHint")}>
-            <Pause className="mr-2 size-4" />{t("pause")}</Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleToggle} loading={toggling} title={t("pauseHint")}>
+            <Pause className="me-2 size-4" />{t("pause")}</Button>
         )}
         {rj.status === "paused" && (
-          <Button variant="outline" size="sm" onClick={handleToggle} loading={toggling} title={t("resumeHint")}>
-            <Play className="mr-2 size-4" />{t("resume")}</Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleToggle} loading={toggling} title={t("resumeHint")}>
+            <Play className="me-2 size-4" />{t("resume")}</Button>
         )}
-        <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600" title={t("deleteScheduleHint")}>
-          <Trash2 className="mr-2 size-4" />{t("delete")}</Button>
+        <Button type="button" variant="outline" size="sm" onClick={handleDelete} className="h-auto max-w-full whitespace-normal text-red-600" title={t("deleteScheduleHint")}>
+          <Trash2 className="me-2 size-4" />{t("delete")}</Button>
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[rj.status] || ""}>
-          {Object.hasOwn(statusLabels, rj.status) ? statusLabels[rj.status] : rj.status}
+          <BidiText>{Object.hasOwn(statusLabels, rj.status) ? statusLabels[rj.status] : rj.status}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {Object.hasOwn(frequencyLabels, rj.frequency) ? frequencyLabels[rj.frequency] : rj.frequency}
+          <BidiText>{Object.hasOwn(frequencyLabels, rj.frequency) ? frequencyLabels[rj.frequency] : rj.frequency}</BidiText>
         </span>
         {rj.reference && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            {t("referenceValue", { reference: rj.reference })}
+            {t.rich("referenceValue", { reference: rj.reference, em: chunks => <BidiText>{chunks}</BidiText> })}
           </span>
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid min-w-0 [&>*]:min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("nextEntry")}</p>
-          <p className="text-sm font-medium mt-1">{rj.nextRunDate || "-"}</p>
+          <p className="text-sm font-medium mt-1"><IdentifierText>{rj.nextRunDate || "-"}</IdentifierText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("lastPosted")}</p>
-          <p className="text-sm font-medium mt-1">{rj.lastRunDate || t("never")}</p>
+          <p className="text-sm font-medium mt-1"><BidiText>{rj.lastRunDate || t("never")}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("postedSoFar")}</p>
@@ -253,7 +255,7 @@ export default function RecurringJournalDetailPage() {
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("eachEntry")}</p>
-          <p className="text-sm font-bold font-mono mt-1">{journalMoney(totalDebit, rj.currencyCode, unitPresentation)}</p>
+          <p className="text-sm font-bold font-mono mt-1"><BidiText>{journalMoney(totalDebit, rj.currencyCode, unitPresentation)}</BidiText></p>
         </div>
       </div>
 
@@ -262,27 +264,27 @@ export default function RecurringJournalDetailPage() {
         <div className="grid min-w-[500px] grid-cols-[1fr_140px_120px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
           <span>{t("description")}</span>
           <span>{t("account")}</span>
-          <span className="text-right">{t("moneyIn")}</span>
-          <span className="text-right">{t("moneyOut")}</span>
+          <span className="text-end">{t("moneyIn")}</span>
+          <span className="text-end">{t("moneyOut")}</span>
         </div>
         {rj.lines.map((line) => (
           <div key={line.id} className="grid min-w-[500px] grid-cols-[1fr_140px_120px_120px] gap-2 border-b px-4 py-2 last:border-b-0">
-            <p className="text-sm">{line.description}</p>
-            <span className="text-sm font-mono text-muted-foreground truncate">{line.accountId || "-"}</span>
-            <span className="text-right text-sm font-mono">{journalStoredMinor(line.debitAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.debitAmountMinor), rj.currencyCode, unitPresentation) : "-"}</span>
-            <span className="text-right text-sm font-mono">{journalStoredMinor(line.creditAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.creditAmountMinor), rj.currencyCode, unitPresentation) : "-"}</span>
+            <p className="text-sm"><BidiText>{line.description}</BidiText></p>
+            <span className="text-sm font-mono text-muted-foreground min-w-0"><IdentifierText>{line.accountId || "-"}</IdentifierText></span>
+            <span className="text-end text-sm font-mono"><BidiText>{journalStoredMinor(line.debitAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.debitAmountMinor), rj.currencyCode, unitPresentation) : "-"}</BidiText></span>
+            <span className="text-end text-sm font-mono"><BidiText>{journalStoredMinor(line.creditAmountMinor) > 0n ? journalMoney(journalStoredMinor(line.creditAmountMinor), rj.currencyCode, unitPresentation) : "-"}</BidiText></span>
           </div>
         ))}
-        <div className="border-t bg-muted/30 px-4 py-2 text-right flex flex-wrap justify-end gap-x-4 gap-y-1">
-          <span className="text-sm font-medium">{t("totalIn", { amount: journalMoney(totalDebit, rj.currencyCode, unitPresentation) })}</span>
-          <span className="text-sm font-medium">{t("totalOut", { amount: journalMoney(totalCredit, rj.currencyCode, unitPresentation) })}</span>
+        <div className="border-t bg-muted/30 px-4 py-2 text-end flex flex-wrap justify-end gap-x-4 gap-y-1">
+          <span className="text-sm font-medium">{t.rich("totalIn", { amount: journalMoney(totalDebit, rj.currencyCode, unitPresentation), em: chunks => <BidiText>{chunks}</BidiText> })}</span>
+          <span className="text-sm font-medium">{t.rich("totalOut", { amount: journalMoney(totalCredit, rj.currencyCode, unitPresentation), em: chunks => <BidiText>{chunks}</BidiText> })}</span>
         </div>
       </div>
 
       {rj.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{rj.notes}</p>
+          <p className="text-sm"><BidiText>{rj.notes}</BidiText></p>
         </div>
       )}
 

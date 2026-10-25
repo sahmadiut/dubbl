@@ -1,4 +1,6 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { journalPreviewMessage, type JournalTranslate, requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
@@ -238,7 +240,7 @@ export default function EntryDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <Skeleton className="size-8 rounded-md" />
           <Skeleton className="h-6 w-48" />
         </div>
@@ -250,9 +252,9 @@ export default function EntryDetailPage() {
 
   if (!entry) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 min-w-0">
         <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-          <Link href="/accounting"><ArrowLeft className="size-4" /></Link>
+          <Link href="/accounting" aria-label={t("backTransactions")}><ArrowLeft className="size-4 rtl:rotate-180" /></Link>
         </Button>
         <div className="flex flex-col items-center gap-3 py-20 text-center">
           <FileText className="size-10 text-muted-foreground" />
@@ -281,14 +283,14 @@ export default function EntryDetailPage() {
       <div className="space-y-6">
         {/* Top bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-              <Link href="/accounting"><ArrowLeft className="size-4" /></Link>
+              <Link href="/accounting" aria-label={t("backTransactions")}><ArrowLeft className="size-4 rtl:rotate-180" /></Link>
             </Button>
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                 <h1 className="text-lg font-semibold tracking-tight">
-                  {t("entryTitle", { number: entry.entryNumber })}
+                  {t.rich("entryTitle", { number: entry.entryNumber, em: chunks => <IdentifierText>{chunks}</IdentifierText> })}
                 </h1>
                 <Badge variant="outline" className={sc.class}>{sc.label}</Badge>
                 {entry.voidedAt && (
@@ -296,7 +298,7 @@ export default function EntryDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {entry.description}
+                <BidiText>{entry.description}</BidiText>
               </p>
             </div>
           </div>
@@ -304,47 +306,52 @@ export default function EntryDetailPage() {
             {entry.status === "draft" && (
               <>
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setEditOpen(true)}
                   disabled={actionLoading}
                   title={t("editHint")}
                 >
-                  <Pencil className="mr-2 size-4" />{t("edit")}</Button>
+                  <Pencil className="me-2 size-4" />{t("edit")}</Button>
                 <Button
+                  type="button"
                   size="sm"
                   onClick={postEntry}
                   disabled={actionLoading}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="h-auto max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
                   title={t("finalizeHint")}
                 >
-                  <Check className="mr-2 size-4" />{t("finalize")}</Button>
+                  <Check className="me-2 size-4" />{t("finalize")}</Button>
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={deleteEntry}
-                  className="text-red-600"
+                  className="h-auto max-w-full whitespace-normal text-red-600"
                 >
-                  <Trash2 className="mr-2 size-4" />{t("delete")}</Button>
+                  <Trash2 className="me-2 size-4" />{t("delete")}</Button>
               </>
             )}
             {entry.status === "posted" && !entry.voidedAt && (
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
-                    className="text-red-600"
+                    className="h-auto max-w-full whitespace-normal text-red-600"
                     title={t("reverseHint")}
                   >
-                    <X className="mr-2 size-4" />{t("voidAction")}</Button>
+                    <X className="me-2 size-4" />{t("voidAction")}</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>{t("voidTitle", { number: entry.entryNumber })}</DialogTitle>
+                    <DialogTitle>{t.rich("voidTitle", { number: entry.entryNumber, em: chunks => <IdentifierText>{chunks}</IdentifierText> })}</DialogTitle>
                     <DialogDescription>{t("voidDescription")}</DialogDescription>
                   </DialogHeader>
                   <Textarea
+                    aria-label={t("voidReason")} dir="auto"
                     value={voidReason}
                     onChange={(e) => setVoidReason(e.target.value)}
                     placeholder={t("voidReason")}
@@ -352,6 +359,7 @@ export default function EntryDetailPage() {
                   />
                   <DialogFooter>
                     <Button
+                      type="button"
                       variant="destructive"
                       onClick={voidEntry}
                       disabled={!voidReason.trim() || actionLoading}
@@ -371,7 +379,7 @@ export default function EntryDetailPage() {
             <AlertTriangle className="size-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-medium text-red-700 dark:text-red-300">{t("voidSuccess")}</p>
-              <p className="text-sm text-red-600 dark:text-red-400 mt-0.5">{entry.voidReason}</p>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-0.5"><BidiText>{entry.voidReason}</BidiText></p>
             </div>
           </div>
         )}
@@ -382,56 +390,56 @@ export default function EntryDetailPage() {
           <div className="border-b bg-muted/30 px-4 py-4 sm:px-6 sm:py-5">
             <div className="grid gap-6 sm:grid-cols-2">
               {/* Left: Entry info */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+              <div className="space-y-3 min-w-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Hash className="size-3.5 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">{t("entryNumber")}</span>
-                  <span className="text-sm font-mono font-semibold">{entry.entryNumber}</span>
+                  <span className="text-sm font-mono font-semibold"><IdentifierText>{entry.entryNumber}</IdentifierText></span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Calendar className="size-3.5 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">{t("date")}</span>
-                  <span className="text-sm">{formatDate(entry.date)}</span>
+                  <span className="text-sm"><BidiText>{formatDate(entry.date)}</BidiText></span>
                 </div>
                 {entry.reference && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <FileText className="size-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">{t("reference")}</span>
-                    <span className="text-sm">{entry.reference}</span>
+                    <span className="text-sm"><BidiText>{entry.reference}</BidiText></span>
                   </div>
                 )}
               </div>
 
               {/* Right: Source & timestamps */}
-              <div className="sm:text-right space-y-3">
+              <div className="sm:text-end space-y-3 min-w-0">
                 {entry.sourceType && (
-                  <div className="flex sm:justify-end items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap sm:justify-end items-center gap-2">
                     <BookOpen className="size-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">{t("source")}</span>
                     <Badge variant="outline" className="text-[10px]">
-                      {Object.hasOwn(sourceTypeLabels, entry.sourceType) ? sourceTypeLabels[entry.sourceType] : entry.sourceType}
+                      <BidiText>{Object.hasOwn(sourceTypeLabels, entry.sourceType) ? sourceTypeLabels[entry.sourceType] : entry.sourceType}</BidiText>
                     </Badge>
                   </div>
                 )}
                 {entry.postedAt && (
-                  <div className="flex sm:justify-end items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap sm:justify-end items-center gap-2">
                     <Check className="size-3.5 text-emerald-500" />
                     <span className="text-xs text-muted-foreground">{t("finalized")}</span>
-                    <span className="text-sm">{formatTimestamp(entry.postedAt, t)}</span>
+                    <span className="text-sm"><BidiText>{formatTimestamp(entry.postedAt, t)}</BidiText></span>
                   </div>
                 )}
                 {entry.voidedAt && (
-                  <div className="flex sm:justify-end items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap sm:justify-end items-center gap-2">
                     <X className="size-3.5 text-red-500" />
                     <span className="text-xs text-muted-foreground">{t("cancelled")}</span>
-                    <span className="text-sm">{formatTimestamp(entry.voidedAt, t)}</span>
+                    <span className="text-sm"><BidiText>{formatTimestamp(entry.voidedAt, t)}</BidiText></span>
                   </div>
                 )}
                 {!entry.postedAt && !entry.voidedAt && entry.createdAt && (
-                  <div className="flex sm:justify-end items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap sm:justify-end items-center gap-2">
                     <Clock className="size-3.5 text-muted-foreground" />
                     <span className="text-xs text-muted-foreground">{t("created")}</span>
-                    <span className="text-sm">{formatTimestamp(entry.createdAt, t)}</span>
+                    <span className="text-sm"><BidiText>{formatTimestamp(entry.createdAt, t)}</BidiText></span>
                   </div>
                 )}
               </div>
@@ -443,10 +451,10 @@ export default function EntryDetailPage() {
             <table className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/20">
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("account")}</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">{t("debit")}</th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">{t("credit")}</th>
+                  <th className="px-6 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("account")}</th>
+                  <th className="px-4 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</th>
+                  <th className="px-6 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">{t("debit")}</th>
+                  <th className="px-6 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-32">{t("credit")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -462,26 +470,26 @@ export default function EntryDetailPage() {
                       )}
                     >
                       <td className="px-6 py-3">
-                        <div className="flex items-baseline gap-2">
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-2">
                           <span className="text-xs font-mono text-muted-foreground shrink-0">
-                            {line.accountCode}
+                            <IdentifierText>{line.accountCode}</IdentifierText>
                           </span>
-                          <span className="font-medium">{line.accountName}</span>
+                          <span className="font-medium"><BidiText>{line.accountName}</BidiText></span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {line.description || "-"}
+                        <BidiText>{line.description || "-"}</BidiText>
                       </td>
-                      <td className="px-6 py-3 text-right font-mono tabular-nums">
+                      <td className="px-6 py-3 text-end font-mono tabular-nums">
                         {debit > 0n ? (
-                          <span className="font-medium">{journalMoney(debit, line.amountCurrencyCode, unitPresentation)}</span>
+                          <span className="font-medium"><BidiText>{journalMoney(debit, line.amountCurrencyCode, unitPresentation)}</BidiText></span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-right font-mono tabular-nums">
+                      <td className="px-6 py-3 text-end font-mono tabular-nums">
                         {credit > 0n ? (
-                          <span className="font-medium">{journalMoney(credit, line.amountCurrencyCode, unitPresentation)}</span>
+                          <span className="font-medium"><BidiText>{journalMoney(credit, line.amountCurrencyCode, unitPresentation)}</BidiText></span>
                         ) : (
                           <span className="text-muted-foreground/30">-</span>
                         )}
@@ -497,20 +505,20 @@ export default function EntryDetailPage() {
           <div className="border-t bg-muted/10 px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex justify-end">
               <div className="w-full max-w-xs space-y-1.5">
-                <div className="flex justify-between text-sm">
+                <div className="flex flex-wrap justify-between gap-2 text-sm">
                   <span className="text-muted-foreground">{t("totalDebits")}</span>
                   <span className="font-mono tabular-nums font-semibold">
-                    {journalSideDisplay(savedLines, "debitAmountMinor", unitPresentation)}
+                    <BidiText>{journalSideDisplay(savedLines, "debitAmountMinor", unitPresentation)}</BidiText>
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex flex-wrap justify-between gap-2 text-sm">
                   <span className="text-muted-foreground">{t("totalCredits")}</span>
                   <span className="font-mono tabular-nums font-semibold">
-                    {journalSideDisplay(savedLines, "creditAmountMinor", unitPresentation)}
+                    <BidiText>{journalSideDisplay(savedLines, "creditAmountMinor", unitPresentation)}</BidiText>
                   </span>
                 </div>
                 <div className="h-px bg-border my-1" />
-                <div className="flex justify-between text-sm">
+                <div className="flex flex-wrap justify-between gap-2 text-sm">
                   <span className="text-muted-foreground">{t("difference")}</span>
                   <span className={cn(
                     "font-mono tabular-nums font-semibold",
@@ -518,7 +526,7 @@ export default function EntryDetailPage() {
                       ? "text-emerald-600 dark:text-emerald-400"
                       : "text-red-600 dark:text-red-400"
                   )}>
-                    {journalSideDisplay(savedLines, "difference", unitPresentation)}
+                    <BidiText>{journalSideDisplay(savedLines, "difference", unitPresentation)}</BidiText>
                   </span>
                 </div>
               </div>
@@ -527,24 +535,24 @@ export default function EntryDetailPage() {
         </div>
 
         {/* Details cards row */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid min-w-0 [&>*]:min-w-0 gap-4 sm:grid-cols-2">
           {/* Entry details */}
           <div className="rounded-xl border bg-card p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{t("entryDetails")}</p>
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("description")}</p>
-                <p className="text-sm mt-0.5">{entry.description}</p>
+                <p className="text-sm mt-0.5"><BidiText>{entry.description}</BidiText></p>
               </div>
               {entry.reference && (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("reference")}</p>
-                  <p className="text-sm mt-0.5">{entry.reference}</p>
+                  <p className="text-sm mt-0.5"><BidiText>{entry.reference}</BidiText></p>
                 </div>
               )}
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("date")}</p>
-                <p className="text-sm mt-0.5">{formatDate(entry.date)}</p>
+                <p className="text-sm mt-0.5"><BidiText>{formatDate(entry.date)}</BidiText></p>
               </div>
             </div>
           </div>
@@ -552,29 +560,29 @@ export default function EntryDetailPage() {
           {/* Audit trail */}
           <div className="rounded-xl border bg-card p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{t("auditTrail")}</p>
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               {entry.sourceType && (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("source")}</p>
                   <p className="text-sm mt-0.5">
-                    {sourceTypeLabels[entry.sourceType] || entry.sourceType}
+                    <BidiText>{sourceTypeLabels[entry.sourceType] || entry.sourceType}</BidiText>
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("created")}</p>
-                <p className="text-sm mt-0.5">{formatTimestamp(entry.createdAt, t)}</p>
+                <p className="text-sm mt-0.5"><BidiText>{formatTimestamp(entry.createdAt, t)}</BidiText></p>
               </div>
               {entry.postedAt && (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("finalized")}</p>
-                  <p className="text-sm mt-0.5">{formatTimestamp(entry.postedAt, t)}</p>
+                  <p className="text-sm mt-0.5"><BidiText>{formatTimestamp(entry.postedAt, t)}</BidiText></p>
                 </div>
               )}
               {entry.voidedAt && (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("cancelled")}</p>
-                  <p className="text-sm mt-0.5">{formatTimestamp(entry.voidedAt, t)}</p>
+                  <p className="text-sm mt-0.5"><BidiText>{formatTimestamp(entry.voidedAt, t)}</BidiText></p>
                 </div>
               )}
               <div>
@@ -700,42 +708,42 @@ function EditEntrySheet({
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col p-0">
+      <SheetContent side={localeDirection(unitPresentation.locale) === "rtl" ? "left" : "right"} className="w-full sm:max-w-2xl flex flex-col p-0">
         <SheetHeader className="px-4 pt-5 pb-4 sm:px-6 border-b shrink-0">
-          <SheetTitle className="text-lg">{t("editTitle", { number: entry.entryNumber })}</SheetTitle>
+          <SheetTitle className="text-lg">{t.rich("editTitle", { number: entry.entryNumber, em: chunks => <IdentifierText>{chunks}</IdentifierText> })}</SheetTitle>
           <SheetDescription>{t("editDescription")}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 space-y-4 min-w-0">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("date")}</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <Label htmlFor="edit-entry-date" className="text-xs">{t("date")}</Label>
+              <Input id="edit-entry-date" dir="ltr" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("referenceOptional")}</Label>
-              <Input value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("adjustmentExample")} />
+              <Label htmlFor="edit-entry-reference" className="text-xs">{t("referenceOptional")}</Label>
+              <Input id="edit-entry-reference" dir="auto" value={reference} onChange={(e) => setReference(e.target.value)} placeholder={t("adjustmentExample")} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">{t("description")}</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("entryPurpose")} />
+            <Label htmlFor="edit-entry-description" className="text-xs">{t("description")}</Label>
+            <Input id="edit-entry-description" dir="auto" value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("entryPurpose")} />
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between">
               <Label className="text-xs">{t("lines")}</Label>
               <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={addLine}>
-                <Plus className="mr-1 size-3.5" />{t("addLine")}</Button>
+                <Plus className="me-1 size-3.5" />{t("addLine")}</Button>
             </div>
             {lines.map((l, i) => (
-              <div key={i} className="grid grid-cols-[1fr_120px_120px_auto] gap-2 items-start">
-                <div className="space-y-1">
+              <div key={i} className="grid min-w-0 grid-cols-2 sm:grid-cols-[minmax(0,1fr)_120px_120px_auto] gap-2 items-start">
+                <div className="col-span-2 min-w-0 sm:col-span-1 space-y-1">
                   <AccountPicker value={l.accountId} onChange={(v) => update(i, { accountId: v })} allowCreate />
                   <Input
                     value={l.description}
                     onChange={(e) => update(i, { description: e.target.value })}
-                    placeholder={t("lineNote")}
+                    placeholder={t("lineNote")} aria-label={t("lineNote")} dir="auto"
                     className="h-7 text-xs"
                   />
                 </div>
@@ -772,20 +780,20 @@ function EditEntrySheet({
 
           {preview.error && <p role="alert" className="text-xs text-red-600">{journalPreviewMessage(t, preview.error)}</p>}
           <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalDebitsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "debitAmountMinor", unitPresentation)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">{t("totalCreditsLower")}</span><span className="font-mono tabular-nums">{journalSideDisplay(preview.lines, "creditAmountMinor", unitPresentation)}</span></div>
-            <div className="mt-1 flex justify-between border-t pt-1">
+            <div className="flex flex-wrap justify-between gap-2"><span className="text-muted-foreground">{t("totalDebitsLower")}</span><span className="font-mono tabular-nums"><BidiText>{journalSideDisplay(preview.lines, "debitAmountMinor", unitPresentation)}</BidiText></span></div>
+            <div className="flex flex-wrap justify-between gap-2"><span className="text-muted-foreground">{t("totalCreditsLower")}</span><span className="font-mono tabular-nums"><BidiText>{journalSideDisplay(preview.lines, "creditAmountMinor", unitPresentation)}</BidiText></span></div>
+            <div className="mt-1 flex flex-wrap justify-between gap-2 border-t pt-1">
               <span className="text-muted-foreground">{t("difference")}</span>
               <span className={cn("font-mono tabular-nums font-semibold", balanced ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
-                {journalSideDisplay(preview.lines, "difference", unitPresentation)}
+                <BidiText>{journalSideDisplay(preview.lines, "difference", unitPresentation)}</BidiText>
               </span>
             </div>
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
-          <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
-          <Button onClick={save} disabled={saving || !balanced} className="bg-emerald-600 hover:bg-emerald-700">
+        <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 backdrop-blur-sm shrink-0">
+          <Button type="button" variant="outline" onClick={onClose}>{t("cancel")}</Button>
+          <Button type="button" onClick={save} disabled={saving || !balanced} className="h-auto max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700">
             {saving ? t("savingEllipsis") : t("saveChanges")}
           </Button>
         </div>

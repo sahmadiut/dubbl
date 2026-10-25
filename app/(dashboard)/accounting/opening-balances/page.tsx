@@ -1,4 +1,5 @@
 "use client";
+import { IdentifierText } from "@/components/ui/bidi-text";
 import { useTranslations } from "next-intl";
 import { requireJournalResponse, journalFailureMessage } from "@/i18n/journal-presentation";
 
@@ -54,8 +55,8 @@ export default function OpeningBalancesPage() {
         title={t("openingTitle")}
         description={t("openingDescription")}
       >
-        <Button size="sm" onClick={() => openDrawer("openingBalance")}>
-          <Plus className="mr-2 size-4" />
+        <Button type="button" size="sm" onClick={() => openDrawer("openingBalance")}>
+          <Plus className="me-2 size-4" />
           {entry ? t("replaceOpening") : t("setOpening")}
         </Button>
       </PageHeader>
@@ -72,14 +73,14 @@ export default function OpeningBalancesPage() {
           <Scale className="size-8 mx-auto text-muted-foreground" />
           <p className="mt-3 text-sm font-medium">{t("noOpening")}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t("firstOpeningHint")}</p>
-          <Button className="mt-4" size="sm" onClick={() => openDrawer("openingBalance")}>
-            <Plus className="mr-2 size-4" />{t("setOpening")}</Button>
+          <Button type="button" className="mt-4" size="sm" onClick={() => openDrawer("openingBalance")}>
+            <Plus className="me-2 size-4" />{t("setOpening")}</Button>
         </div>
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="text-xs sm:text-sm text-muted-foreground">
-              {t("startingFrom", { date: entry.date })}
+              {t.rich("startingFrom", { date: entry.date, em: chunks => <IdentifierText>{chunks}</IdentifierText> })}
             </span>
           </div>
 

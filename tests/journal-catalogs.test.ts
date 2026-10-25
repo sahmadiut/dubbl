@@ -139,11 +139,11 @@ test("production list, detail, edit, recurring and opening templates render bili
     const Detail = loaded(entryPath, [entry, false, null, "", false, false]).default;
     const html = renderWithPresentation(createElement(Detail), locale);
     for (const key of ["entryDetails", "auditTrail", "finalize", "edit", "manualSource"] as const) assert.ok(html.includes(messages.Journals[key]), key);
-    assert.ok(html.includes(t("entryTitle", { number: 42 })));
+    assert.ok(html.replace(/<[^>]*>/g, "").includes(t.rich("entryTitle", { number: 42, em: text => text }) as string));
     assert.ok(html.includes(displayNumberFixture("40,000,000,000,000.01", locale)));
     const Edit = loaded(entryPath, [entry.date, entry.description, entry.reference, rows, false]).EditEntrySheet;
     const edit = renderWithPresentation(createElement(Edit, { open: true, onClose: noop, entry, orgId: "org-a", onSaved: noop }), locale);
-    assert.ok(edit.includes(t("editTitle", { number: 42 })));
+    assert.ok(edit.replace(/<[^>]*>/g, "").includes(t.rich("editTitle", { number: 42, em: text => text }) as string));
     assert.ok(edit.includes(messages.Journals.saveChanges));
     const Recurring = loaded(recurringPath, [recurring, null, false, false, false]).default;
     const recurringHtml = renderWithPresentation(createElement(Recurring), locale);
@@ -154,7 +154,7 @@ test("production list, detail, edit, recurring and opening templates render bili
     const opening = renderWithPresentation(createElement(Opening), locale);
     assert.ok(opening.includes(messages.Journals.replaceOpening));
     assert.ok(opening.includes(displayNumberFixture("40,000,000,000,000.01", locale)));
-    assert.ok(opening.includes(t("startingFrom", { date: entry.date })));
+    assert.ok(opening.replace(/<[^>]*>/g, "").includes(t.rich("startingFrom", { date: entry.date, em: text => text }) as string));
     const List = loaded(`${base}/recurring-journals/page.tsx`, [[recurring], null, false, false, false, 1, 1, 0, "all", "all", "created", "desc", ""]).default;
     const list = renderWithPresentation(createElement(List), locale);
     assert.ok(list.includes(messages.Journals.newRecurring));

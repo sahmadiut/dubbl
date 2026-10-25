@@ -73,8 +73,8 @@ export function LocalePreferences() {
         {select("calendar", [["gregory", t("gregorianCalendar")], ["persian", t("persianCalendar")]])}
       </div>
       <div className="space-y-1.5">
-        <Label className="text-xs">{t("fontFamily")}</Label>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <Label id="locale-font-family-label" className="text-xs">{t("fontFamily")}</Label>
+        <div role="group" aria-labelledby="locale-font-family-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {([
             ["vazirmatn", t("fontVazirmatn"), t("fontPreviewVazirmatn"), "var(--font-vazirmatn), sans-serif"],
             ["abar", t("fontAbar"), t("fontPreviewAbar"), "'Abar', sans-serif"],
@@ -85,7 +85,7 @@ export function LocalePreferences() {
           ] as const).map(([value, label, preview, fontStyle]) => {
             const selected = (form?.fontFamily ?? "vazirmatn") === value;
             return (
-              <button key={value} type="button" disabled={!form || saving}
+              <button key={value} type="button" aria-pressed={selected} disabled={!form || saving}
                 className={`rounded-lg border p-3 text-start transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-input hover:border-primary/40"} disabled:cursor-not-allowed disabled:opacity-50`}
                 onClick={() => setForm(form && { ...form, fontFamily: value === "vazirmatn" ? null : value })}>
                 <span className="block text-sm font-medium" style={{ fontFamily: fontStyle }}>{label}</span>

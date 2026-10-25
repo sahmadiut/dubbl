@@ -29,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { useTranslations } from "next-intl";
 
 export interface Template {
@@ -133,13 +134,13 @@ export function DocumentTemplateForm({
       <SectionHeading>{st("general")}</SectionHeading>
       <div className="space-y-1.5">
         <Label className="text-xs">{st("name")}</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={st("namePlaceholder")} />
+        <Input dir="auto" aria-label={st("name")} value={name} onChange={(e) => setName(e.target.value)} placeholder={st("namePlaceholder")} />
       </div>
       {!editing && (
         <div className="space-y-1.5">
           <Label className="text-xs">{st("type")}</Label>
           <Select value={type} onValueChange={setType}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label={st("type")}><SelectValue /></SelectTrigger>
             <SelectContent>
               {Object.entries(documentTemplateTypes(st)).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -148,12 +149,12 @@ export function DocumentTemplateForm({
           </Select>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Label className="text-xs">{st("defaultTemplate")}</Label>
           <p className="text-[11px] text-muted-foreground">{st("defaultHelp")}</p>
         </div>
-        <Switch checked={isDefault} onCheckedChange={setIsDefault} />
+        <Switch aria-label={st("defaultTemplate")} checked={isDefault} onCheckedChange={setIsDefault} />
       </div>
 
       {/* Branding */}
@@ -163,35 +164,35 @@ export function DocumentTemplateForm({
         <p className="text-[11px] text-muted-foreground">{st("accentHelp")}</p>
         <div className="flex items-center gap-2">
           <input
-            type="color"
+            type="color" aria-label={st("accentColor")}
             value={accentColor}
             onChange={(e) => setAccentColor(e.target.value)}
             className="size-8 rounded border cursor-pointer"
           />
-          <Input value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="font-mono" />
+          <Input dir="ltr" aria-label={st("accentColor")} value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="font-mono" />
         </div>
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs">{st("logoUrl")}</Label>
         <p className="text-[11px] text-muted-foreground">{st("logoHelp")}</p>
-        <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder={st("logoPlaceholder")} />
+        <Input dir="ltr" aria-label={st("logoUrl")} value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder={st("logoPlaceholder")} />
       </div>
 
       {/* Display Options */}
       <SectionHeading>{st("displayOptions")}</SectionHeading>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Label className="text-xs">{st("showTax")}</Label>
           <p className="text-[11px] text-muted-foreground">{st("taxHelp")}</p>
         </div>
-        <Switch checked={showTaxBreakdown} onCheckedChange={setShowTaxBreakdown} />
+        <Switch aria-label={st("showTax")} checked={showTaxBreakdown} onCheckedChange={setShowTaxBreakdown} />
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Label className="text-xs">{st("showPaymentTerms")}</Label>
           <p className="text-[11px] text-muted-foreground">{st("paymentTermsHelp")}</p>
         </div>
-        <Switch checked={showPaymentTerms} onCheckedChange={setShowPaymentTerms} />
+        <Switch aria-label={st("showPaymentTerms")} checked={showPaymentTerms} onCheckedChange={setShowPaymentTerms} />
       </div>
 
       {/* Payment Information */}
@@ -199,12 +200,12 @@ export function DocumentTemplateForm({
       <div className="space-y-1.5">
         <Label className="text-xs">{st("bankDetails")}</Label>
         <p className="text-[11px] text-muted-foreground">{st("bankHelp")}</p>
-        <Textarea value={bankDetails} onChange={(e) => setBankDetails(e.target.value)} placeholder={st("bankPlaceholder", { iban: "DE89 3704 0044 0532 0130 00", swift: "COBADEFFXXX", bank: "Commerzbank" })} rows={3} className="text-xs" />
+        <Textarea dir="auto" aria-label={st("bankDetails")} value={bankDetails} onChange={(e) => setBankDetails(e.target.value)} placeholder={st("bankPlaceholder", { iban: "DE89 3704 0044 0532 0130 00", swift: "COBADEFFXXX", bank: "Commerzbank" })} rows={3} className="text-xs" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs">{st("paymentInstructions")}</Label>
         <p className="text-[11px] text-muted-foreground">{st("instructionsHelp")}</p>
-        <Textarea value={paymentInstructions} onChange={(e) => setPaymentInstructions(e.target.value)} placeholder={st("instructionsPlaceholder", { invoiceNumber: "{{invoiceNumber}}" })} rows={2} className="text-xs" />
+        <Textarea dir="auto" aria-label={st("paymentInstructions")} value={paymentInstructions} onChange={(e) => setPaymentInstructions(e.target.value)} placeholder={st("instructionsPlaceholder", { invoiceNumber: "{{invoiceNumber}}" })} rows={2} className="text-xs" />
       </div>
 
       {/* Content */}
@@ -212,17 +213,17 @@ export function DocumentTemplateForm({
       <div className="space-y-1.5">
         <Label className="text-xs">{st("notes")}</Label>
         <p className="text-[11px] text-muted-foreground">{st("notesHelp")}</p>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={st("notesPlaceholder")} rows={3} className="text-xs" />
+        <Textarea dir="auto" aria-label={st("notes")} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={st("notesPlaceholder")} rows={3} className="text-xs" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs">{st("headerHtml")}</Label>
         <p className="text-[11px] text-muted-foreground">{st("headerHelp")}</p>
-        <Textarea value={headerHtml} onChange={(e) => setHeaderHtml(e.target.value)} placeholder={`<p style="color: #6b7280;">${st("headerSample")}</p>`} rows={3} className="font-mono text-xs" />
+        <Textarea dir="ltr" aria-label={st("headerHtml")} value={headerHtml} onChange={(e) => setHeaderHtml(e.target.value)} placeholder={`<p style="color: #6b7280;">${st("headerSample")}</p>`} rows={3} className="font-mono text-xs" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs">{st("footerHtml")}</Label>
         <p className="text-[11px] text-muted-foreground">{st("footerHelp")}</p>
-        <Textarea value={footerHtml} onChange={(e) => setFooterHtml(e.target.value)} placeholder={`<p style="font-size: 10px; color: #9ca3af;">${st("footerSample")}</p>`} rows={3} className="font-mono text-xs" />
+        <Textarea dir="ltr" aria-label={st("footerHtml")} value={footerHtml} onChange={(e) => setFooterHtml(e.target.value)} placeholder={`<p style="font-size: 10px; color: #9ca3af;">${st("footerSample")}</p>`} rows={3} className="font-mono text-xs" />
       </div>
 
       {/* Template Variables Reference */}
@@ -236,7 +237,7 @@ export function DocumentTemplateForm({
             "contactName", "contactEmail", "contactAddress", "contactTaxNumber",
             "subtotal", "taxTotal", "total", "currency",
           ].map((v) => (
-            <code key={v} className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">{`{{${v}}}`}</code>
+            <code key={v} className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground"><IdentifierText>{`{{${v}}}`}</IdentifierText></code>
           ))}
         </div>
       </div>
@@ -262,7 +263,7 @@ interface ListProps {
 export function DocumentTemplateList({ templates, openCreate, openEdit, handlePreview, handleDelete }: ListProps) {
   const st = useTranslations("SettingsDocumentTemplates");
   return (<>
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 className="text-lg font-semibold">{st("documentTemplates")}</h2>
         <p className="text-sm text-muted-foreground">
@@ -295,18 +296,18 @@ export function DocumentTemplateList({ templates, openCreate, openEdit, handlePr
             key={t.id}
             className="rounded-lg border bg-card p-4 space-y-3"
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium truncate">{t.name}</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="min-w-0 text-sm font-medium"><BidiText>{t.name}</BidiText></h3>
                   {t.isDefault && (
                     <Badge variant="outline" className="text-[10px] border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400">
-                      <Star className="size-2.5 mr-0.5" /> {st("default")}
+                      <Star className="size-2.5 me-0.5" /> {st("default")}
                     </Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {documentTemplateTypeLabel(st, t.type)}
+                  <BidiText>{documentTemplateTypeLabel(st, t.type)}</BidiText>
                 </p>
               </div>
               <DropdownMenu>
@@ -334,7 +335,7 @@ export function DocumentTemplateList({ templates, openCreate, openEdit, handlePr
                 style={{ backgroundColor: t.accentColor || "#10b981" }}
               />
               <span className="text-xs text-muted-foreground font-mono">
-                {t.accentColor || "#10b981"}
+                <IdentifierText>{t.accentColor || "#10b981"}</IdentifierText>
               </span>
             </div>
           </div>

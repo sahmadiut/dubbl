@@ -9,6 +9,7 @@ import BackupsPage from "../app/(dashboard)/settings/backups/page";
 import TrashPage from "../app/(dashboard)/settings/trash/page";
 import { BulkImportWizardContent } from "../components/bulk-import-wizard";
 import { Sheet } from "../components/ui/sheet";
+import { BidiText, IdentifierText } from "../components/ui/bidi-text";
 import { BackupList, TrashList, ImportJobHistory, BackupRestoreDescription, BackupDeleteDescription, TrashDeleteDescription, TrashEmptyDescription, type Backup, type TrashItem } from "../components/settings/data-management-content";
 import { importOptions } from "../components/settings/import-options";
 import { backupTypeLabel, formatBackupSize, formatEntitySummary, importEntityLabel, importStatusLabel, trashEntityLabel, trashEntityOptions, trashRelativeTime } from "../i18n/data-presentation";
@@ -150,7 +151,7 @@ test("all five real wizard states translate their descriptions, counts, actions 
     assert.ok(upload.includes('accept=".csv"'));
     assert.ok(!upload.includes("<script>"));
     const mapping = render({ step: "mapping" });
-    assert.ok(mapping.includes(escaped(t("mapFile", { fileName: wizardDefaults.fileName }))));
+    assert.ok(mapping.includes(renderWithPresentation(t.rich("mapFile", { fileName: wizardDefaults.fileName, code: chunks => createElement(BidiText, null, chunks) }), locale)));
     assert.ok(mapping.includes(escaped(t("requiredFieldsMissing"))));
     assert.ok(mapping.includes('disabled=""'));
     assert.ok(!render({ step: "mapping", mappings: [{ csvColumn: sampleName, targetField: "name" }] }).includes('disabled=""'));
@@ -179,12 +180,14 @@ test("destructive descriptions escape names and describe organization-wide empty
     const messages = locale === "en-US" ? en : fa;
     const tt = createTranslator({ locale, messages, namespace: "SettingsTrash" });
     const bt = createTranslator({ locale, messages, namespace: "SettingsBackups" });
-    assert.equal(renderWithPresentation(createElement(TrashDeleteDescription, { item }), locale), escaped(tt("deleteDescription", { name: sampleName })));
-    assert.equal(renderWithPresentation(createElement(TrashDeleteDescription, { item: { ...item, name: null } }), locale), escaped(tt("deleteDescription", { name: tt("invoice") })));
+    const nameScope = (chunks: import("react").ReactNode) => createElement(BidiText, null, chunks);
+    const dateScope = (chunks: import("react").ReactNode) => createElement(IdentifierText, null, chunks);
+    assert.equal(renderWithPresentation(createElement(TrashDeleteDescription, { item }), locale), renderWithPresentation(tt.rich("deleteDescription", { name: sampleName, code: nameScope }), locale));
+    assert.equal(renderWithPresentation(createElement(TrashDeleteDescription, { item: { ...item, name: null } }), locale), renderWithPresentation(tt.rich("deleteDescription", { name: tt("invoice"), code: nameScope }), locale));
     assert.equal(renderWithPresentation(createElement(TrashEmptyDescription), locale), escaped(tt("emptyDescription")));
     const date = "2026-10-17 10:00 <script>";
-    assert.equal(renderWithPresentation(createElement(BackupRestoreDescription, { date }), locale), escaped(bt("restoreDescription", { date })));
-    assert.equal(renderWithPresentation(createElement(BackupDeleteDescription, { date }), locale), escaped(bt("deleteDescription", { date })));
+    assert.equal(renderWithPresentation(createElement(BackupRestoreDescription, { date }), locale), renderWithPresentation(bt.rich("restoreDescription", { date, code: dateScope }), locale));
+    assert.equal(renderWithPresentation(createElement(BackupDeleteDescription, { date }), locale), renderWithPresentation(bt.rich("deleteDescription", { date, code: dateScope }), locale));
   }
 });
 

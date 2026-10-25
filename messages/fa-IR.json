@@ -2210,8 +2210,8 @@
   },
   "SettingsBackups": {
     "pageOf": "صفحه {page} از {total}",
-    "restoreDescription": "تمام داده‌های فعلی با تصویر داده‌های {date} جایگزین می‌شوند. پیش از بازیابی، تصویری از داده‌های فعلی به‌طور خودکار ذخیره می‌شود.",
-    "deleteDescription": "نسخه پشتیبان {date} به سطل زباله منتقل می‌شود. تا ۳۰ روز می‌توانید آن را بازیابی کنید.",
+    "restoreDescription": "تمام داده‌های فعلی با تصویر داده‌های <code>{date}</code> جایگزین می‌شوند. پیش از بازیابی، تصویری از داده‌های فعلی به‌طور خودکار ذخیره می‌شود.",
+    "deleteDescription": "نسخه پشتیبان <code>{date}</code> به سطل زباله منتقل می‌شود. تا ۳۰ روز می‌توانید آن را بازیابی کنید.",
     "backups": "نسخه‌های پشتیبان",
     "automatedDailySnapshotsOfYourOrganizationData": "تصویرهای روزانه و خودکار از داده‌های سازمان",
     "uploadBackup": "بارگذاری نسخه پشتیبان",
@@ -2261,7 +2261,7 @@
   "SettingsTrash": {
     "restored": "{entity} بازیابی شد",
     "permanentlyDeleted": "{entity} برای همیشه حذف شد",
-    "deleteDescription": "«{name}» برای همیشه حذف می‌شود. این کار برگشت‌پذیر نیست.",
+    "deleteDescription": "«<code>{name}</code>» برای همیشه حذف می‌شود. این کار برگشت‌پذیر نیست.",
     "emptyDescription": "تمام موارد موجود در سطل زباله سازمان شما، از جمله موارد خارج از فیلترها و صفحه فعلی، برای همیشه حذف می‌شوند. این کار برگشت‌پذیر نیست.",
     "minutesAgo": "{count} دقیقه پیش",
     "hoursAgo": "{count} ساعت پیش",
@@ -2313,7 +2313,7 @@
     "loan": "وام"
   },
   "BulkImport": {
-    "mapFile": "نگاشت ستون‌های {fileName}",
+    "mapFile": "نگاشت ستون‌های <code>{fileName}</code>",
     "columnsMapped": "{count} ستون از {total} ستون نگاشت شد",
     "validCount": "{count} معتبر",
     "invalidCount": "{count} نامعتبر",

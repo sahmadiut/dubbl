@@ -28,6 +28,7 @@ import {
 import { Upload, CheckCircle2, XCircle, Loader2, FileUp, ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { autoMapColumns, mapImportRows, csvFailureMessage, importRowError, ImportMappingError } from "@/i18n/import-presentation";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { parseCSV } from "@/lib/import-export/csv-utils";
 
 interface ColumnMapping {
@@ -239,10 +240,10 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
               <Upload className="size-5" />
             </div>
             <div>
-              <SheetTitle className="text-lg">{title}</SheetTitle>
+              <SheetTitle className="text-lg"><BidiText>{title}</BidiText></SheetTitle>
               <SheetDescription>
                 {step === "upload" && t("uploadACSVFileToGetStarted")}
-                {step === "mapping" && t("mapFile", { fileName })}
+                {step === "mapping" && t.rich("mapFile", { fileName, code: chunks => <BidiText>{chunks}</BidiText> })}
                 {step === "preview" && t("reviewDataBeforeImporting")}
                 {step === "importing" && t("importInProgress")}
                 {step === "results" && t("importComplete")}
@@ -252,9 +253,9 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
 
           {/* Step indicator */}
           {step !== "importing" && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {([t("upload"), t("map"), t("preview"), t("import")] as const).map((label, i) => (
-                <div key={i} className="flex items-center gap-1.5">
+                <div key={i} className="flex flex-wrap items-center gap-1.5">
                   <div className={`flex size-5 items-center justify-center rounded-full text-[10px] font-medium transition-colors ${
                     i <= stepIndex
                       ? "bg-emerald-600 text-white dark:bg-emerald-500"
@@ -265,7 +266,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
                   <span className={`text-xs ${i <= stepIndex ? "text-foreground" : "text-muted-foreground"}`}>
                     {label}
                   </span>
-                  {i < 3 && <ArrowRight className="size-3 text-muted-foreground mx-0.5" />}
+                  {i < 3 && <ArrowRight className="rtl:rotate-180 size-3 text-muted-foreground mx-0.5" />}
                 </div>
               ))}
             </div>
@@ -277,7 +278,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
           {/* Upload step */}
           {step === "upload" && (
             <div
-              className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-10 transition-colors cursor-pointer ${
+              className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-4 sm:p-10 transition-colors cursor-pointer ${
                 dragActive
                   ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20"
                   : "border-border hover:border-emerald-500/40 hover:bg-muted/50"
@@ -285,6 +286,8 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
               onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
               onDragLeave={() => setDragActive(false)}
               onDrop={handleDrop}
+              role="button" tabIndex={0} aria-label={t("orClickToBrowse")}
+              onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileInputRef.current?.click(); } }}
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
@@ -307,7 +310,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
           {/* Mapping step */}
           {step === "mapping" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">
                   {t("columnsMapped", { count: mappedCount, total: csvHeaders.length })}
                 </p>
@@ -318,11 +321,11 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
 
               <div className="space-y-1.5 rounded-lg border p-3">
                 {csvHeaders.map((header, i) => (
-                  <div key={header} className="flex items-center gap-2">
+                  <div key={header} className="flex flex-wrap items-center gap-2">
                     <span className="w-32 text-xs truncate text-muted-foreground" title={header}>
-                      {header}
+                      <BidiText>{header}</BidiText>
                     </span>
-                    <ArrowRight className="size-3 text-muted-foreground shrink-0" />
+                    <ArrowRight className="rtl:rotate-180 size-3 text-muted-foreground shrink-0" />
                     <Select
                       value={mappings[i]?.targetField || "__skip__"}
                       onValueChange={(v) => {
@@ -331,14 +334,14 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
                         setMappings(next);
                       }}
                     >
-                      <SelectTrigger className="h-8 text-xs flex-1">
+                      <SelectTrigger aria-label={header} className="h-auto min-h-8 min-w-0 text-xs flex-1">
                         <SelectValue placeholder={t("skip")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__skip__">{t("skip")}</SelectItem>
                         {targetFields.map(f => (
                           <SelectItem key={f.key} value={f.key}>
-                            {f.label}{f.required ? " *" : ""}
+                            <BidiText>{f.label}</BidiText>{f.required ? " *" : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -352,7 +355,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
           {/* Preview step */}
           {step === "preview" && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="text-xs gap-1">
                   <CheckCircle2 className="size-3" />
                   {t("validCount", { count: validCount })}
@@ -365,8 +368,8 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
                 )}
               </div>
 
-              <div className="max-h-[50vh] overflow-y-auto rounded-lg border">
-                <Table>
+              <div className="max-h-[50vh] overflow-auto rounded-lg border">
+                <Table className="min-w-[28rem]">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12 text-xs">{t("row")}</TableHead>
@@ -386,7 +389,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
                           }
                         </TableCell>
                         <TableCell className="text-[11px] max-w-[200px] truncate text-muted-foreground">
-                          {JSON.stringify(p.data).slice(0, 80)}
+                          <IdentifierText>{JSON.stringify(p.data).slice(0, 80)}</IdentifierText>
                         </TableCell>
                         <TableCell className="text-[11px] text-destructive">{p.errors.map(error => importRowError(t, error)).join(", ")}</TableCell>
                       </TableRow>
@@ -408,7 +411,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
           {/* Results step */}
           {step === "results" && result && (
             <div className="space-y-4">
-              <div className="flex items-center gap-6 rounded-lg border p-4">
+              <div className="flex flex-wrap items-center gap-6 rounded-lg border p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-emerald-600 tabular-nums">{result.processedRows}</p>
                   <p className="text-[11px] text-muted-foreground">{t("imported")}</p>
@@ -436,7 +439,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
 
         {/* Footer */}
         {step !== "importing" && (
-          <div className="sticky bottom-0 z-10 flex items-center justify-between border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
+          <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-2 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
             <div>
               {step === "mapping" && (
                 <Button variant="ghost" size="sm" onClick={reset}>{t("changeFile")}</Button>
@@ -445,7 +448,7 @@ export function BulkImportWizardContent({ title, step, csvData, csvHeaders, mapp
                 <Button variant="ghost" size="sm" onClick={() => setStep("mapping")}>{t("back")}</Button>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => { reset(); onOpenChange(false); }}>
                 {step === "results" ? t("close") : t("cancel")}
               </Button>

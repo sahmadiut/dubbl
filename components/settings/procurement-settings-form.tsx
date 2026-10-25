@@ -43,7 +43,7 @@ export function ProcurementSettingsForm({ saving, settings, priceInput, qtyInput
     <ContentReveal>
       <div className="space-y-6 px-4 py-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">{st("billMatching")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -51,7 +51,7 @@ export function ProcurementSettingsForm({ saving, settings, priceInput, qtyInput
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" className="h-7 text-xs gap-1.5" onClick={onSave} disabled={saving}>
+            <Button size="sm" className="h-auto min-h-7 whitespace-normal text-xs gap-1.5" onClick={onSave} disabled={saving}>
               <Save className="size-3" />
               {saving ? st("saving") : st("saveChanges")}
             </Button>
@@ -60,22 +60,22 @@ export function ProcurementSettingsForm({ saving, settings, priceInput, qtyInput
 
         {/* Tolerances */}
         <div className="rounded-lg border divide-y">
-          <div className="flex items-center gap-4 px-4 py-3.5">
+          <div className="flex flex-wrap items-center gap-4 px-4 py-3.5">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg text-blue-500 bg-blue-500/10">
               <Percent className="size-4" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 basis-40 flex-1 [overflow-wrap:anywhere]">
               <p className="text-[13px] font-medium">{st("allowedPriceDifference")}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {st("howMuchABillSPriceCanBeAboveTheOrderBefore")}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div dir="ltr" className="flex items-center gap-2 shrink-0 [unicode-bidi:isolate]">
               <Input
                 type="number"
                 min={0}
                 step="0.01"
-                value={priceInput}
+                dir="ltr" aria-label={st("allowedPriceDifference")} value={priceInput}
                 onChange={(e) => onPriceChange(e.target.value)}
                 className="h-8 w-20 text-sm text-right"
               />
@@ -83,22 +83,22 @@ export function ProcurementSettingsForm({ saving, settings, priceInput, qtyInput
             </div>
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-3.5">
+          <div className="flex flex-wrap items-center gap-4 px-4 py-3.5">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg text-indigo-500 bg-indigo-500/10">
               <Percent className="size-4" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 basis-40 flex-1 [overflow-wrap:anywhere]">
               <p className="text-[13px] font-medium">{st("allowedQuantityDifference")}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {st("howMuchABillSQuantityCanBeAboveWhatWasOrdered")}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div dir="ltr" className="flex items-center gap-2 shrink-0 [unicode-bidi:isolate]">
               <Input
                 type="number"
                 min={0}
                 step="0.01"
-                value={qtyInput}
+                dir="ltr" aria-label={st("allowedQuantityDifference")} value={qtyInput}
                 onChange={(e) => onQtyChange(e.target.value)}
                 className="h-8 w-20 text-sm text-right"
               />
@@ -109,35 +109,35 @@ export function ProcurementSettingsForm({ saving, settings, priceInput, qtyInput
 
         {/* Rules */}
         <div className="rounded-lg border divide-y">
-          <div className="flex items-center gap-4 px-4 py-3.5">
+          <div className="flex flex-wrap items-center gap-4 px-4 py-3.5">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg text-emerald-500 bg-emerald-500/10">
               <PackageCheck className="size-4" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 basis-40 flex-1 [overflow-wrap:anywhere]">
               <p className="text-[13px] font-medium">{st("requireGoodsToBeReceivedFirst")}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {st("aSupplierBillCanTBeEnteredUntilTheGoodsHaveBeen")}
               </p>
             </div>
             <Switch
-              checked={settings.requireGrnBeforeBill}
+              aria-label={st("requireGoodsToBeReceivedFirst")} checked={settings.requireGrnBeforeBill}
               onCheckedChange={(v) => onSettingsChange((s) => ({ ...s, requireGrnBeforeBill: v }))}
               className="scale-90 shrink-0"
             />
           </div>
 
-          <div className="flex items-center gap-4 px-4 py-3.5">
+          <div className="flex flex-wrap items-center gap-4 px-4 py-3.5">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg text-amber-500 bg-amber-500/10">
               <ShieldAlert className="size-4" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 basis-40 flex-1 [overflow-wrap:anywhere]">
               <p className="text-[13px] font-medium">{st("blockBillsThatChargeMoreThanOrdered")}</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {st("stopABillFromBeingSavedWhenItsTotalIsHigherThan")}
               </p>
             </div>
             <Switch
-              checked={settings.blockOverBill}
+              aria-label={st("blockBillsThatChargeMoreThanOrdered")} checked={settings.blockOverBill}
               onCheckedChange={(v) => onSettingsChange((s) => ({ ...s, blockOverBill: v }))}
               className="scale-90 shrink-0"
             />

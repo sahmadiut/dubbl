@@ -78,7 +78,7 @@ export function NotificationPreferencesForm({ prefs, saving, onSave, onToggleInA
     <ContentReveal>
       <div className="space-y-6 px-4 py-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">{t("notificationPreferences")}</h2>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -86,7 +86,7 @@ export function NotificationPreferencesForm({ prefs, saving, onSave, onToggleInA
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" className="h-7 text-xs gap-1.5" onClick={onSave} disabled={saving}>
+            <Button size="sm" className="h-auto min-h-7 whitespace-normal text-xs gap-1.5" onClick={onSave} disabled={saving}>
               <Save className="size-3" />
               {saving ? t("saving") : t("saveChanges")}
             </Button>
@@ -94,7 +94,7 @@ export function NotificationPreferencesForm({ prefs, saving, onSave, onToggleInA
         </div>
 
         {/* Channel legend */}
-        <div className="flex items-center gap-6 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-6 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Bell className="size-3.5" />
             <span>{t("inApp")}</span>
@@ -112,11 +112,11 @@ export function NotificationPreferencesForm({ prefs, saving, onSave, onToggleInA
             const val = prefs[item.type];
 
             return (
-              <div key={item.type} className="flex items-center gap-4 px-4 py-3.5">
+              <div key={item.type} className="flex flex-wrap items-center gap-4 px-4 py-3.5">
                 <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", item.color)}>
                   <Icon className="size-4" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 basis-40 flex-1 [overflow-wrap:anywhere]">
                   <p className="text-[13px] font-medium">{t(item.label)}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{t(item.description)}</p>
                 </div>

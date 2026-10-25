@@ -112,9 +112,9 @@ export function RolePermissionFields({ selectedPermissions, onToggleCategory, on
                 {category}
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-1.5 pl-6">
+            <div className="grid grid-cols-1 gap-1.5 ps-6">
               {perms.map((perm) => (
-                <label key={perm} className="flex items-center gap-2 text-sm cursor-pointer">
+                <label key={perm} className="flex min-w-0 items-start gap-2 text-sm cursor-pointer [overflow-wrap:anywhere]">
                   <Checkbox
                     checked={selectedPermissions.includes(perm)}
                     onCheckedChange={() => onTogglePermission(perm)}

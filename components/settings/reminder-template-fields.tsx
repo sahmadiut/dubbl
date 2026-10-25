@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,12 +25,14 @@ export function ReminderTemplateFields({ subjectTemplate, bodyTemplate, onChange
   onInsert: (variable: string, field: TemplateField) => void;
 }) {
   const t = useTranslations("SettingsReminders");
+  const id = useId();
   return (<>
     {(["subjectTemplate", "bodyTemplate"] as const).map((field) => (
       <div key={field} className="space-y-1.5">
-        <Label className="text-xs">{t(field)}</Label>
+        <Label htmlFor={`${id}-${field}`} className="text-xs">{t(field)}</Label>
         {field === "subjectTemplate" ? (
           <Input
+            id={`${id}-${field}`} dir="auto"
             placeholder={t("paymentReminderForDocumentNumber")}
             value={subjectTemplate}
             onChange={(e) => onChange(field, e.target.value)}
@@ -37,6 +40,7 @@ export function ReminderTemplateFields({ subjectTemplate, bodyTemplate, onChange
           />
         ) : (
           <Textarea
+            id={`${id}-${field}`} dir="auto"
             placeholder={t("dearContactNameThisIsAReminder")}
             value={bodyTemplate}
             onChange={(e) => onChange(field, e.target.value)}
@@ -50,7 +54,7 @@ export function ReminderTemplateFields({ subjectTemplate, bodyTemplate, onChange
               type="button"
               variant="outline"
               size="sm"
-              className="h-5 text-[10px] px-1.5"
+              className="h-auto min-h-5 whitespace-normal text-[10px] px-1.5"
               onClick={() => onInsert(variable.value, field)}
             >
               {t(variable.label)}

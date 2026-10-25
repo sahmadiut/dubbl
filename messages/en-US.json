@@ -2210,8 +2210,8 @@
   },
   "SettingsBackups": {
     "pageOf": "Page {page} of {total}",
-    "restoreDescription": "This will replace all current data with the snapshot from {date}. A snapshot of your current data will be saved automatically before restoring.",
-    "deleteDescription": "This backup from {date} will be moved to trash. You can restore it within 30 days.",
+    "restoreDescription": "This will replace all current data with the snapshot from <code>{date}</code>. A snapshot of your current data will be saved automatically before restoring.",
+    "deleteDescription": "This backup from <code>{date}</code> will be moved to trash. You can restore it within 30 days.",
     "backups": "Backups",
     "automatedDailySnapshotsOfYourOrganizationData": "Automated daily snapshots of your organization data",
     "uploadBackup": "Upload Backup",
@@ -2261,7 +2261,7 @@
   "SettingsTrash": {
     "restored": "{entity} restored",
     "permanentlyDeleted": "{entity} permanently deleted",
-    "deleteDescription": "This will permanently delete \"{name}\". This action cannot be undone.",
+    "deleteDescription": "This will permanently delete \"<code>{name}</code>\". This action cannot be undone.",
     "emptyDescription": "This will permanently delete all items in your organization's trash, including items outside the current filters and page. This action cannot be undone.",
     "minutesAgo": "{count}m ago",
     "hoursAgo": "{count}h ago",
@@ -2313,7 +2313,7 @@
     "loan": "Loan"
   },
   "BulkImport": {
-    "mapFile": "Map columns from {fileName}",
+    "mapFile": "Map columns from <code>{fileName}</code>",
     "columnsMapped": "{count} of {total} columns mapped",
     "validCount": "{count} valid",
     "invalidCount": "{count} invalid",

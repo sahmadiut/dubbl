@@ -12,6 +12,7 @@ import { useParams } from "next/navigation";
 import { FileText, Download, ArrowLeft, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { IdentifierText } from "@/components/ui/bidi-text";
 import { documentMoneyText as formatMoney } from "@/lib/documents/render-wire";
 import Link from "next/link";
 
@@ -67,14 +68,14 @@ export default function PortalInvoicesPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white px-6 py-4">
         <div className="mx-auto max-w-3xl flex items-center gap-3">
-          <Link href={`/portal/${token}`} className="text-gray-400 hover:text-gray-600">
-            <ArrowLeft className="size-4" />
+          <Link href={`/portal/${token}`} aria-label={t("overview")} className="shrink-0 text-gray-400 hover:text-gray-600">
+            <ArrowLeft className="size-4 [&:dir(rtl)]:rotate-180" />
           </Link>
           <h1 className="text-lg font-semibold text-gray-900">{t("invoices")}</h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-8">
+      <main className="mx-auto min-w-0 max-w-3xl px-6 py-8 [overflow-wrap:anywhere]">
         {loading ? (
           <p className="text-sm text-gray-500">{t("loadingInvoices")}</p>
         ) : error ? (
@@ -89,22 +90,22 @@ export default function PortalInvoicesPage() {
             {invoices.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between rounded-lg border bg-white p-4"
+                className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border bg-white p-4"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{inv.invoiceNumber}</p>
+                  <p className="text-sm font-medium text-gray-900"><IdentifierText>{inv.invoiceNumber}</IdentifierText></p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {t("issuedDue", { issueDate: inv.issueDate, dueDate: inv.dueDate })}
+                    {t.rich("issuedDue", { issueDate: inv.issueDate, dueDate: inv.dueDate, code: chunks => <IdentifierText>{chunks}</IdentifierText> })}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className={statusColors[inv.status]}>
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
+                  <Badge variant="outline" className={`max-w-full whitespace-normal [overflow-wrap:anywhere] ${statusColors[inv.status] || ""}`}>
                     {t(portalStatusKey(inv.status))}
                   </Badge>
                   <span className="text-sm font-mono tabular-nums font-medium text-gray-900">
-                    {formatMoney(inv.total, inv.currencyCode, presentation)}
+                    <IdentifierText>{formatMoney(inv.total, inv.currencyCode, presentation)}</IdentifierText>
                   </span>
-                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={async () => {
+                  <Button variant="outline" size="sm" className="h-auto min-h-7 min-w-0 whitespace-normal [overflow-wrap:anywhere] py-1 text-xs gap-1" onClick={async () => {
                     try {
                       const blob = await clientPdf(await fetch(`/api/portal/${token}/invoices/${inv.id}/pdf`));
                       downloadBlob(blob, `${inv.invoiceNumber}.pdf`);
@@ -114,7 +115,7 @@ export default function PortalInvoicesPage() {
                   </Button>
                   {PAYABLE_STATUSES.has(inv.status) && inv.paymentLinkToken && (
                     <a href={`/pay/${inv.paymentLinkToken}`}>
-                      <Button size="sm" className="h-7 text-xs gap-1">
+                      <Button size="sm" className="h-auto min-h-7 min-w-0 whitespace-normal [overflow-wrap:anywhere] py-1 text-xs gap-1">
                         <CreditCard className="size-3" />
                         {t("payNow")}
                       </Button>

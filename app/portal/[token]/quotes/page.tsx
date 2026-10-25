@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { IdentifierText } from "@/components/ui/bidi-text";
 import { Button } from "@/components/ui/button";
 
 interface Quote {
@@ -72,18 +73,18 @@ export default function PortalQuotesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       <h2 className="text-lg font-semibold">{t("quotes")}</h2>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
-      <div className="rounded-lg border">
-        <Table>
+      <div className="min-w-0 rounded-lg border">
+        <Table className="min-w-[40rem]">
           <TableHeader>
             <TableRow>
               <TableHead>{t("quoteNumber")}</TableHead>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("expiry")}</TableHead>
-              <TableHead className="text-right">{t("total")}</TableHead>
+              <TableHead className="text-end">{t("total")}</TableHead>
               <TableHead>{t("statusLabel")}</TableHead>
               <TableHead />
             </TableRow>
@@ -98,18 +99,18 @@ export default function PortalQuotesPage() {
             ) : (
               quotes.map(q => (
                 <TableRow key={q.id}>
-                  <TableCell className="text-sm font-medium">{q.quoteNumber}</TableCell>
-                  <TableCell className="text-sm">{q.issueDate}</TableCell>
-                  <TableCell className="text-sm">{q.expiryDate}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(q.total, q.currencyCode, presentation)}</TableCell>
+                  <TableCell className="text-sm font-medium"><IdentifierText>{q.quoteNumber}</IdentifierText></TableCell>
+                  <TableCell className="text-sm"><IdentifierText>{q.issueDate}</IdentifierText></TableCell>
+                  <TableCell className="text-sm"><IdentifierText>{q.expiryDate}</IdentifierText></TableCell>
+                  <TableCell className="text-sm text-end"><IdentifierText>{formatMoney(q.total, q.currencyCode, presentation)}</IdentifierText></TableCell>
                   <TableCell>
-                    <Badge variant={q.status === "accepted" ? "default" : q.status === "declined" ? "destructive" : "secondary"} className="text-xs">
+                    <Badge variant={q.status === "accepted" ? "default" : q.status === "declined" ? "destructive" : "secondary"} className="max-w-full text-xs whitespace-normal [overflow-wrap:anywhere]">
                       {t(portalStatusKey(q.status))}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {q.status === "sent" && (
-                      <Button size="sm" variant="outline" disabled={!!accepting || !!error} onClick={() => handleAccept(q.id)}>
+                      <Button size="sm" variant="outline" className="h-auto min-h-8 min-w-0 whitespace-normal [overflow-wrap:anywhere] py-1" disabled={!!accepting || !!error} onClick={() => handleAccept(q.id)}>
                         {t("accept")}
                       </Button>
                     )}

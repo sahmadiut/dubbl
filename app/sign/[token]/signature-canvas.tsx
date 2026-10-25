@@ -140,7 +140,7 @@ export function SignatureCanvas({ token }: Props) {
 
   if (success) {
     return (
-      <div className="text-center py-6">
+      <div role="status" className="text-center py-6 [overflow-wrap:anywhere]">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 mb-3">
           <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
         </div>
@@ -155,15 +155,19 @@ export function SignatureCanvas({ token }: Props) {
   }
 
   return (
-    <div>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+    <div className="min-w-0 [overflow-wrap:anywhere]">
+      <p id="signature-hint" className="text-sm text-gray-600 dark:text-gray-400 mb-3">
         {t("drawHint")}
       </p>
 
       <div className="border rounded-lg dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="w-full h-40 cursor-crosshair touch-none"
+          dir="ltr"
+          role="img"
+          aria-label={t("drawHint")}
+          aria-describedby="signature-hint"
+          className="w-full h-40 cursor-crosshair touch-none [unicode-bidi:isolate]"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
@@ -171,21 +175,23 @@ export function SignatureCanvas({ token }: Props) {
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-        />
+        >
+          {t("drawHint")}
+        </canvas>
       </div>
 
       {error && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
 
-      <div className="flex gap-3 mt-4">
+      <div className="flex min-w-0 flex-wrap gap-3 mt-4">
         <button
           type="button"
           onClick={clearCanvas}
           disabled={submitting || !hasStrokes}
-          className="flex items-center justify-center gap-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2.5 px-4 text-sm transition-colors"
+          className="flex min-w-0 items-center justify-center gap-2 whitespace-normal [overflow-wrap:anywhere] rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2.5 px-4 text-sm transition-colors"
         >
-          <Eraser className="h-4 w-4" />
+          <Eraser className="h-4 w-4 shrink-0" />
           {t("clear")}
         </button>
 
@@ -193,16 +199,16 @@ export function SignatureCanvas({ token }: Props) {
           type="button"
           onClick={handleSubmit}
           disabled={submitting || !hasStrokes}
-          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 text-sm transition-colors"
+          className="flex-1 flex min-w-0 items-center justify-center gap-2 whitespace-normal [overflow-wrap:anywhere] rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 text-sm transition-colors"
         >
           {submitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
               {t("submitting")}
             </>
           ) : (
             <>
-              <Check className="h-4 w-4" />
+              <Check className="h-4 w-4 shrink-0" />
               {t("confirm")}
             </>
           )}

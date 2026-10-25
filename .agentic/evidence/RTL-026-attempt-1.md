@@ -1,0 +1,42 @@
+# RTL-026 customer portal and signing bidi
+
+## Selection and scope
+
+Controller validate/status/next selected resumable RTL-026 on master after CI repair e89b47742149a228edc60469ff7db62b5fbb11fa. The only initial dirty path was RTL-026.md, recording its existing start by codex-batch06-task1. That intent and attribution are retained. All nine owned inventory sources were audited; eight portal/signing sources receive presentation changes. The payment checkout source is retained unchanged under DEC-008. Ownership/dependencies/priorities and independent RTL-011/008/002 acceptance remain unchanged.
+
+This is the first local task commit in the supervisor's authorized two-task batch. No push is performed by this agent.
+
+## Exhaustive source audit
+
+- app/pay/[token]/page.tsx: audited unchanged. This is the frozen Stripe checkout/redirect surface, including its payment statuses, money helpers, PDF download and provider attribution. DEC-008 prohibits dedicated changes and says provider gaps do not block unrelated work. No Stripe qualification or change is claimed.
+- app/portal/[token]/layout.tsx: exact organization and contact names are auto-direction isolated. Header and nav can wrap long bilingual content; icon geometry is retained, with nonshrinking icons. Navigation exposes a localized landmark name and active page. Paths, tab identity/order, fetch and selection logic remain unchanged.
+- app/portal/[token]/page.tsx: exact caller names in headers and welcome/intro interpolation are isolated and escaped by React. Long header/card content can wrap and shrink; card alignment and trailing icon margin follow reading direction. Canonical invoice navigation and portal lookup remain unchanged.
+- app/portal/[token]/invoices/page.tsx: exact issued invoice numbers, issue/due dates and existing formatted money are isolated LTR. Issued/due sentence uses approved rich code callbacks around each existing argument. Invoice rows/actions/badges reflow and translated buttons can grow. Back navigation has the localized overview name and direction-aware arrow. Status/payability, invoice/payment tokens, PDF fetch/content checking/filename, all request callbacks and money helpers remain unchanged.
+- app/portal/[token]/quotes/page.tsx: quote numbers, issued/expiry dates and formatted totals are isolated; totals align at inline end. The real shared Table retains local horizontal overflow and a minimum width; action labels and status badges wrap. Exact quote IDs, acceptance/load callbacks, request routes/status gating, parser and money calls remain unchanged.
+- app/portal/[token]/payments/page.tsx: exact invoice numbers, existing formatted totals/paid values and existing date output are isolated. Numeric columns align inline end; a bounded scrolling table retains row/column order. Existing paidAt conversion, loaders/status mapping and REST/wire/money contracts remain unchanged.
+- app/portal/[token]/statements/page.tsx: dates and existing formatted amounts/paid/balances/outstanding total are isolated LTR. Caller descriptions are auto-direction isolated and can wrap within their cell. Header/download/total rows reflow; numeric alignment follows inline end; table scrolls locally. Download URL, PDF validation/filename, parsers, line order and totals/currency calculations remain unchanged.
+- app/sign/[token]/page.tsx: frozen issued invoice number, email, dates and existing formatted total are isolated LTR; signer/contact names and signed-date/fallback interpolation are isolated with auto direction. Summary rows wrap and narrow card padding adapts. Token lookup, not-found/unsafe handling, status/expiry precedence, exact-money helper and native date policy remain unchanged.
+- app/sign/[token]/signature-canvas.tsx: physical drawing surface explicitly stays LTR with local isolation; pointer coordinates, bounding rectangle math, DPR scaling, paths, clearing, image/png serialization and POST body remain unchanged. Canvas has its existing localized draw hint as an accessible name, description and fallback text. Success/error feedback has status/alert semantics. Clear/confirm actions wrap with stable icons. This does not add keyboard signature entry or qualify assistive technology/browser drawing behavior.
+
+Paired catalog changes only add existing approved em/code structural tags around the six existing PublicPortal/PublicSigning message arguments; callbacks map to BidiText/IdentifierText. Wording, keys, interpolation arguments and native Persian text are retained. No new translation or native terminology approval is asserted.
+
+## Actual checks
+
+- `node --import tsx --test --test-concurrency=1 tests/rtl-public-portals.test.ts tests/public-portal-catalogs.test.ts tests/public-signing-catalogs.test.ts tests/rtl-bidi-controls.test.ts tests/rtl-primitives.test.ts`: final 26/26 pass. Five new tests execute actual production JSX, real next-intl/PresentationProvider and controls in en-US/fa-IR x latn/arabext. They assert escaped long exact caller values, active nav and canonical route, isolated IDs/dates/money/descriptions, retained server signing status branches, named feedback and installed Tailwind CSS. Canvas callback recordings verify unmirrored mouse/touch coordinates, changedTouches fallback, DPR=2 dimensions, physical clearing and exact PNG POST body. Existing regressions retain portal read/error/accept/PDF and signing HTTP/network/JSON behavior.
+- `pnpm typecheck`: exit 0; fumadocs generation and tsc completed with no diagnostics. No build/dev startup occurred.
+- `pnpm exec eslint 'app/portal/**/page.tsx' 'app/portal/**/layout.tsx' 'app/sign/**/*.tsx' tests/rtl-public-portals.test.ts`: exit 0, zero warnings/errors.
+- `pnpm lint`: exit 0, zero errors and 20 existing warnings in unrelated sources.
+- `pnpm i18n:check`: final 10,720 paired keys and allowed rich-tag contracts pass.
+- `node --import tsx .agentic/scripts/verify_legacy_money.mjs`: nine regression checks pass.
+- `python .agentic/scripts/money_inventory.py --write` and `node --import tsx .agentic/scripts/verify_money_inventory.mjs`: 417 schema columns and 1,884 source consumer hashes/occurrence lines pass. Registry refresh includes the eight modified sources, two tag-only catalogs and new regression test. It also reconciles three stale hashes from the preceding committed CI fixture repair: shared-purchasing-catalogs, tax-rate-catalogs and whole-catalog-integration tests. Those test sources are not changed by RTL-026. MONEY_COLUMNS has no content diff; schema metadata is unchanged.
+- `git diff --check`: pass. Controller structurally validates all 415 tasks before work and again after review/done; structural validation is not independent implementation acceptance.
+
+Initial new test assumed rendered Next Link attribute order; it was corrected to inspect the actual active link props. Initial catalog validation rejected a new value tag; callbacks now use the existing approved em/code vocabulary and final focused/catalog checks pass. These were fixture/structural-tag corrections, not runtime contract changes.
+
+An optional extra AST comparison could not spawn Git inside Node (sandbox EPERM). Its requested escalated run was aborted while awaiting approval; it did not produce a result. Temporary audit/edit scripts were removed. No AST-invariant pass is claimed. Source/callback review and actual focused runtime assertions above are the contract evidence.
+
+## Review and qualification limits
+
+Review is honestly attributed self-review, permitted by START_HERE step 6 and docs/CONTROLLER.md for this task's pre-existing human_review=false metadata. No MON-010-specific waiver is applied. All assigned source edits and the complete diff were reviewed for preserved caller/REST/MCP/money/output behavior. This is presentation-only work, so no new REST/MCP operation/tool or DB migration is required.
+
+No mounted browser, native Persian, keyboard/AT, measured contrast, pixel clipping/zoom/spacing, canvas painting/signature quality, PDF/print/email output, financial accounting, hosted CI or deployment acceptance is claimed. Existing pointer-only signature input and current native date-format behavior are retained and not qualified as keyboard or calendar completion. DEC-005 excludes screenshot requirements; DEC-008 freezes the payment checkout. No application DB access/write, rescaling, IRR flag change, schema/migration or provider work occurred. Parent acceptance and later native/output gates remain independent.

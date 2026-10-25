@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { SignatureCanvas } from "./signature-canvas";
 import { getPresentation } from "@/i18n/server";
 import { statementMoneyText } from "@/lib/reports/statement-money";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 
 export default async function SignPage({
   params,
@@ -36,49 +37,49 @@ export default async function SignPage({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded-xl border bg-white dark:bg-gray-900 p-8 shadow-lg">
+      <div className="w-full min-w-0 max-w-lg rounded-xl border bg-white dark:bg-gray-900 p-4 sm:p-8 shadow-lg [overflow-wrap:anywhere]">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            {t("heading", { number: inv.invoiceNumber })}
+            {t.rich("heading", { number: inv.invoiceNumber, code: chunks => <IdentifierText>{chunks}</IdentifierText> })}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {t("requestedFor", { name: sig.signerName, email: sig.signerEmail })}
+            {t.rich("requestedFor", { name: sig.signerName, email: sig.signerEmail, em: chunks => <BidiText>{chunks}</BidiText>, code: chunks => <IdentifierText>{chunks}</IdentifierText> })}
           </p>
         </div>
 
         {/* Invoice summary */}
         <div className="space-y-3 mb-6 border-t border-b dark:border-gray-800 py-4">
           {inv.contact && (
-            <div className="flex justify-between text-sm">
+            <div className="flex min-w-0 flex-wrap justify-between gap-2 text-sm">
               <span className="text-gray-500 dark:text-gray-400">{t("contact")}</span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {inv.contact.name}
+                <BidiText>{inv.contact.name}</BidiText>
               </span>
             </div>
           )}
-          <div className="flex justify-between text-sm">
+          <div className="flex min-w-0 flex-wrap justify-between gap-2 text-sm">
             <span className="text-gray-500 dark:text-gray-400">{t("invoice")}</span>
             <span className="text-gray-900 dark:text-gray-100">
-              {inv.invoiceNumber}
+              <IdentifierText>{inv.invoiceNumber}</IdentifierText>
             </span>
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex min-w-0 flex-wrap justify-between gap-2 text-sm">
             <span className="text-gray-500 dark:text-gray-400">{t("issueDate")}</span>
             <span className="text-gray-900 dark:text-gray-100">
-              {inv.issueDate}
+              <IdentifierText>{inv.issueDate}</IdentifierText>
             </span>
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex min-w-0 flex-wrap justify-between gap-2 text-sm">
             <span className="text-gray-500 dark:text-gray-400">{t("dueDate")}</span>
             <span className="text-gray-900 dark:text-gray-100">
-              {inv.dueDate}
+              <IdentifierText>{inv.dueDate}</IdentifierText>
             </span>
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex min-w-0 flex-wrap justify-between gap-2 text-sm">
             <span className="text-gray-500 dark:text-gray-400">{t("total")}</span>
             <span className="text-gray-900 dark:text-gray-100 font-semibold">
-              {statementMoneyText(inv.total, inv.currencyCode, presentation)}
+              <IdentifierText>{statementMoneyText(inv.total, inv.currencyCode, presentation)}</IdentifierText>
             </span>
           </div>
         </div>
@@ -105,9 +106,9 @@ export default async function SignPage({
               {t("alreadySigned")}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {t("signedOn", { date: sig.signedAt
+              {t.rich("signedOn", { date: sig.signedAt
                 ? new Date(sig.signedAt).toLocaleDateString()
-                : t("previousDate") })}
+                : t("previousDate"), em: chunks => <BidiText>{chunks}</BidiText> })}
             </p>
           </div>
         ) : isExpired ? (

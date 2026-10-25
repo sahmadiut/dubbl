@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { IdentifierText } from "@/components/ui/bidi-text";
 
 interface Payment {
   invoiceNumber: string;
@@ -58,16 +59,16 @@ export default function PortalPaymentsPage() {
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       <h2 className="text-lg font-semibold">{t("paymentHistory")}</h2>
 
-      <div className="rounded-lg border">
-        <Table>
+      <div className="min-w-0 rounded-lg border">
+        <Table className="min-w-[40rem]">
           <TableHeader>
             <TableRow>
               <TableHead>{t("invoice")}</TableHead>
-              <TableHead className="text-right">{t("invoiceTotal")}</TableHead>
-              <TableHead className="text-right">{t("amountPaid")}</TableHead>
+              <TableHead className="text-end">{t("invoiceTotal")}</TableHead>
+              <TableHead className="text-end">{t("amountPaid")}</TableHead>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("statusLabel")}</TableHead>
             </TableRow>
@@ -82,12 +83,12 @@ export default function PortalPaymentsPage() {
             ) : (
               payments.map(p => (
                 <TableRow key={p.invoiceId}>
-                  <TableCell className="text-sm font-medium">{p.invoiceNumber}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(p.total, p.currencyCode, presentation)}</TableCell>
-                  <TableCell className="text-sm text-right font-medium">{formatMoney(p.amountPaid, p.currencyCode, presentation)}</TableCell>
-                  <TableCell className="text-sm">{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}</TableCell>
+                  <TableCell className="text-sm font-medium"><IdentifierText>{p.invoiceNumber}</IdentifierText></TableCell>
+                  <TableCell className="text-sm text-end"><IdentifierText>{formatMoney(p.total, p.currencyCode, presentation)}</IdentifierText></TableCell>
+                  <TableCell className="text-sm text-end font-medium"><IdentifierText>{formatMoney(p.amountPaid, p.currencyCode, presentation)}</IdentifierText></TableCell>
+                  <TableCell className="text-sm"><IdentifierText>{p.paidAt ? new Date(p.paidAt).toLocaleDateString() : "-"}</IdentifierText></TableCell>
                   <TableCell>
-                    <Badge variant={p.status === "paid" ? "default" : "secondary"} className="text-xs">
+                    <Badge variant={p.status === "paid" ? "default" : "secondary"} className="max-w-full text-xs whitespace-normal [overflow-wrap:anywhere]">
                       {t(portalStatusKey(p.status))}
                     </Badge>
                   </TableCell>

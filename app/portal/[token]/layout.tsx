@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BidiText } from "@/components/ui/bidi-text";
 import { FileText, ScrollText, MessageSquare, CreditCard } from "lucide-react";
 
 interface PortalInfo {
@@ -39,19 +40,19 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white px-6 py-4">
-        <div className="mx-auto max-w-4xl flex items-center justify-between">
-          <div>
+        <div className="mx-auto max-w-4xl flex min-w-0 flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <h1 className="text-lg font-semibold text-gray-900">
-              {info?.organization.name || t("loading")}
+              <BidiText>{info?.organization.name || t("loading")}</BidiText>
             </h1>
             <p className="text-sm text-gray-500">{t("portal")}</p>
           </div>
-          <p className="text-sm text-gray-600">{info?.contact.name}</p>
+          <p className="min-w-0 text-sm text-gray-600"><BidiText>{info?.contact.name}</BidiText></p>
         </div>
       </header>
 
-      <nav className="border-b bg-white">
-        <div className="mx-auto max-w-4xl flex gap-1 px-6">
+      <nav aria-label={t("portal")} className="border-b bg-white">
+        <div className="mx-auto max-w-4xl flex min-w-0 flex-wrap gap-1 px-6">
           {tabs.map(tab => {
             const href = `${basePath}${tab.href}`;
             const isActive = tab.href === ""
@@ -61,14 +62,15 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <Link
                 key={tab.href}
                 href={href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm border-b-2 transition-colors",
+                  "flex min-w-0 items-center gap-2 px-4 py-3 text-sm text-start whitespace-normal [overflow-wrap:anywhere] border-b-2 transition-colors",
                   isActive
                     ? "border-blue-600 text-blue-600 font-medium"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
-                <tab.icon className="size-4" />
+                <tab.icon className="size-4 shrink-0" />
                 {t(tab.label)}
               </Link>
             );
@@ -76,7 +78,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
       </nav>
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
+      <main className="mx-auto min-w-0 max-w-4xl px-6 py-8 [overflow-wrap:anywhere]">
         {children}
       </main>
     </div>

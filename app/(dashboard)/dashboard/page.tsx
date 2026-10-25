@@ -514,7 +514,7 @@ export default function DashboardPage() {
                     <button
                       key={step.href}
                       onClick={() => router.push(step.href)}
-                      className="flex items-start gap-3 rounded-lg border bg-background p-3 text-end transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      className="flex items-start gap-3 rounded-lg border bg-background p-3 text-start transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                     >
                       <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground/40" />
                       <div className="min-w-0 flex-1">

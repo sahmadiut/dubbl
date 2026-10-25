@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 
@@ -65,11 +66,11 @@ export default function PortalStatementsPage() {
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
         <h2 className="text-lg font-semibold">{t("statement")}</h2>
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" className="gap-1" onClick={async () => {
+        <div className="flex min-w-0 flex-wrap items-center gap-4">
+          <Button variant="outline" size="sm" className="h-auto min-h-8 min-w-0 gap-1 whitespace-normal [overflow-wrap:anywhere] py-1" onClick={async () => {
             try {
               const blob = await clientPdf(await fetch(`/api/portal/${token}/statements/pdf?format=pdf`));
               downloadBlob(blob, "statement.pdf");
@@ -77,22 +78,22 @@ export default function PortalStatementsPage() {
           }}>
             <Download className="size-4" />{t("downloadStatement")}
           </Button>
-          <div className="text-right">
+          <div className="text-end">
             <p className="text-sm text-gray-500">{t("outstanding")}</p>
-            <p className="text-xl font-bold">{formatMoney(totalOutstanding, currencyCode, presentation)}</p>
+            <p className="text-xl font-bold"><IdentifierText>{formatMoney(totalOutstanding, currencyCode, presentation)}</IdentifierText></p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
+      <div className="min-w-0 rounded-lg border">
+        <Table className="min-w-[40rem]">
           <TableHeader>
             <TableRow>
               <TableHead>{t("date")}</TableHead>
               <TableHead>{t("description")}</TableHead>
-              <TableHead className="text-right">{t("amount")}</TableHead>
-              <TableHead className="text-right">{t("paid")}</TableHead>
-              <TableHead className="text-right">{t("balance")}</TableHead>
+              <TableHead className="text-end">{t("amount")}</TableHead>
+              <TableHead className="text-end">{t("paid")}</TableHead>
+              <TableHead className="text-end">{t("balance")}</TableHead>
               <TableHead>{t("statusLabel")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -106,13 +107,13 @@ export default function PortalStatementsPage() {
             ) : (
               lines.map((line, i) => (
                 <TableRow key={i}>
-                  <TableCell className="text-sm">{line.date}</TableCell>
-                  <TableCell className="text-sm">{line.description}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(line.amount, currencyCode, presentation)}</TableCell>
-                  <TableCell className="text-sm text-right">{formatMoney(line.paid, currencyCode, presentation)}</TableCell>
-                  <TableCell className="text-sm text-right font-medium">{formatMoney(line.balance, currencyCode, presentation)}</TableCell>
+                  <TableCell className="text-sm"><IdentifierText>{line.date}</IdentifierText></TableCell>
+                  <TableCell className="max-w-xs text-sm whitespace-normal [overflow-wrap:anywhere]"><BidiText>{line.description}</BidiText></TableCell>
+                  <TableCell className="text-sm text-end"><IdentifierText>{formatMoney(line.amount, currencyCode, presentation)}</IdentifierText></TableCell>
+                  <TableCell className="text-sm text-end"><IdentifierText>{formatMoney(line.paid, currencyCode, presentation)}</IdentifierText></TableCell>
+                  <TableCell className="text-sm text-end font-medium"><IdentifierText>{formatMoney(line.balance, currencyCode, presentation)}</IdentifierText></TableCell>
                   <TableCell>
-                    <Badge variant={line.status === "paid" ? "default" : "secondary"} className="text-xs">
+                    <Badge variant={line.status === "paid" ? "default" : "secondary"} className="max-w-full text-xs whitespace-normal [overflow-wrap:anywhere]">
                       {t(portalStatusKey(line.status))}
                     </Badge>
                   </TableCell>

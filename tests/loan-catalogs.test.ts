@@ -128,7 +128,7 @@ test("loan detail renders payment previews, schedules, statuses and missing/load
       const Page = loaded(detail, [{ ...loan, status }, [entry, { ...entry, id: "posted", posted: true }], null, false, false]);
       const html = renderWithPresentation(createElement(Page), locale);
       for (const key of ["loan", "back", "borrowed", "rate", "length", "monthly", "date", "principal", "interest", "payment", "remaining", "posted"] as const) assert.ok(html.includes(escape(t(key))), key);
-      assert.ok(html.includes(escape(t("started", { date: loan.startDate }))) && html.includes(escape(t("months", { count: 36 }))));
+      assert.ok(html.replace(/<[^>]*>/g, "").includes(escape(String(t.rich("started", { date: loan.startDate, em: chunks => String(chunks) })))) && html.includes(escape(t("months", { count: 36 }))));
       assert.ok(html.includes(escape(loanStatusLabel(t, status))) && html.includes(localizedAmount("$0.29", locale)) && html.includes(assetMoneyDisplay(loan.principalAmount, resolvePresentation({ user: { language: locale } }))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
       if (status === "active") assert.ok(html.includes(escape(t("recordMonth"))) && html.includes(escape(t("recordHint"))));

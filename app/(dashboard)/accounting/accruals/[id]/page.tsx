@@ -2,6 +2,7 @@
 
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { accrualJson, accrualFailureMessage, accrualStatusLabel } from "@/i18n/accrual-presentation";
 
 import { useState, useEffect, useCallback } from "react";
@@ -131,44 +132,44 @@ export default function AccrualDetailPage() {
     <div className="space-y-6">
       {error && <p role="alert">{error}</p>}
       <PageHeader title={acc.description} description={t("summary", { amount: formatMoney(acc.totalAmount, unitPresentation), count: acc.periods })}>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/accounting/accruals"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+        <Button className="h-auto min-h-9 min-w-0 whitespace-normal text-start" type="button" variant="outline" size="sm" asChild>
+          <Link href="/accounting/accruals"><ArrowLeft className="rtl:rotate-180 me-2 size-4" />{t("back")}</Link>
         </Button>
         {acc.status === "active" && hasUnposted && (
-          <Button
+          <Button type="button"
             size="sm"
             onClick={handlePostNext}
             loading={posting}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
             title={t("postTitle")}
           >
-            <CalendarClock className="mr-2 size-4" />{t("post")}
+            <CalendarClock className="me-2 size-4" />{t("post")}
           </Button>
         )}
         {acc.status !== "cancelled" && (
-          <Button variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title={t("cancelTitle")}>
-            <Ban className="mr-2 size-4" />{t("cancelAccrual")}
+          <Button type="button" variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title={t("cancelTitle")}>
+            <Ban className="me-2 size-4" />{t("cancelAccrual")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[acc.status] || ""}>
-          {accrualStatusLabel(t, acc.status)}
+          <BidiText>{accrualStatusLabel(t, acc.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("dateRange", { start: acc.startDate, end: acc.endDate })}
+          {t.rich("dateRange", { start: acc.startDate, end: acc.endDate, em: chunks => <IdentifierText>{chunks}</IdentifierText> })}
         </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("total")}</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(acc.totalAmount, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono"><BidiText>{formatMoney(acc.totalAmount, unitPresentation)}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("months")}</p>
-          <p className="text-xl font-bold font-mono">{acc.periods}</p>
+          <p className="text-xl font-bold font-mono"><BidiText>{acc.periods}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("recordedSoFar")}</p>
@@ -179,14 +180,14 @@ export default function AccrualDetailPage() {
       <div className="rounded-lg border overflow-x-auto">
         <div className="grid min-w-[420px] grid-cols-[1fr_140px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
           <span>{t("month")}</span>
-          <span className="text-right">{t("amount")}</span>
-          <span className="text-right">{t("recorded")}</span>
+          <span className="text-end">{t("amount")}</span>
+          <span className="text-end">{t("recorded")}</span>
         </div>
         {entries.map((entry) => (
           <div key={entry.id} className="grid min-w-[420px] grid-cols-[1fr_140px_120px] gap-2 border-b px-4 py-2.5 last:border-b-0 items-center">
-            <span className="text-sm">{entry.periodDate}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.amount, unitPresentation)}</span>
-            <span className="text-right">
+            <span className="text-sm"><IdentifierText>{entry.periodDate}</IdentifierText></span>
+            <span className="text-end text-sm font-mono font-medium"><BidiText>{formatMoney(entry.amount, unitPresentation)}</BidiText></span>
+            <span className="text-end">
               {entry.posted ? (
                 <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
                   <Check className="size-3.5" />{t("recorded")}
@@ -197,8 +198,8 @@ export default function AccrualDetailPage() {
             </span>
           </div>
         ))}
-        <div className="border-t bg-muted/30 px-4 py-2 text-right">
-          <span className="text-sm font-bold">{t("totalAmountSummary", { amount: formatMoney(acc.totalAmount, unitPresentation) })}</span>
+        <div className="border-t bg-muted/30 px-4 py-2 text-end">
+          <span className="text-sm font-bold"><BidiText>{t("totalAmountSummary", { amount: formatMoney(acc.totalAmount, unitPresentation) })}</BidiText></span>
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { loanJson, loanFailureMessage, loanStatusLabel } from "@/i18n/loan-presentation";
 
 import { useState, useEffect } from "react";
@@ -115,39 +116,39 @@ export default function LoanDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={ln.name} description={t("loan")}>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/accounting/loans"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+        <Button className="h-auto min-h-9 min-w-0 whitespace-normal text-start" type="button" variant="outline" size="sm" asChild>
+          <Link href="/accounting/loans"><ArrowLeft className="rtl:rotate-180 me-2 size-4" />{t("back")}</Link>
         </Button>
         {ln.status === "active" && nextEntry && (
-          <Button
+          <Button type="button"
             size="sm"
             onClick={handlePostPayment}
             loading={posting}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
             title={t("recordHint")}
           >
-            <Wallet className="mr-2 size-4" />{t("recordMonth")}
+            <Wallet className="me-2 size-4" />{t("recordMonth")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[ln.status] || ""}>
-          {loanStatusLabel(t, ln.status)}
+          <BidiText>{loanStatusLabel(t, ln.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("started", { date: ln.startDate })}
+          {t.rich("started", { date: ln.startDate, em: chunks => <IdentifierText>{chunks}</IdentifierText> })}
         </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("borrowed")}</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(ln.principalAmount, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono"><BidiText>{formatMoney(ln.principalAmount, unitPresentation)}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("rate")}</p>
-          <p className="text-xl font-bold font-mono">{(ln.interestRate / 100).toFixed(2)}%</p>
+          <p className="text-xl font-bold font-mono"><BidiText dir="ltr">{(ln.interestRate / 100).toFixed(2)}%</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("length")}</p>
@@ -155,7 +156,7 @@ export default function LoanDetailPage() {
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("monthly")}</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(ln.monthlyPayment, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono text-emerald-600"><BidiText>{formatMoney(ln.monthlyPayment, unitPresentation)}</BidiText></p>
         </div>
       </div>
 
@@ -163,11 +164,11 @@ export default function LoanDetailPage() {
         <div className="grid min-w-[640px] grid-cols-[60px_110px_1fr_1fr_1fr_1fr_90px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
           <span>#</span>
           <span>{t("date")}</span>
-          <span className="text-right">{t("principal")}</span>
-          <span className="text-right">{t("interest")}</span>
-          <span className="text-right">{t("payment")}</span>
-          <span className="text-right">{t("remaining")}</span>
-          <span className="text-right">{t("posted")}</span>
+          <span className="text-end">{t("principal")}</span>
+          <span className="text-end">{t("interest")}</span>
+          <span className="text-end">{t("payment")}</span>
+          <span className="text-end">{t("remaining")}</span>
+          <span className="text-end">{t("posted")}</span>
         </div>
         {schedule.map((entry) => (
           <div
@@ -176,15 +177,15 @@ export default function LoanDetailPage() {
               !entry.posted && entry.id === nextEntry?.id ? "bg-emerald-50/30 dark:bg-emerald-950/10" : ""
             }`}
           >
-            <span className="text-sm font-mono">{entry.periodNumber}</span>
-            <span className="text-sm">{entry.date || "-"}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(entry.principalAmount, unitPresentation)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(entry.interestAmount, unitPresentation)}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.totalPayment, unitPresentation)}</span>
-            <span className="text-right text-sm font-mono">{formatMoney(entry.remainingBalance, unitPresentation)}</span>
-            <span className="text-right text-sm">
+            <span className="text-sm font-mono"><IdentifierText>{entry.periodNumber}</IdentifierText></span>
+            <span className="text-sm"><IdentifierText>{entry.date || "-"}</IdentifierText></span>
+            <span className="text-end text-sm font-mono"><BidiText>{formatMoney(entry.principalAmount, unitPresentation)}</BidiText></span>
+            <span className="text-end text-sm font-mono"><BidiText>{formatMoney(entry.interestAmount, unitPresentation)}</BidiText></span>
+            <span className="text-end text-sm font-mono font-medium"><BidiText>{formatMoney(entry.totalPayment, unitPresentation)}</BidiText></span>
+            <span className="text-end text-sm font-mono"><BidiText>{formatMoney(entry.remainingBalance, unitPresentation)}</BidiText></span>
+            <span className="text-end text-sm">
               {entry.posted ? (
-                <span className="inline-flex items-center gap-1 text-emerald-600">
+                <span aria-label={t("posted")} className="inline-flex items-center gap-1 text-emerald-600">
                   <CheckCircle2 className="size-3.5" />
                 </span>
               ) : (

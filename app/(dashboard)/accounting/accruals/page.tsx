@@ -3,6 +3,7 @@
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { accrualJson, accrualFailureMessage, accrualStatusLabel } from "@/i18n/accrual-presentation";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -53,26 +54,26 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>, unitPre
       key: "description",
       header: t("purpose"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.description}</span>
+        <span className="text-sm font-medium"><BidiText>{r.description}</BidiText></span>
       ),
     },
     {
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.totalAmount, unitPresentation)}
+          <BidiText>{formatMoney(r.totalAmount, unitPresentation)}</BidiText>
         </span>
       ),
     },
     {
       key: "periods",
       header: t("months"),
-      className: "w-24 text-right",
+      className: "w-24 text-end",
       render: (r) => (
-        <span className="text-sm tabular-nums">{r.periods}</span>
+        <span className="text-sm tabular-nums"><BidiText>{r.periods}</BidiText></span>
       ),
     },
     {
@@ -80,7 +81,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>, unitPre
       header: t("starts"),
       sortKey: "start",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.startDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.startDate}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -88,7 +89,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Accruals">>, unitPre
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {accrualStatusLabel(t, r.status)}
+          <BidiText>{accrualStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -228,11 +229,11 @@ export default function AccrualsPage() {
                 {t("intro")}
               </p>
             </div>
-            <Button
+            <Button type="button"
               onClick={() => openDrawer("accrualSchedule")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("new")}
             </Button>
           </div>
@@ -244,8 +245,8 @@ export default function AccrualsPage() {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("how")}</p>
               </div>
               <div className="divide-y">
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                       <CalendarRange className="size-3.5 text-blue-500" />
                     </div>
@@ -254,10 +255,10 @@ export default function AccrualsPage() {
                       <p className="text-[11px] text-muted-foreground">{t("insurance")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{formatMoney(120000, unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><BidiText>{formatMoney(120000, unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-teal-50 dark:bg-teal-950/40">
                       <CalendarClock className="size-3.5 text-teal-500" />
                     </div>
@@ -266,14 +267,14 @@ export default function AccrualsPage() {
                       <p className="text-[11px] text-muted-foreground">{t("littleEachMonth")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">{t("monthlyExample", { amount: formatMoney(10000, unitPresentation) })}</span>
+                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400"><BidiText>{t("monthlyExample", { amount: formatMoney(10000, unitPresentation) })}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("fairShare")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{formatMoney(10000, unitPresentation)}</span>
+                  <span className="font-mono text-sm font-bold"><BidiText>{formatMoney(10000, unitPresentation)}</BidiText></span>
                 </div>
               </div>
             </div>
@@ -285,25 +286,25 @@ export default function AccrualsPage() {
                 {
                   title: t("upfront"),
                   desc: t("upfrontDescription"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("bigBill"),
                   desc: t("bigBillDescription"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("income"),
                   desc: t("incomeDescription"),
-                  color: "border-l-teal-400",
+                  color: "border-s-teal-400",
                 },
                 {
                   title: t("smoother"),
                   desc: t("smootherDescription"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -329,43 +330,44 @@ export default function AccrualsPage() {
       {/* Accrual table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap">{t("runningTab")}</TabsTrigger>
-              <TabsTrigger value="completed" className="whitespace-nowrap">{t("finishedTab")}</TabsTrigger>
-              <TabsTrigger value="cancelled" className="whitespace-nowrap">{t("cancelledTab")}</TabsTrigger>
+          <Tabs dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList aria-label={t("status")} className="h-auto max-w-full flex-wrap">
+              <TabsTrigger value="all" className="h-auto whitespace-normal text-start">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="h-auto whitespace-normal text-start">{t("runningTab")}</TabsTrigger>
+              <TabsTrigger value="completed" className="h-auto whitespace-normal text-start">{t("finishedTab")}</TabsTrigger>
+              <TabsTrigger value="cancelled" className="h-auto whitespace-normal text-start">{t("cancelledTab")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <Button
+          <Button type="button"
             onClick={() => openDrawer("accrualSchedule")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("new")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative w-full sm:w-auto">
+            <Search aria-hidden="true" className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder={t("search")}
+              aria-label={t("search")} dir="auto"
+            placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-full sm:w-56 ps-8 text-xs"
             />
           </div>
           {hasFilters && (
-            <Button
+            <Button type="button"
               variant="ghost"
               size="sm"
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}
@@ -388,7 +390,7 @@ export default function AccrualsPage() {
         {/* Infinite scroll sentinel & count */}
         {!refetching && !pendingSearch && filteredSchedules.length > 0 && (
           <>
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 pt-1">
               <p className="text-xs text-muted-foreground">
                 {t("showing", { shown: schedules.length, count: totalCount })}
               </p>

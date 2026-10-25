@@ -2,6 +2,7 @@
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { budgetTypeLabel, budgetReadJson, budgetFailureMessage } from "@/i18n/budget-presentation";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
@@ -166,7 +167,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
     return (
       <div className="space-y-4 pt-12 text-center">
         <p className="text-sm text-muted-foreground">{loadError || t("notFound")}</p>
-        <button onClick={() => router.push("/accounting/budgets")} className="text-sm text-muted-foreground underline">{t("backCapital")}</button>
+        <button type="button" onClick={() => router.push("/accounting/budgets")} className="text-sm text-muted-foreground underline">{t("backCapital")}</button>
       </div>
     );
   }
@@ -181,23 +182,23 @@ export default function BudgetDetailLayout({ children }: { children: React.React
     <BudgetContext.Provider value={{ currencyCode, budget, setBudget, comparisons, totalBudgeted, totalActual, totalBurnRate, daysElapsed, daysRemaining, totalDays, accounts, refetch: fetchData }}>
       <ContentReveal>
         {/* Back link */}
-        <button
+        <button type="button"
           onClick={() => router.push("/accounting/budgets")}
           className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="rtl:rotate-180 size-3.5" />
           {t("back")}
         </button>
 
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 dark:bg-purple-500/15">
               <Target className="size-5 text-purple-700 dark:text-purple-300" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                <h1 className="text-base sm:text-lg font-semibold tracking-tight">{budget.name}</h1>
+                <h1 className="min-w-0 [overflow-wrap:anywhere] text-base sm:text-lg font-semibold tracking-tight"><BidiText>{budget.name}</BidiText></h1>
                 <Badge variant="outline" className={budget.isActive
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
                   : "text-muted-foreground"
@@ -205,11 +206,11 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                   {budget.isActive ? t("active") : t("inactive")}
                 </Badge>
                 <Badge variant="outline" className="text-[10px]">
-                  {budgetTypeLabel(t, budget.periodType)}
+                  <BidiText>{budgetTypeLabel(t, budget.periodType)}</BidiText>
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {budget.startDate} · {budget.endDate} · {t("lineCount", { count: budget.lines.length })}
+                <IdentifierText>{budget.startDate}</IdentifierText> · <IdentifierText>{budget.endDate}</IdentifierText> · {t("lineCount", { count: budget.lines.length })}
               </p>
             </div>
           </div>
@@ -217,20 +218,20 @@ export default function BudgetDetailLayout({ children }: { children: React.React
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-8">
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <p className="text-[11px] text-muted-foreground">{t("totalBudget")}</p>
-            <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums">{formatMoney(grandTotal)}</p>
+            <p className="mt-0.5 font-mono text-xl font-semibold tabular-nums"><BidiText>{formatMoney(grandTotal)}</BidiText></p>
           </div>
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <TrendingUp className="size-3 text-blue-500" />
               {t("actualSpend")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-blue-600">
-              {totalActual !== 0n ? formatMoney(totalActual) : "-"}
+              <BidiText>{totalActual !== 0n ? formatMoney(totalActual) : "-"}</BidiText>
             </p>
           </div>
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               {totalVariance >= 0
                 ? <TrendingDown className="size-3 text-emerald-500" />
@@ -242,34 +243,34 @@ export default function BudgetDetailLayout({ children }: { children: React.React
               "mt-0.5 font-mono text-lg font-semibold tabular-nums",
               totalVariance >= 0 ? "text-emerald-600" : "text-red-600"
             )}>
-              {totalBudgeted !== 0n ? formatMoney(budgetAbs(totalVariance)) : "-"}
+              <BidiText>{totalBudgeted !== 0n ? formatMoney(budgetAbs(totalVariance)) : "-"}</BidiText>
             </p>
           </div>
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Flame className="size-3 text-orange-500" />
               {t("burnRate")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-orange-600">
-              {totalBurnRate !== 0n ? formatMoney(totalBurnRate) : "-"}
+              <BidiText>{totalBurnRate !== 0n ? formatMoney(totalBurnRate) : "-"}</BidiText>
             </p>
             {totalBurnRate !== 0n && (
               <p className="text-[10px] text-muted-foreground">{t("projectedTotal")}</p>
             )}
           </div>
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="size-3 text-violet-500" />
               {t("daysRemaining")}
             </p>
             <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums">
-              {daysRemaining}
+              <BidiText>{daysRemaining}</BidiText>
             </p>
             <p className="text-[10px] text-muted-foreground">{t("elapsed", { elapsed: daysElapsed, total: totalDays })}</p>
           </div>
-          <div>
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <p className="text-[11px] text-muted-foreground">{t("utilization")}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 mt-1">
               <div className="h-2 flex-1 rounded-full bg-gray-200 dark:bg-muted overflow-hidden">
                 <div
                   className={cn(
@@ -279,20 +280,21 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                   style={{ width: `${Math.max(0, Math.min(overallPct, 100))}%` }}
                 />
               </div>
-              <span className="text-xs font-mono tabular-nums text-muted-foreground">{overallPct}%</span>
+              <span className="text-xs font-mono tabular-nums text-muted-foreground"><BidiText>{overallPct}</BidiText>%</span>
             </div>
           </div>
         </div>
 
         {/* Page tabs */}
-        <nav className="-mt-2 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
+        <nav aria-label={t("detailsTitle")} className="-mt-2 mb-8 flex items-center gap-1 overflow-x-auto border-b border-border">
           {PAGE_TABS.map((tab) => {
             const Icon = tab.icon;
             const tabHref = tab.href(id);
             const active = activeTab === tab.value;
             return (
-              <button
+              <button type="button"
                 key={tab.value}
+                aria-current={active ? "page" : undefined}
                 onClick={() => router.push(tabHref)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 pb-2.5 text-[13px] font-medium transition-colors",

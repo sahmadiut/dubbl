@@ -3,6 +3,7 @@ import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { budgetTypeLabel, budgetPeriodLabel, budgetFailureMessage, requireBudgetResponse } from "@/i18n/budget-presentation";
 
 import { useState } from "react";
@@ -49,7 +50,7 @@ function buildLineFromBudgetLine(l: BudgetLineData): LineInput {
     id: l.id,
     accountId: l.accountId,
     total: l.total,
-    periods: (l.periods || [])
+    periods: [...(l.periods || [])]
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((p) => ({
         label: p.label,
@@ -278,28 +279,28 @@ export default function BudgetSettingsPage() {
           </div>
           <div className="min-w-0 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("name")}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              <Label htmlFor="budget-name" className="text-xs">{t("name")}</Label>
+              <Input id="budget-name" dir="auto" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("startDate")}</Label>
-                <Input type="date" value={startDate} onChange={(e) => handleDateChange("start", e.target.value)} required />
+                <Label htmlFor="budget-start" className="text-xs">{t("startDate")}</Label>
+                <Input id="budget-start" dir="ltr" type="date" value={startDate} onChange={(e) => handleDateChange("start", e.target.value)} required />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("endDate")}</Label>
-                <Input type="date" value={endDate} onChange={(e) => handleDateChange("end", e.target.value)} required />
+                <Label htmlFor="budget-end" className="text-xs">{t("endDate")}</Label>
+                <Input id="budget-end" dir="ltr" type="date" value={endDate} onChange={(e) => handleDateChange("end", e.target.value)} required />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("periodType")}</Label>
+              <Label htmlFor="budget-period-type" className="text-xs">{t("periodType")}</Label>
               <Select value={periodType} onValueChange={(v) => handlePeriodTypeChange(v as PeriodType)}>
-                <SelectTrigger>
+                <SelectTrigger className="data-[size=default]:h-auto min-h-9 whitespace-normal text-start *:data-[slot=select-value]:line-clamp-none" id="budget-period-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {(["daily", "weekly", "monthly", "quarterly", "yearly", "custom"] as const).map((value) => (
-                    <SelectItem key={value} value={value}>{budgetTypeLabel(t, value)}</SelectItem>
+                    <SelectItem key={value} value={value}><BidiText>{budgetTypeLabel(t, value)}</BidiText></SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -317,8 +318,8 @@ export default function BudgetSettingsPage() {
           </div>
           <div className="min-w-0 space-y-4">
             <div className="flex justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={() => setLines((prev) => [...prev, emptyLine(periodType, startDate, endDate)])}>
-                <Plus className="mr-2 size-3.5" />{t("addLine")}
+              <Button className="h-auto min-h-9 min-w-0 whitespace-normal text-start" type="button" variant="outline" size="sm" onClick={() => setLines((prev) => [...prev, emptyLine(periodType, startDate, endDate)])}>
+                <Plus className="me-2 size-3.5" />{t("addLine")}
               </Button>
             </div>
 
@@ -326,7 +327,7 @@ export default function BudgetSettingsPage() {
               const isExpanded = expandedLine === i;
               return (
                 <div key={i} className="space-y-2.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <Select
                         value={line.accountId || undefined}
@@ -338,10 +339,10 @@ export default function BudgetSettingsPage() {
                           });
                         }}
                       >
-                        <SelectTrigger><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
+                        <SelectTrigger className="data-[size=default]:h-auto min-h-9 whitespace-normal text-start *:data-[slot=select-value]:line-clamp-none" aria-label={t("selectAccount")}><SelectValue placeholder={t("selectAccount")} /></SelectTrigger>
                         <SelectContent>
                           {accounts.map((a) => (
-                            <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
+                            <SelectItem key={a.id} value={a.id}><IdentifierText>{a.code}</IdentifierText> - <BidiText>{a.name}</BidiText></SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -350,26 +351,28 @@ export default function BudgetSettingsPage() {
                       <Trash2 className="size-4" />
                     </button>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-xs text-muted-foreground shrink-0 w-16">{t("annual")}</Label>
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                    <Label htmlFor={`budget-annual-${i}`} className="text-xs text-muted-foreground min-w-0 w-16">{t("annual")}</Label>
                     <CurrencyInput
+                      id={`budget-annual-${i}`}
                       prefix={currencyCode === "USD" ? currencyLabel("USD", unitPresentation.locale, "$") : currencyCode}
                       aria-label={t("totalForLine", { number: i + 1 })}
                         aria-invalid={budgetDraftInvalid(annualAmounts[i] ?? budgetDecimal(line.total))}
                         value={annualAmounts[i] ?? budgetDecimal(line.total)}
                       onChange={(v) => handleAnnualChange(i, v)}
                       placeholder="0.00"
-                      className="flex-1"
+                      className="min-w-0 flex-1 basis-40"
                     />
                     {line.total !== 0n && line.periods.length > 0 && (
                       <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">
-                        {t("perPeriod", { amount: formatMoney(budgetPerPeriod(line.total, line.periods.length)) })}
+                        <BidiText>{t("perPeriod", { amount: formatMoney(budgetPerPeriod(line.total, line.periods.length)) })}</BidiText>
                       </span>
                     )}
                   </div>
                   {line.total !== 0n && line.periods.length > 0 && (
                     <button
                       type="button"
+                      aria-expanded={isExpanded}
                       onClick={() => setExpandedLine(isExpanded ? null : i)}
                       className="text-[11px] text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
                     >
@@ -380,8 +383,9 @@ export default function BudgetSettingsPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {line.periods.map((p, pi) => (
                         <div key={pi} className="space-y-1">
-                          <label className="text-[10px] text-muted-foreground pl-0.5">{budgetPeriodLabel(t, p.label)}</label>
+                          <label htmlFor={`budget-period-${i}-${pi}`} className="text-[10px] text-muted-foreground ps-0.5"><BidiText>{budgetPeriodLabel(t, p.label)}</BidiText></label>
                           <CurrencyInput
+                            id={`budget-period-${i}-${pi}`}
                             size="sm"
                             aria-label={t("amountForPeriod", { period: budgetPeriodLabel(t, p.label) })}
                               aria-invalid={budgetDraftInvalid(periodDrafts[`${i}:${pi}`] ?? budgetDecimal(p.amount))}
@@ -406,8 +410,8 @@ export default function BudgetSettingsPage() {
         <div className="h-px bg-border" />
 
         <div className="flex justify-end">
-          <Button type="submit" size="sm" loading={saving} className="bg-emerald-600 hover:bg-emerald-700">
-            <Save className="mr-2 size-3.5" />{t("save")}
+          <Button type="submit" size="sm" loading={saving} className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700">
+            <Save className="me-2 size-3.5" />{t("save")}
           </Button>
         </div>
 
@@ -447,7 +451,7 @@ export default function BudgetSettingsPage() {
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">{t("deleteBudget")}</p>
                 <p className="text-[12px] text-muted-foreground">{t("deleteDescription")}</p>
               </div>
-              <Button variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
+              <Button className="h-auto min-h-9 min-w-0 whitespace-normal text-start" variant="destructive" size="sm" type="button" onClick={handleDelete}>{t("delete")}</Button>
             </div>
           </div>
         </div>

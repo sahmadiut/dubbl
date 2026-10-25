@@ -4,6 +4,7 @@ import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
+import { BidiText } from "@/components/ui/bidi-text";
 import { loanJson, loanFailureMessage, loanStatusLabel } from "@/i18n/loan-presentation";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -47,36 +48,36 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>, unitPresen
       key: "name",
       header: t("name"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.name}</span>
+        <span className="text-sm font-medium"><BidiText>{r.name}</BidiText></span>
       ),
     },
     {
       key: "principal",
       header: t("borrowed"),
-      className: "w-36 text-right",
+      className: "w-36 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.principalAmount, unitPresentation)}
+          <BidiText>{formatMoney(r.principalAmount, unitPresentation)}</BidiText>
         </span>
       ),
     },
     {
       key: "rate",
       header: t("rate"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {(r.interestRate / 100).toFixed(2)}%
+          <BidiText dir="ltr">{(r.interestRate / 100).toFixed(2)}%</BidiText>
         </span>
       ),
     },
     {
       key: "monthlyPayment",
       header: t("monthly"),
-      className: "w-36 text-right",
+      className: "w-36 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.monthlyPayment, unitPresentation)}
+          <BidiText>{formatMoney(r.monthlyPayment, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -86,7 +87,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"Loans">>, unitPresen
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {loanStatusLabel(t, r.status)}
+          <BidiText>{loanStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -225,11 +226,11 @@ export default function LoansPage() {
                 {t("emptyDescription")}
               </p>
             </div>
-            <Button
+            <Button type="button"
               onClick={() => openDrawer("loan")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("new")}
             </Button>
           </div>
@@ -241,8 +242,8 @@ export default function LoansPage() {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("how")}</p>
               </div>
               <div className="divide-y">
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                       <Landmark className="size-3.5 text-blue-500" />
                     </div>
@@ -251,10 +252,10 @@ export default function LoansPage() {
                       <p className="text-[11px] text-muted-foreground">{t("equipment")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{exampleMoney(1000000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><BidiText>{exampleMoney(1000000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                       <Wallet className="size-3.5 text-emerald-500" />
                     </div>
@@ -263,14 +264,14 @@ export default function LoansPage() {
                       <p className="text-[11px] text-muted-foreground">{t("split")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{exampleMoney(-88000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400"><BidiText>{exampleMoney(-88000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
-                  <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("paidOverTime")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{exampleMoney(0n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-bold"><BidiText>{exampleMoney(0n, "USD", unitPresentation)}</BidiText></span>
                 </div>
               </div>
             </div>
@@ -282,25 +283,25 @@ export default function LoansPage() {
                 {
                   title: t("bankTitle"),
                   desc: t("bankDescription"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("financeTitle"),
                   desc: t("financeDescription"),
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("interestTitle"),
                   desc: t("interestDescription"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("booksTitle"),
                   desc: t("booksDescription"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -326,43 +327,44 @@ export default function LoansPage() {
       {/* Loans table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
-              <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
-              <TabsTrigger value="active" className="whitespace-nowrap">{t("activeTab")}</TabsTrigger>
-              <TabsTrigger value="paid_off" className="whitespace-nowrap">{t("paidOffTab")}</TabsTrigger>
-              <TabsTrigger value="defaulted" className="whitespace-nowrap">{t("defaultedTab")}</TabsTrigger>
+          <Tabs dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList aria-label={t("status")} className="h-auto max-w-full flex-wrap">
+              <TabsTrigger value="all" className="h-auto whitespace-normal text-start">{t("all")}</TabsTrigger>
+              <TabsTrigger value="active" className="h-auto whitespace-normal text-start">{t("activeTab")}</TabsTrigger>
+              <TabsTrigger value="paid_off" className="h-auto whitespace-normal text-start">{t("paidOffTab")}</TabsTrigger>
+              <TabsTrigger value="defaulted" className="h-auto whitespace-normal text-start">{t("defaultedTab")}</TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <Button
+          <Button type="button"
             onClick={() => openDrawer("loan")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("new")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative w-full sm:w-auto">
+            <Search aria-hidden="true" className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
-              placeholder={t("search")}
+              aria-label={t("search")} dir="auto"
+            placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-full sm:w-56 ps-8 text-xs"
             />
           </div>
           {hasFilters && (
-            <Button
+            <Button type="button"
               variant="ghost"
               size="sm"
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clear")}
             </Button>
           )}
@@ -385,7 +387,7 @@ export default function LoansPage() {
         {/* Infinite scroll sentinel & count */}
         {!refetching && !pendingSearch && filteredLoans.length > 0 && (
           <>
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 pt-1">
               <p className="text-xs text-muted-foreground">
                 {t("showing", { shown: loans.length, count: totalCount })}
               </p>

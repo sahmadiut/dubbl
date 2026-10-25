@@ -3,6 +3,7 @@ import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { budgetPeriodLabel } from "@/i18n/budget-presentation";
 
 import { useState, useMemo } from "react";
@@ -72,7 +73,7 @@ export default function BudgetOverviewPage() {
       {chartData.length > 1 && (
         <div>
           <p className="text-sm font-medium mb-3">{t("spendingTrend")}</p>
-          <div className="rounded-lg border p-4">
+          <div dir="ltr" className="min-w-0 rounded-lg border p-4">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                 <defs>
@@ -89,11 +90,11 @@ export default function BudgetOverviewPage() {
                 <XAxis dataKey="name" tickFormatter={(label: string) => budgetPeriodLabel(t, label)} tick={{ fontSize: 11 }} className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" tickFormatter={(v) => `${currencyLabel(currencyCode, unitPresentation.locale)} ${v >= 1000 ? t("chartThousands", { value: (v / 1000).toFixed(0) }) : v}`} />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  labelFormatter={(label) => budgetPeriodLabel(t, String(label))}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, direction: unitPresentation.locale === "fa-IR" ? "rtl" : "ltr", overflowWrap: "anywhere", maxWidth: "min(24rem, 90vw)" }}
+                  labelFormatter={(label) => <BidiText>{budgetPeriodLabel(t, String(label))}</BidiText>}
                   formatter={(_value, _name, item) => [formatMoney(item.dataKey === "budgeted" ? item.payload.budgetedExact : item.payload.actualExact)]}
                 />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12, direction: unitPresentation.locale === "fa-IR" ? "rtl" : "ltr" }} formatter={(value) => <BidiText>{value}</BidiText>} />
                 <Area type="monotone" dataKey="budgeted" name={t("budgeted")} stroke="#8b5cf6" fill="url(#budgetedGrad)" strokeWidth={2} />
                 <Area type="monotone" dataKey="actual" name={t("actual")} stroke="#3b82f6" fill="url(#actualGrad)" strokeWidth={2} />
               </AreaChart>
@@ -166,25 +167,25 @@ export default function BudgetOverviewPage() {
       {/* Grand total */}
       {grandTotal !== 0n && (
         <div className="rounded-lg border bg-muted/30 px-4 py-3 space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-medium">{t("grandTotal")}</p>
-            <p className="font-mono text-lg font-semibold tabular-nums">{formatMoney(grandTotal)}</p>
+            <p className="font-mono text-lg font-semibold tabular-nums"><BidiText>{formatMoney(grandTotal)}</BidiText></p>
           </div>
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-4 text-muted-foreground">
-              <span>{t.rich("spent", { amount: formatMoney(totalActual), strong: (chunks) => <span className="font-mono tabular-nums text-foreground">{chunks}</span> })}</span>
+              <span>{t.rich("spent", { amount: formatMoney(totalActual), strong: (chunks) => <BidiText className="font-mono tabular-nums text-foreground">{chunks}</BidiText> })}</span>
               <span className={cn(
                 "font-mono tabular-nums",
                 over ? "text-red-600" : "text-emerald-600"
               )}>
-                {over ? t("overBy", { amount: formatMoney(budgetAbs(totalVariance)) }) : t("remaining", { amount: formatMoney(totalVariance) })}
+                <BidiText>{over ? t("overBy", { amount: formatMoney(budgetAbs(totalVariance)) }) : t("remaining", { amount: formatMoney(totalVariance) })}</BidiText>
               </span>
             </div>
             <span className={cn(
               "text-xs font-mono tabular-nums font-medium",
               over ? "text-red-600" : overallPct > 80 ? "text-amber-600" : "text-emerald-600"
             )}>
-              {overallPct}%
+              <BidiText>{overallPct}</BidiText>%
             </span>
           </div>
         </div>
@@ -238,17 +239,17 @@ function ViewLineCard({
 
   return (
     <div className="rounded-lg border px-4 py-3 space-y-2.5">
-      <div className="flex items-center justify-between">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium truncate">{accountName}</p>
-            {accountCode && <span className="text-xs text-muted-foreground font-mono">{accountCode}</span>}
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{accountName}</BidiText></p>
+            {accountCode && <span className="text-xs text-muted-foreground font-mono"><IdentifierText>{accountCode}</IdentifierText></span>}
           </div>
         </div>
-        <div className="text-right shrink-0 ml-4">
+        <div className="text-end shrink-0 ms-4">
           <p className="text-sm font-mono font-semibold tabular-nums">
             {actual !== 0n ? (
-              <>{formatMoney(actual)} <span className="text-muted-foreground font-normal">/ {formatMoney(budgeted)}</span></>
+              <><BidiText>{formatMoney(actual)}</BidiText> <span className="text-muted-foreground font-normal">/ <BidiText>{formatMoney(budgeted)}</BidiText></span></>
             ) : (
               formatMoney(budgeted)
             )}
@@ -258,7 +259,7 @@ function ViewLineCard({
               "text-xs font-mono tabular-nums",
               over ? "text-red-600" : "text-emerald-600"
             )}>
-              {t(over ? "overBy" : "underBy", { amount: formatMoney(budgetAbs(variance)) })}
+              <BidiText>{t(over ? "overBy" : "underBy", { amount: formatMoney(budgetAbs(variance)) })}</BidiText>
             </p>
           )}
         </div>
@@ -274,43 +275,44 @@ function ViewLineCard({
           />
         </div>
       )}
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 text-[11px] text-muted-foreground">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           {actual !== 0n && <span>{t("utilized", { percent: pct })}</span>}
-          {actual !== 0n && <span className="font-mono tabular-nums">{t("remaining", { amount: formatMoney(budgeted - actual) })}</span>}
-          {burnRate !== 0n && <span className="font-mono tabular-nums">{t("projected", { amount: formatMoney(burnRate) })}</span>}
+          {actual !== 0n && <span className="font-mono tabular-nums"><BidiText>{t("remaining", { amount: formatMoney(budgeted - actual) })}</BidiText></span>}
+          {burnRate !== 0n && <span className="font-mono tabular-nums"><BidiText>{t("projected", { amount: formatMoney(burnRate) })}</BidiText></span>}
           {actual === 0n && <span>{t("noSpending")}</span>}
         </div>
         {periods.length > 0 && (
-          <button
+          <button type="button"
+            aria-expanded={expanded}
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+            {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="rtl:rotate-180 size-3" />}
             {t("periods")}
           </button>
         )}
       </div>
       {expanded && periods.length > 0 && (
         <div className="space-y-1 pt-1">
-          {periods.sort((a, b) => a.sortOrder - b.sortOrder).map((p) => {
+          {[...periods].sort((a, b) => a.sortOrder - b.sortOrder).map((p) => {
             const pPct = p.budgeted === 0n ? 0 : budgetPercent(p.actual, p.budgeted);
             const pOver = p.actual > p.budgeted;
             return (
-              <div key={p.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded hover:bg-muted/50">
-                <span className="text-muted-foreground min-w-[80px]">{budgetPeriodLabel(t, p.label)}</span>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono tabular-nums">{formatMoney(p.budgeted)}</span>
+              <div key={p.id} className="flex min-w-0 flex-wrap items-center justify-between gap-3 text-[11px] py-1 px-2 rounded hover:bg-muted/50">
+                <span className="text-muted-foreground min-w-[80px]"><BidiText>{budgetPeriodLabel(t, p.label)}</BidiText></span>
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
+                  <span className="font-mono tabular-nums"><BidiText>{formatMoney(p.budgeted)}</BidiText></span>
                   {p.actual !== 0n && (
                     <>
-                      <span className="font-mono tabular-nums text-blue-600">{formatMoney(p.actual)}</span>
+                      <span className="font-mono tabular-nums text-blue-600"><BidiText>{formatMoney(p.actual)}</BidiText></span>
                       <span className={cn(
                         "font-mono tabular-nums",
                         pOver ? "text-red-600" : "text-emerald-600"
                       )}>
-                        {pOver ? "+" : "-"}{formatMoney(budgetAbs(p.variance))}
+                        {pOver ? "+" : "-"}<BidiText>{formatMoney(budgetAbs(p.variance))}</BidiText>
                       </span>
-                      <span className="text-muted-foreground w-8 text-right">{pPct}%</span>
+                      <span className="text-muted-foreground w-8 text-end"><BidiText>{pPct}</BidiText>%</span>
                     </>
                   )}
                 </div>
@@ -357,14 +359,14 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
   return (
     <div>
       <p className="text-sm font-medium mb-3">{t("periodBreakdown")}</p>
-      <div className="rounded-lg border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="max-w-full rounded-lg border overflow-x-auto">
+        <table className="min-w-[560px] w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/30">
-              <th className="text-left px-4 py-2 text-xs font-medium text-muted-foreground">{t("period")}</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">{t("budgeted")}</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">{t("actual")}</th>
-              <th className="text-right px-4 py-2 text-xs font-medium text-muted-foreground">{t("variance")}</th>
+              <th className="text-start px-4 py-2 text-xs font-medium text-muted-foreground">{t("period")}</th>
+              <th className="text-end px-4 py-2 text-xs font-medium text-muted-foreground">{t("budgeted")}</th>
+              <th className="text-end px-4 py-2 text-xs font-medium text-muted-foreground">{t("actual")}</th>
+              <th className="text-end px-4 py-2 text-xs font-medium text-muted-foreground">{t("variance")}</th>
             </tr>
           </thead>
           <tbody>
@@ -372,14 +374,14 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
               const variance = p.budgeted - p.actual;
               return (
                 <tr key={p.label} className="border-b last:border-b-0">
-                  <td className="px-4 py-2 text-sm">{budgetPeriodLabel(t, p.label)}</td>
-                  <td className="px-4 py-2 text-right font-mono tabular-nums text-sm">{formatMoney(p.budgeted)}</td>
-                  <td className="px-4 py-2 text-right font-mono tabular-nums text-sm text-blue-600">{formatMoney(p.actual)}</td>
+                  <td className="px-4 py-2 text-sm"><BidiText>{budgetPeriodLabel(t, p.label)}</BidiText></td>
+                  <td className="px-4 py-2 text-end font-mono tabular-nums text-sm"><BidiText>{formatMoney(p.budgeted)}</BidiText></td>
+                  <td className="px-4 py-2 text-end font-mono tabular-nums text-sm text-blue-600"><BidiText>{formatMoney(p.actual)}</BidiText></td>
                   <td className={cn(
-                    "px-4 py-2 text-right font-mono tabular-nums text-sm",
+                    "px-4 py-2 text-end font-mono tabular-nums text-sm",
                     variance >= 0 ? "text-emerald-600" : "text-red-600"
                   )}>
-                    {variance >= 0 ? "" : "-"}{formatMoney(budgetAbs(variance))}
+                    {variance >= 0 ? "" : "-"}<BidiText>{formatMoney(budgetAbs(variance))}</BidiText>
                   </td>
                 </tr>
               );
@@ -388,13 +390,13 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
           <tfoot>
             <tr className="border-t bg-muted/30">
               <td className="px-4 py-2 text-sm font-medium">{t("total")}</td>
-              <td className="px-4 py-2 text-right font-mono tabular-nums text-sm font-semibold">{formatMoney(totBudgeted)}</td>
-              <td className="px-4 py-2 text-right font-mono tabular-nums text-sm font-semibold text-blue-600">{formatMoney(totActual)}</td>
+              <td className="px-4 py-2 text-end font-mono tabular-nums text-sm font-semibold"><BidiText>{formatMoney(totBudgeted)}</BidiText></td>
+              <td className="px-4 py-2 text-end font-mono tabular-nums text-sm font-semibold text-blue-600"><BidiText>{formatMoney(totActual)}</BidiText></td>
               <td className={cn(
-                "px-4 py-2 text-right font-mono tabular-nums text-sm font-semibold",
+                "px-4 py-2 text-end font-mono tabular-nums text-sm font-semibold",
                 totVariance >= 0 ? "text-emerald-600" : "text-red-600"
               )}>
-                {totVariance >= 0 ? "" : "-"}{formatMoney(budgetAbs(totVariance))}
+                {totVariance >= 0 ? "" : "-"}<BidiText>{formatMoney(budgetAbs(totVariance))}</BidiText>
               </td>
             </tr>
           </tfoot>

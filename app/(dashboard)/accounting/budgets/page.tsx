@@ -2,6 +2,7 @@
 import { usePresentation as useUnitPresentation } from "@/i18n/provider";
 
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { budgetTypeLabel, budgetPeriodLabel, budgetReadJson, budgetFailureMessage } from "@/i18n/budget-presentation";
 
 import { useState, useEffect, useCallback } from "react";
@@ -148,20 +149,20 @@ export default function BudgetsPage() {
   if (budgets.length === 0) {
     return (
       <ContentReveal className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">{t("budgets")}</h2>
-          <Button
+          <Button type="button"
             onClick={() => openDrawer("budget")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("new")}
           </Button>
         </div>
 
         <div className="rounded-xl border bg-card overflow-hidden">
-          <div className="flex items-center gap-3 px-5 py-4 border-b">
+          <div className="flex min-w-0 flex-wrap items-center gap-3 px-5 py-4 border-b">
             <Target className="size-4 text-muted-foreground" />
             <div>
               <p className="text-sm font-semibold">{t("tracking")}</p>
@@ -176,9 +177,9 @@ export default function BudgetsPage() {
               { label: t("sales"), pct: 55 },
             ].map(({ label, pct }) => (
               <div key={label} className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-medium text-muted-foreground">{label}</span>
-                  <span className={cn("text-xs font-medium", pct > 80 ? "text-amber-500/70" : "text-emerald-500/70")}>{pct}%</span>
+                  <span className={cn("text-xs font-medium", pct > 80 ? "text-amber-500/70" : "text-emerald-500/70")}><BidiText>{pct}</BidiText>%</span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
@@ -217,19 +218,19 @@ export default function BudgetsPage() {
   return (
     <ContentReveal className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{t("budgets")}</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("count", { count: budgets.length, active: totalActive })}
           </p>
         </div>
-        <Button
+        <Button type="button"
           onClick={() => openDrawer("budget")}
           size="sm"
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="h-auto min-h-9 min-w-0 whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("new")}
         </Button>
       </div>
@@ -237,16 +238,17 @@ export default function BudgetsPage() {
       {/* Search + Filter */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Search aria-hidden="true" className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
+            aria-label={t("search")} dir="auto"
             placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | "active" | "inactive")}>
-          <SelectTrigger className="h-9 w-32 text-xs">
+          <SelectTrigger aria-label={`${t("active")} / ${t("inactive")}`} className="data-[size=default]:h-auto min-h-9 w-auto min-w-32 max-w-full whitespace-normal text-start *:data-[slot=select-value]:line-clamp-none text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -256,13 +258,13 @@ export default function BudgetsPage() {
           </SelectContent>
         </Select>
         {hasFilters && (
-          <Button
+          <Button type="button"
             variant="ghost"
             size="sm"
             className="h-8 text-xs text-muted-foreground"
             onClick={() => { setSearch(""); setStatusFilter("all"); }}
           >
-            <X className="mr-1 size-3" />
+            <X className="me-1 size-3" />
             {t("clear")}
           </Button>
         )}
@@ -273,7 +275,7 @@ export default function BudgetsPage() {
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-sm text-muted-foreground">{t("noResults")}</p>
-          <Button
+          <Button type="button"
             variant="ghost"
             size="sm"
             className="mt-2 text-xs"
@@ -289,8 +291,8 @@ export default function BudgetsPage() {
         <div className="space-y-3">
           {activeBudgets.map((b) => {
             const report = reports[b.id];
-            if (!report) return <button key={b.id} onClick={() => router.push(`/accounting/budgets/${b.id}`)} className="w-full rounded-lg border p-4 text-left">
-              <span className="text-sm font-semibold">{b.name}</span>
+            if (!report) return <button type="button" key={b.id} onClick={() => router.push(`/accounting/budgets/${b.id}`)} className="w-full rounded-lg border p-4 text-start">
+              <span className="text-sm font-semibold"><BidiText>{b.name}</BidiText></span>
               <span className="block text-xs text-muted-foreground">{loadingReports ? t("loadingAmounts") : t("amountsUnavailable")}</span>
             </button>;
             const formatMoney = (amount: bigint) => budgetMoney(amount, report.currencyCode, unitPresentation);
@@ -309,34 +311,34 @@ export default function BudgetsPage() {
             return (
               <div key={b.id} className="rounded-lg border bg-card overflow-hidden">
                 {/* Budget header */}
-                <button
+                <button type="button"
                   onClick={() => router.push(`/accounting/budgets/${b.id}`)}
-                  className="w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors group"
+                  className="w-full px-4 py-3 text-start hover:bg-muted/50 transition-colors group"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="text-sm font-semibold truncate">{b.name}</p>
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 gap-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{b.name}</BidiText></p>
                       <Badge variant="outline" className="text-[10px] shrink-0">
-                        {budgetTypeLabel(t, b.periodType)}
+                        <BidiText>{budgetTypeLabel(t, b.periodType)}</BidiText>
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-right">
+                    <div className="flex min-w-0 flex-wrap items-center gap-3 shrink-0">
+                      <div className="text-end">
                         <p className="text-sm font-mono font-semibold tabular-nums">
-                          {formatMoney(actual)} <span className="text-muted-foreground font-normal">/ {formatMoney(budgeted)}</span>
+                          <BidiText>{formatMoney(actual)}</BidiText> <span className="text-muted-foreground font-normal">/ <BidiText>{formatMoney(budgeted)}</BidiText></span>
                         </p>
-                        <div className="flex items-center gap-2 justify-end text-[11px] text-muted-foreground">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 justify-end text-[11px] text-muted-foreground">
                           <span className={cn(
                             "font-mono tabular-nums",
                             over ? "text-red-600" : "text-emerald-600"
                           )}>
-                            {over ? t("overBy", { amount: formatMoney(budgetAbs(remaining)) }) : t("left", { amount: formatMoney(remaining) })}
+                            <BidiText>{over ? t("overBy", { amount: formatMoney(budgetAbs(remaining)) }) : t("left", { amount: formatMoney(remaining) })}</BidiText>
                           </span>
                           <span>·</span>
                           <span>{t("timeLeft", { days: daysRemaining, percent: timePct })}</span>
                         </div>
                       </div>
-                      <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ChevronRight className="rtl:rotate-180 size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
 
@@ -363,13 +365,13 @@ export default function BudgetsPage() {
                       const periodOver = currentPeriod ? currentPeriod.actual > currentPeriod.budgeted : false;
 
                       return (
-                        <div key={line.accountId} className="px-4 py-2 flex items-center gap-3">
+                        <div key={line.accountId} className="px-4 py-2 flex min-w-0 flex-wrap items-center gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
                               {line.accountCode && (
-                                <span className="text-[11px] text-muted-foreground font-mono shrink-0">{line.accountCode}</span>
+                                <span className="text-[11px] text-muted-foreground font-mono shrink-0"><IdentifierText>{line.accountCode}</IdentifierText></span>
                               )}
-                              <span className="text-[13px] truncate">{line.accountName}</span>
+                              <span className="text-[13px] min-w-0 whitespace-normal [overflow-wrap:anywhere]"><BidiText>{line.accountName}</BidiText></span>
                             </div>
                             <div className="mt-1 h-1 w-full rounded-full bg-muted overflow-hidden">
                               <div
@@ -383,29 +385,29 @@ export default function BudgetsPage() {
                           </div>
 
                           {currentPeriod && (
-                            <div className="text-right shrink-0">
+                            <div className="text-end shrink-0">
                               <p className={cn(
                                 "text-[11px] font-mono tabular-nums",
                                 periodOver ? "text-red-600" : "text-emerald-600"
                               )}>
-                                {periodOver
+                                <BidiText>{periodOver
                                   ? "+" + formatMoney(budgetAbs(periodRemaining!))
                                   : formatMoney(periodRemaining!)
-                                }
+                                }</BidiText>
                               </p>
                               <p className="text-[10px] text-muted-foreground">{t("leftIn", { period: budgetPeriodLabel(t, currentPeriod.label) })}</p>
                             </div>
                           )}
 
-                          <div className="text-right shrink-0 min-w-[80px]">
+                          <div className="text-end shrink-0 min-w-[80px]">
                             <p className="text-[11px] font-mono tabular-nums font-medium">
-                              {formatMoney(line.actual)} <span className="text-muted-foreground font-normal">/ {formatMoney(line.budgeted)}</span>
+                              <BidiText>{formatMoney(line.actual)}</BidiText> <span className="text-muted-foreground font-normal">/ <BidiText>{formatMoney(line.budgeted)}</BidiText></span>
                             </p>
                             <p className={cn(
                               "text-[10px] font-mono tabular-nums",
                               lineOver ? "text-red-600" : "text-muted-foreground"
                             )}>
-                              {linePct}%
+                              <BidiText>{linePct}</BidiText>%
                             </p>
                           </div>
                         </div>
@@ -415,7 +417,7 @@ export default function BudgetsPage() {
                 ) : loadingReports ? (
                   <div className="border-t px-4 py-3 space-y-2.5">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3 animate-pulse">
+                      <div key={i} className="flex min-w-0 flex-wrap items-center gap-3 animate-pulse">
                         <div className="flex-1 space-y-1.5">
                           <div className="h-3 w-32 rounded bg-muted" />
                           <div className="h-1 w-full rounded-full bg-muted" />
@@ -442,18 +444,18 @@ export default function BudgetsPage() {
                 const report = reports[b.id];
                 const total = report?.totalBudgeted;
                 return (
-                  <button
+                  <button type="button"
                     key={b.id}
                     onClick={() => router.push(`/accounting/budgets/${b.id}`)}
-                    className="w-full flex items-center gap-4 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors group"
+                    className="w-full flex items-center gap-4 px-4 py-2.5 text-start hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate text-muted-foreground">{b.name}</p>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium min-w-0 whitespace-normal [overflow-wrap:anywhere] text-muted-foreground"><BidiText>{b.name}</BidiText></p>
                         <Badge variant="outline" className="text-[10px] shrink-0">{t("inactive")}</Badge>
                         {b.periodType && b.periodType !== "monthly" && (
                           <Badge variant="outline" className="text-[10px] shrink-0">
-                            {budgetTypeLabel(t, b.periodType)}
+                            <BidiText>{budgetTypeLabel(t, b.periodType)}</BidiText>
                           </Badge>
                         )}
                       </div>
@@ -464,7 +466,7 @@ export default function BudgetsPage() {
                     <span className="font-mono text-sm font-medium tabular-nums shrink-0 text-muted-foreground">
                       {total === undefined ? t("unavailable") : budgetMoney(total, report.currencyCode, unitPresentation)}
                     </span>
-                    <ChevronRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    <ChevronRight className="rtl:rotate-180 size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </button>
                 );
               })}

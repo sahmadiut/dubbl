@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -90,6 +93,7 @@ export default function DebitNoteDetailPage() {
 
 function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
   const unitPresentation = usePresentation();
+  const dir = localeDirection(unitPresentation.locale);
   const t = useTranslations("DebitNotes");
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [dn, setDn] = useState<DebitNoteDetail | null>(null);
@@ -221,11 +225,11 @@ function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
     <div className="space-y-6">
       <PageHeader title={dn.debitNoteNumber} description={t("sender", { name: dn.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/purchases/debit-notes"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+          <Link href="/purchases/debit-notes"><ArrowLeft className="me-2 size-4 rtl:rotate-180" />{t("back")}</Link>
         </Button>
         {dn.status === "draft" && (
-          <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Send className="mr-2 size-4" />{t("send")}
+          <Button size="sm" onClick={() => setSendDialogOpen(true)} className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+            <Send className="me-2 size-4" />{t("send")}
           </Button>
         )}
         {dn.status === "sent" && dn.amountRemaining > 0n && (
@@ -234,26 +238,26 @@ function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
             if (open) { setBillLoaded(null); setApplyBillId(""); setApplyAmount(""); }
           }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title={t("applyHint")}>
-                <FileText className="mr-2 size-4" />{t("applyAction")}
+              <Button size="sm" className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700" title={t("applyHint")}>
+                <FileText className="me-2 size-4" />{t("applyAction")}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent dir={dir} className="max-h-dvh overflow-y-auto [overflow-wrap:anywhere]">
               <DialogHeader>
                 <DialogTitle>{t("applyTitle")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>{t("bill")}</Label>
+                  <Label htmlFor="debit-apply-bill">{t("bill")}</Label>
                   <p className="text-xs text-muted-foreground">{t("billScope")}</p>
-                  <Select value={applyBillId} onValueChange={setApplyBillId}>
-                    <SelectTrigger>
+                  <Select dir={dir} value={applyBillId} onValueChange={setApplyBillId}>
+                    <SelectTrigger id="debit-apply-bill" aria-label={t("bill")} className="h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                       <SelectValue placeholder={t("selectBill")} />
                     </SelectTrigger>
                     <SelectContent>
                       {bills.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {t("billOption", { number: inv.billNumber, name: inv.contact?.name || t("unknown"), amount: debitNoteUiMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}
+                          <BidiText>{t("billOption", { number: inv.billNumber, name: inv.contact?.name || t("unknown"), amount: debitNoteUiMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}</BidiText>
                         </SelectItem>
                       ))}
                       {bills.length === 0 && (
@@ -275,7 +279,7 @@ function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
                     placeholder={invoiceUiDecimal(dn.amountRemaining, dn.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("remainingCredit", { amount: debitNoteUiMoney(dn.amountRemaining, dn.currencyCode, unitPresentation) })}
+                    <BidiText>{t("remainingCredit", { amount: debitNoteUiMoney(dn.amountRemaining, dn.currencyCode, unitPresentation) })}</BidiText>
                   </p>
                 </div>
                 {billError && <p role="alert" className="text-xs text-destructive">{t(billError)}</p>}
@@ -293,20 +297,20 @@ function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
           </Dialog>
         )}
         {dn.status !== "void" && (
-          <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title={t("voidHint")}>
-            <Ban className="mr-2 size-4" />{t("voidAction")}
+          <Button variant="outline" size="sm" onClick={handleVoid} className="h-auto min-h-8 whitespace-normal text-red-600" title={t("voidHint")}>
+            <Ban className="me-2 size-4" />{t("voidAction")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[dn.status] || ""}>
-          {debitNoteStatusLabel(t, dn.status)}
+          <BidiText>{debitNoteStatusLabel(t, dn.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("issued", { date: dn.issueDate })}
+          <BidiText>{t("issued", { date: dn.issueDate })}</BidiText>
         </span>
-        {dn.reference && <span className="text-xs sm:text-sm text-muted-foreground">{t("referenceValue", { reference: dn.reference })}</span>}
+        {dn.reference && <span className="text-xs sm:text-sm text-muted-foreground"><BidiText>{t("referenceValue", { reference: dn.reference })}</BidiText></span>}
       </div>
 
       <DebitNoteMoneyDetails credit={dn} />
@@ -314,7 +318,7 @@ function DebitNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
       {dn.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{dn.notes}</p>
+          <p className="text-sm whitespace-pre-wrap"><BidiText>{dn.notes}</BidiText></p>
         </div>
       )}
 

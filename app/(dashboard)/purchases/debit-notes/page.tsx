@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
@@ -64,14 +67,14 @@ function buildColumns(t: DebitNoteTranslate, unitPresentation: NumberPresentatio
       sortKey: "number",
       className: "w-32",
       render: (r) => (
-        <span className="font-mono text-sm">{r.debitNoteNumber}</span>
+        <span className="font-mono text-sm"><IdentifierText>{r.debitNoteNumber}</IdentifierText></span>
       ),
     },
     {
       key: "contact",
       header: t("supplier"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -79,7 +82,7 @@ function buildColumns(t: DebitNoteTranslate, unitPresentation: NumberPresentatio
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.issueDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.issueDate}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -87,7 +90,7 @@ function buildColumns(t: DebitNoteTranslate, unitPresentation: NumberPresentatio
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {debitNoteStatusLabel(t, r.status)}
+          <BidiText>{debitNoteStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -95,20 +98,20 @@ function buildColumns(t: DebitNoteTranslate, unitPresentation: NumberPresentatio
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {debitNoteUiMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{debitNoteUiMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
     {
       key: "remaining",
       header: t("remaining"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {debitNoteUiMoney(r.amountRemaining, r.currencyCode, unitPresentation)}
+          <BidiText>{debitNoteUiMoney(r.amountRemaining, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -117,6 +120,7 @@ function buildColumns(t: DebitNoteTranslate, unitPresentation: NumberPresentatio
 
 export default function DebitNotesPage() {
   const unitPresentation = usePresentation();
+  const dir = localeDirection(unitPresentation.locale);
   const t = useTranslations("DebitNotes");
   const router = useRouter();
   const { open: openDrawer } = useCreateDrawer();
@@ -263,9 +267,9 @@ export default function DebitNotesPage() {
             </div>
             <Button
               onClick={() => openDrawer("debitNote")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newSupplierCredit")}
             </Button>
           </div>
@@ -277,36 +281,36 @@ export default function DebitNotesPage() {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">{t("billTotal")}</p>
-                      <p className="text-[11px] text-muted-foreground">BILL-0042</p>
+                      <p className="text-[11px] text-muted-foreground"><IdentifierText>BILL-0042</IdentifierText></p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{exampleMoney(120000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><BidiText>{exampleMoney(120000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5 bg-teal-50/30 dark:bg-teal-950/10">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-teal-50 dark:bg-teal-950/40">
                       <CreditCard className="size-3.5 text-teal-500" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-teal-700 dark:text-teal-300">{t("creditApplied")}</p>
-                      <p className="text-[11px] text-muted-foreground">DN-0001</p>
+                      <p className="text-[11px] text-muted-foreground"><IdentifierText>DN-0001</IdentifierText></p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400">{exampleMoney(-20000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium text-teal-600 dark:text-teal-400"><BidiText>{exampleMoney(-20000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("newBalance")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{exampleMoney(100000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-bold"><BidiText>{exampleMoney(100000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
               </div>
             </div>
@@ -318,25 +322,25 @@ export default function DebitNotesPage() {
                 {
                   title: t("overchargedTitle"),
                   desc: t("overchargedDescription"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("returnedTitle"),
                   desc: t("returnedDescription"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("serviceTitle"),
                   desc: t("serviceDescription"),
-                  color: "border-l-teal-400",
+                  color: "border-s-teal-400",
                 },
                 {
                   title: t("discountTitle"),
                   desc: t("discountDescription"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -351,7 +355,7 @@ export default function DebitNotesPage() {
   return (
     <ContentReveal className="space-y-6">
       {/* Top: Stats */}
-      <p className="text-xs text-muted-foreground">{t("overviewScope", { count: filteredDebitNotes.length })}</p>
+      <p className="text-xs text-muted-foreground"><BidiText>{t("overviewScope", { count: filteredDebitNotes.length })}</BidiText></p>
       <DebitNoteOverview groups={overview} />
 
       <div className="h-px bg-border" />
@@ -359,8 +363,8 @@ export default function DebitNotesPage() {
       {/* Debit note table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={dir} value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
               <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentHeading")}</TabsTrigger>
@@ -372,24 +376,26 @@ export default function DebitNotesPage() {
           <Button
             onClick={() => openDrawer("debitNote")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newSupplierCredit")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative min-w-0 max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              aria-label={t("search")}
+              dir="auto"
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("startDate")} className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
@@ -398,7 +404,7 @@ export default function DebitNotesPage() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("endDate")} className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -408,6 +414,7 @@ export default function DebitNotesPage() {
             />
           </div>
           <Select
+            dir={dir}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -415,7 +422,7 @@ export default function DebitNotesPage() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-44 max-w-full text-xs *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -434,7 +441,7 @@ export default function DebitNotesPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}
@@ -462,7 +469,7 @@ export default function DebitNotesPage() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                {t("showing", { loaded: debitNotes.length, total: totalCount })}
+                <BidiText>{t("showing", { loaded: debitNotes.length, total: totalCount })}</BidiText>
               </p>
             </div>
             {hasMore && (

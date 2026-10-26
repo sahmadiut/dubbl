@@ -1,4 +1,6 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -165,7 +167,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
             {t("title")}
@@ -176,16 +178,16 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
         </div>
         <Button
           onClick={() => setDrawerOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("newBill")}
         </Button>
       </div>
 
       {error && <p role="alert" className="text-sm text-red-600">{t(error)}</p>}
       <div className="rounded-lg border overflow-x-auto">
-        <Table>
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow>
               <TableHead>{t("name")}</TableHead>
@@ -194,7 +196,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
               <TableHead>{t("nextBill")}</TableHead>
               <TableHead>{t("status")}</TableHead>
               <TableHead>{t("currency")}</TableHead>
-              <TableHead className="text-right">{t("grossAmount")}</TableHead>
+              <TableHead className="text-end">{t("grossAmount")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -220,27 +222,27 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
               templates.map((template) => (
                 <TableRow key={template.id}>
                   <TableCell className="text-sm font-medium">
-                    {template.name}
+                    <BidiText>{template.name}</BidiText>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {template.contact?.name || "-"}
+                    <BidiText>{template.contact?.name || "-"}</BidiText>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {recurringBillFrequencyLabel(t, template.frequency)}
+                    <BidiText>{recurringBillFrequencyLabel(t, template.frequency)}</BidiText>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {template.nextRunDate || "-"}
+                    <IdentifierText>{template.nextRunDate || "-"}</IdentifierText>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
                       className={statusColors[template.status] || ""}
                     >
-                      {recurringBillStatusLabel(t, template.status)}
+                      <BidiText>{recurringBillStatusLabel(t, template.status)}</BidiText>
                     </Badge>
                   </TableCell>
-                  <TableCell>{currencyLabel(template.currencyCode, unitPresentation.locale)}</TableCell>
-                  <TableCell className="text-right font-mono break-words">{invoiceUiMoney(template.lines.reduce((sum, line) => sum + line.grossMinor, 0n), template.currencyCode, unitPresentation)}</TableCell>
+                  <TableCell><BidiText>{currencyLabel(template.currencyCode, unitPresentation.locale)}</BidiText></TableCell>
+                  <TableCell className="text-end font-mono break-words"><BidiText>{invoiceUiMoney(template.lines.reduce((sum, line) => sum + line.grossMinor, 0n), template.currencyCode, unitPresentation)}</BidiText></TableCell>
                 </TableRow>
               ))
             )}
@@ -249,7 +251,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
       </div>
 
       <Sheet open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open) resetForm(); }}>
-        <SheetContent className="sm:max-w-3xl w-full p-0 flex flex-col overflow-y-auto">
+        <SheetContent dir={localeDirection(unitPresentation.locale)} className="sm:max-w-3xl w-full max-h-dvh p-0 flex flex-col overflow-y-auto">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
             <SheetTitle>{t("newBill")}</SheetTitle>
           </SheetHeader>
@@ -261,8 +263,8 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
               <CurrencySelect value={currencyCode} onValueChange={(code) => { setCurrencyCode(code); setValidLines(false); }} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("name")}</label>
-              <Input
+              <label className="text-sm font-medium" htmlFor="rtl040-name">{t("name")}</label>
+              <Input id="rtl040-name" dir="auto"
                 placeholder={t("namePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -280,8 +282,8 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("reference")}</label>
-              <Input
+              <label className="text-sm font-medium" htmlFor="rtl040-reference">{t("reference")}</label>
+              <Input id="rtl040-reference" dir="auto"
                 placeholder={t("referencePlaceholder")}
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
@@ -290,9 +292,9 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("frequency")}</label>
-              <Select value={frequency} onValueChange={setFrequency}>
-                <SelectTrigger>
-                  <SelectValue>{recurringBillFrequencyLabel(t, frequency)}</SelectValue>
+              <Select dir={localeDirection(unitPresentation.locale)} value={frequency} onValueChange={setFrequency}>
+                <SelectTrigger aria-label={t("frequency")}>
+                  <SelectValue><BidiText>{recurringBillFrequencyLabel(t, frequency)}</BidiText></SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="weekly">{t("weekly")}</SelectItem>
@@ -305,18 +307,18 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">{t("startDate")}</label>
-                <Input
+                <label className="text-sm font-medium" htmlFor="rtl040-startDate">{t("startDate")}</label>
+                <Input id="rtl040-startDate" dir="ltr"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">{t("endDate")}</label>
-                <Input
+                <label className="text-sm font-medium" htmlFor="rtl040-endDate">{t("endDate")}</label>
+                <Input id="rtl040-endDate" dir="ltr"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
@@ -325,8 +327,8 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("maxOccurrences")}</label>
-              <Input
+              <label className="text-sm font-medium" htmlFor="rtl040-maxOccurrences">{t("maxOccurrences")}</label>
+              <Input id="rtl040-maxOccurrences" dir="ltr"
                 type="number"
                 min="1"
                 placeholder={t("unlimited")}
@@ -340,7 +342,7 @@ function RecurringBillsWorkspace({ orgId }: { orgId: string }) {
               documentKind="recurringBill" priceFractionDigits={18} onValidityChange={setValidLines} />}
 
             <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto whitespace-normal w-full bg-emerald-600 hover:bg-emerald-700"
               onClick={handleSubmit}
               disabled={submitting || !name.trim() || !contactId || !startDate || !validLines}
             >

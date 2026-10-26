@@ -1,4 +1,6 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -124,6 +126,7 @@ function formatDate(dateStr: string) {
 }
 
 function ReceiptViewer({ fileKey, fileName }: { fileKey: string; fileName: string }) {
+  const unitPresentation = usePresentation();
   const t = useTranslations("Expenses");
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
@@ -155,14 +158,14 @@ function ReceiptViewer({ fileKey, fileName }: { fileKey: string; fileName: strin
       <DialogTrigger asChild>
         <button className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 transition-colors group">
           {isImage ? <ImageIcon className="size-3.5" /> : <FileText className="size-3.5" />}
-          <span className="max-w-[100px] truncate text-xs group-hover:underline">{fileName}</span>
+          <span className="max-w-[100px] truncate text-xs group-hover:underline"><BidiText>{fileName}</BidiText></span>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent dir={localeDirection(unitPresentation.locale)} className="sm:max-w-2xl max-h-dvh overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="size-4" />
-            {fileName}
+            <BidiText>{fileName}</BidiText>
           </DialogTitle>
         </DialogHeader>
         <div className="mt-2">
@@ -186,7 +189,7 @@ function ReceiptViewer({ fileKey, fileName }: { fileKey: string; fileName: strin
               <div className="flex justify-end">
                 <Button variant="outline" size="sm" asChild>
                   <a href={url} target="_blank" rel="noopener noreferrer" download={fileName}>
-                    <Download className="mr-2 size-3.5" />
+                    <Download className="me-2 size-3.5" />
                     {t("download")}</a>
                 </Button>
               </div>
@@ -237,7 +240,7 @@ function DrawerFooter({
       <Button
         type="submit"
         disabled={saving}
-        className="bg-emerald-600 hover:bg-emerald-700"
+        className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
       >
         {saving ? t("saving") : label}
       </Button>
@@ -336,7 +339,7 @@ function EditExpenseDrawer({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-3xl w-full p-0 flex flex-col">
+      <SheetContent dir={localeDirection(unitPresentation.locale)} className="sm:max-w-3xl w-full max-h-dvh p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
           <div className="flex items-center gap-3">
             <DrawerIcon><Receipt className="size-5" /></DrawerIcon>
@@ -350,31 +353,31 @@ function EditExpenseDrawer({
           <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
             <div className="space-y-4">
               <SectionLabel>{t("claimInfo")}</SectionLabel>
-              <p className="text-sm text-muted-foreground">{t("editCurrency", { currency: currencyLabel(claim.currencyCode, unitPresentation.locale) })}</p>
+              <p className="text-sm text-muted-foreground"><BidiText>{t("editCurrency", { currency: currencyLabel(claim.currencyCode, unitPresentation.locale) })}</BidiText></p>
               {preview.error && <p role="alert" className="text-sm text-destructive">{t(expenseInputError(preview.error))}</p>}
               <div className="space-y-2">
-                <Label>{t("titleRequired")}</Label>
-                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                <Label htmlFor="rtl040-editTitle">{t("titleRequired")}</Label>
+                <Input id="rtl040-editTitle" dir="auto" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>{t("itemDescription")}</Label>
-                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} />
+                <Label htmlFor="rtl040-editDescription">{t("itemDescription")}</Label>
+                <Textarea id="rtl040-editDescription" dir="auto" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} />
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <SectionLabel>{t("expenseItems")}</SectionLabel>
                 <Button type="button" variant="outline" size="sm" onClick={addEditItem}>
-                  <Plus className="mr-2 size-3.5" />{t("addItem")}</Button>
+                  <Plus className="me-2 size-3.5" />{t("addItem")}</Button>
               </div>
               <div className="space-y-4">
                 {editItems.map((item, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">{t("itemNumber", { number: index + 1 })}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-muted-foreground"><BidiText>{t("itemNumber", { number: index + 1 })}</BidiText></span>
                       {editItems.length > 1 && (
                         <Button type="button" variant="ghost" size="sm" aria-label={t("removeItem", { number: index + 1 })} onClick={() => removeEditItem(index)} className="text-red-600 hover:text-red-700">
                           <Trash2 className="size-4" />
@@ -383,20 +386,20 @@ function EditExpenseDrawer({
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div className="space-y-2">
-                        <Label className="text-xs">{t("date")}</Label>
-                        <Input type="date" value={item.date} onChange={(e) => updateEditItem(index, { date: e.target.value })} />
+                        <Label className="text-xs" htmlFor={`expense-item-date-${index}`}>{t("date")}</Label>
+                        <Input id={`expense-item-date-${index}`} dir="ltr" type="date" value={item.date} onChange={(e) => updateEditItem(index, { date: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">{t("descriptionRequired")}</Label>
-                        <Input value={item.description} onChange={(e) => updateEditItem(index, { description: e.target.value })} />
+                        <Label className="text-xs" htmlFor={`expense-item-description-${index}`}>{t("descriptionRequired")}</Label>
+                        <Input id={`expense-item-description-${index}`} dir="auto" value={item.description} onChange={(e) => updateEditItem(index, { description: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">{t("amountRequired")}</Label>
                         <ExpenseAmountInput currency={claim.currencyCode} label={t("itemAmount", { number: index + 1 })} value={item.amount} onChange={(v) => updateEditItem(index, { amount: v })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">{t("category")}</Label>
-                        <Input value={item.category} onChange={(e) => updateEditItem(index, { category: e.target.value })} />
+                        <Label className="text-xs" htmlFor={`expense-item-category-${index}`}>{t("category")}</Label>
+                        <Input id={`expense-item-category-${index}`} dir="auto" value={item.category} onChange={(e) => updateEditItem(index, { category: e.target.value })} />
                       </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -409,7 +412,7 @@ function EditExpenseDrawer({
                         {item.receiptFileName ? (
                           <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
                             <FileText className="size-4 text-emerald-600 shrink-0" />
-                            <span className="text-xs truncate flex-1">{item.receiptFileName}</span>
+                            <span className="text-xs truncate flex-1"><BidiText>{item.receiptFileName}</BidiText></span>
                             <button type="button" aria-label={t("removeReceipt")} onClick={() => updateEditItem(index, { receiptFileKey: "", receiptFileName: "" })} className="text-muted-foreground hover:text-foreground">
                               <X className="size-3.5" />
                             </button>
@@ -424,9 +427,9 @@ function EditExpenseDrawer({
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/50 px-4 py-3">
               <span className="text-sm font-medium">{t("total")}</span>
-              <span className="text-lg font-bold font-mono tabular-nums">{editTotal}</span>
+              <span className="text-lg font-bold [overflow-wrap:anywhere] font-mono tabular-nums"><BidiText>{editTotal}</BidiText></span>
             </div>
           </div>
           <DrawerFooter onClose={onClose} saving={saving} label={t("saveChanges")} />
@@ -526,7 +529,7 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <p role={loadError ? "alert" : undefined} className="text-sm text-muted-foreground">{loadError ? t(loadError) : t("notFound")}</p>
-        <Button variant="ghost" size="sm" asChild className="mt-2">
+        <Button variant="ghost" size="sm" asChild className="h-auto whitespace-normal mt-2">
           <Link href="/purchases/expenses">{t("back")}</Link>
         </Button>
       </div>
@@ -541,17 +544,17 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
         {/* Top bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="size-8 p-0" aria-label={t("back")}>
-              <Link href="/purchases/expenses"><ArrowLeft className="size-4" /></Link>
+            <Button variant="ghost" size="sm" asChild className="h-auto whitespace-normal size-8 p-0" aria-label={t("back")}>
+              <Link href="/purchases/expenses"><ArrowLeft className="size-4 rtl:rotate-180" /></Link>
             </Button>
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-lg font-semibold tracking-tight">{claim.title}</h1>
-                <Badge variant="outline" className={sc.class}>{expenseStatusLabel(t, claim.status)}</Badge>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-lg font-semibold tracking-tight"><BidiText>{claim.title}</BidiText></h1>
+                <Badge variant="outline" className={sc.class}><BidiText>{expenseStatusLabel(t, claim.status)}</BidiText></Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {claim.submittedByUser?.name || claim.submittedByUser?.email || t("unknown")}
-                {claim.submittedAt && <span>{t("submittedMeta", { date: formatDate(claim.submittedAt) })}</span>}
+                <BidiText>{claim.submittedByUser?.name || claim.submittedByUser?.email || t("unknown")}</BidiText>
+                {claim.submittedAt && <span><BidiText>{t("submittedMeta", { date: formatDate(claim.submittedAt) })}</BidiText></span>}
               </p>
             </div>
           </div>
@@ -559,63 +562,63 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
             {claim.status === "draft" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  <Pencil className="mr-2 size-3.5" />{t("edit")}</Button>
-                <Button size="sm" onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Send className="mr-2 size-3.5" />{t("submit")}</Button>
-                <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="mr-2 size-3.5" />{t("delete")}</Button>
+                  <Pencil className="me-2 size-3.5" />{t("edit")}</Button>
+                <Button size="sm" onClick={handleSubmit} className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+                  <Send className="me-2 size-3.5" />{t("submit")}</Button>
+                <Button variant="outline" size="sm" onClick={handleDelete} className="h-auto whitespace-normal text-red-600 hover:text-red-700">
+                  <Trash2 className="me-2 size-3.5" />{t("delete")}</Button>
               </>
             )}
             {claim.status === "submitted" && (
               <>
                 <Button variant="outline" size="sm" onClick={handleRecall} title={t("recallHint")}>
-                  <Undo2 className="mr-2 size-3.5" />{t("recall")}</Button>
-                <Button size="sm" onClick={handleApprove} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Check className="mr-2 size-3.5" />{t("approve")}</Button>
+                  <Undo2 className="me-2 size-3.5" />{t("recall")}</Button>
+                <Button size="sm" onClick={handleApprove} className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+                  <Check className="me-2 size-3.5" />{t("approve")}</Button>
                 <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-red-600">
-                      <X className="mr-2 size-3.5" />{t("reject")}</Button>
+                    <Button variant="outline" size="sm" className="h-auto whitespace-normal text-red-600">
+                      <X className="me-2 size-3.5" />{t("reject")}</Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent dir={localeDirection(unitPresentation.locale)} className="max-h-dvh overflow-y-auto">
                     <DialogHeader><DialogTitle>{t("rejectClaim")}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label>{t("reasonRequired")}</Label>
-                        <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder={t("reasonPlaceholder")} />
+                        <Label htmlFor="rtl040-rejectReason">{t("reasonRequired")}</Label>
+                        <Textarea id="rtl040-rejectReason" dir="auto" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder={t("reasonPlaceholder")} />
                       </div>
-                      <Button onClick={handleReject} className="w-full bg-red-600 hover:bg-red-700">{t("rejectClaim")}</Button>
+                      <Button onClick={handleReject} className="h-auto whitespace-normal w-full bg-red-600 hover:bg-red-700">{t("rejectClaim")}</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
               </>
             )}
             {claim.status === "approved" && (
-              <Button variant="outline" size="sm" onClick={handleReverse} className="text-red-600 hover:text-red-700" title={t("reverseApprovalHint")}>
-                <Undo2 className="mr-2 size-3.5" />{t("reverse")}</Button>
+              <Button variant="outline" size="sm" onClick={handleReverse} className="h-auto whitespace-normal text-red-600 hover:text-red-700" title={t("reverseApprovalHint")}>
+                <Undo2 className="me-2 size-3.5" />{t("reverse")}</Button>
             )}
             {claim.status === "paid" && (
-              <Button variant="outline" size="sm" onClick={handleReverse} className="text-red-600 hover:text-red-700" title={t("reversePaymentHint")}>
-                <Undo2 className="mr-2 size-3.5" />{t("reverse")}</Button>
+              <Button variant="outline" size="sm" onClick={handleReverse} className="h-auto whitespace-normal text-red-600 hover:text-red-700" title={t("reversePaymentHint")}>
+                <Undo2 className="me-2 size-3.5" />{t("reverse")}</Button>
             )}
             {claim.status === "approved" && (
               <Dialog open={payOpen} onOpenChange={setPayOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                    <DollarSign className="mr-2 size-3.5" />{t("markPaid")}</Button>
+                  <Button size="sm" className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+                    <DollarSign className="me-2 size-3.5" />{t("markPaid")}</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent dir={localeDirection(unitPresentation.locale)} className="max-h-dvh overflow-y-auto">
                   <DialogHeader><DialogTitle>{t("markPaid")}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="rounded-lg border bg-muted/50 px-4 py-3">
                       <p className="text-xs text-muted-foreground">{t("totalAmount")}</p>
-                      <p className="text-xl font-bold font-mono">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</p>
+                      <p className="text-xl font-bold [overflow-wrap:anywhere] font-mono"><BidiText>{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</BidiText></p>
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("paymentDate")}</Label>
-                      <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
+                      <Label htmlFor="rtl040-payDate">{t("paymentDate")}</Label>
+                      <Input id="rtl040-payDate" dir="ltr" type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
                     </div>
-                    <Button onClick={handlePay} className="w-full bg-emerald-600 hover:bg-emerald-700">{t("confirmPayment")}</Button>
+                    <Button onClick={handlePay} className="h-auto whitespace-normal w-full bg-emerald-600 hover:bg-emerald-700">{t("confirmPayment")}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -623,11 +626,11 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
             {claim.status === "rejected" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  <Pencil className="mr-2 size-3.5" />{t("edit")}</Button>
-                <Button size="sm" onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700" title={t("resubmitHint")}>
-                  <Send className="mr-2 size-3.5" />{t("resubmit")}</Button>
-                <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="mr-2 size-3.5" />{t("delete")}</Button>
+                  <Pencil className="me-2 size-3.5" />{t("edit")}</Button>
+                <Button size="sm" onClick={handleSubmit} className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700" title={t("resubmitHint")}>
+                  <Send className="me-2 size-3.5" />{t("resubmit")}</Button>
+                <Button variant="outline" size="sm" onClick={handleDelete} className="h-auto whitespace-normal text-red-600 hover:text-red-700">
+                  <Trash2 className="me-2 size-3.5" />{t("delete")}</Button>
               </>
             )}
           </div>
@@ -638,41 +641,41 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
 
         {/* Timeline / status info */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span>{t("createdDate", { date: formatDate(claim.createdAt) })}</span>
-          {claim.submittedAt && <span>{t("submittedDate", { date: formatDate(claim.submittedAt) })}</span>}
+          <span><BidiText>{t("createdDate", { date: formatDate(claim.createdAt) })}</BidiText></span>
+          {claim.submittedAt && <span><BidiText>{t("submittedDate", { date: formatDate(claim.submittedAt) })}</BidiText></span>}
           {claim.approvedAt && (
-            <span>{claim.approvedByUser ? t("approvedByDate", { date: formatDate(claim.approvedAt), user: claim.approvedByUser.name || claim.approvedByUser.email }) : t("approvedDate", { date: formatDate(claim.approvedAt) })}</span>
+            <span><BidiText>{claim.approvedByUser ? t("approvedByDate", { date: formatDate(claim.approvedAt), user: claim.approvedByUser.name || claim.approvedByUser.email }) : t("approvedDate", { date: formatDate(claim.approvedAt) })}</BidiText></span>
           )}
-          {claim.paidAt && <span>{t("paidDate", { date: formatDate(claim.paidAt) })}</span>}
+          {claim.paidAt && <span><BidiText>{t("paidDate", { date: formatDate(claim.paidAt) })}</BidiText></span>}
         </div>
 
         {claim.status === "rejected" && claim.rejectionReason && (
           <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 p-4">
             <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">{t("rejectionReason")}</p>
-            <p className="text-sm text-red-600 dark:text-red-400">{claim.rejectionReason}</p>
+            <p className="text-sm text-red-600 dark:text-red-400"><BidiText>{claim.rejectionReason}</BidiText></p>
           </div>
         )}
 
         {claim.description && (
           <div className="rounded-lg border p-4">
             <p className="text-xs text-muted-foreground mb-1">{t("itemDescription")}</p>
-            <p className="text-sm">{claim.description}</p>
+            <p className="text-sm"><BidiText>{claim.description}</BidiText></p>
           </div>
         )}
 
         {/* Summary cards */}
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("totalAmount")}</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</p>
+            <p className="mt-1 text-xl font-bold [overflow-wrap:anywhere] font-mono tabular-nums"><BidiText>{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</BidiText></p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("items")}</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{claim.items.length}</p>
+            <p className="mt-1 text-xl font-bold [overflow-wrap:anywhere] font-mono tabular-nums"><BidiText>{claim.items.length}</BidiText></p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("currency")}</p>
-            <p className="mt-1 text-xl font-bold">{currencyLabel(claim.currencyCode, unitPresentation.locale)}</p>
+            <p className="mt-1 text-xl font-bold"><BidiText>{currencyLabel(claim.currencyCode, unitPresentation.locale)}</BidiText></p>
           </div>
         </div>
 
@@ -684,19 +687,19 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
               <span>{t("itemDescription")}</span>
               <span>{t("category")}</span>
               <span>{t("receipt")}</span>
-              <span className="text-right">{t("amount")}</span>
+              <span className="text-end">{t("amount")}</span>
             </div>
             {claim.items.map((item) => (
               <div key={item.id} className="grid min-w-[580px] grid-cols-[100px_1fr_100px_140px_100px] gap-2 border-b px-4 py-3 last:border-b-0 hover:bg-muted/30 transition-colors">
-                <span className="text-sm tabular-nums">{item.date}</span>
+                <span className="text-sm tabular-nums"><IdentifierText>{item.date}</IdentifierText></span>
                 <div>
-                  <p className="text-sm font-medium">{item.description}</p>
-                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground">{t("mileageDetail", { distance: expenseDistanceText(item.distanceMiles), rate: expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode, unitPresentation) })}</p>}
+                  <p className="text-sm font-medium"><BidiText>{item.description}</BidiText></p>
+                  {item.isMileage && item.distanceMiles !== null && item.mileageRate !== null && <p className="text-xs text-muted-foreground"><BidiText>{t("mileageDetail", { distance: expenseDistanceText(item.distanceMiles), rate: expenseUiMoney(expenseUiMinor(item, "mileageRate"), claim.currencyCode, unitPresentation) })}</BidiText></p>}
                   {item.account && (
-                    <p className="text-xs text-muted-foreground">{item.account.code} · {item.account.name}</p>
+                    <p className="text-xs text-muted-foreground"><IdentifierText>{item.account.code}</IdentifierText> · <BidiText>{item.account.name}</BidiText></p>
                   )}
                 </div>
-                <span className="text-sm text-muted-foreground">{item.category || "-"}</span>
+                <span className="text-sm text-muted-foreground"><BidiText>{item.category || "-"}</BidiText></span>
                 <span>
                   {item.receiptFileKey && item.receiptFileName ? (
                     <ReceiptViewer fileKey={item.receiptFileKey} fileName={item.receiptFileName} />
@@ -704,8 +707,8 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
                     <span className="text-sm text-muted-foreground">-</span>
                   )}
                 </span>
-                <span className="text-right text-sm font-mono font-medium tabular-nums">
-                  {expenseUiMoney(expenseUiMinor(item, "amount"), claim.currencyCode, unitPresentation)}
+                <span className="text-end text-sm font-mono font-medium tabular-nums">
+                  <BidiText>{expenseUiMoney(expenseUiMinor(item, "amount"), claim.currencyCode, unitPresentation)}</BidiText>
                 </span>
               </div>
             ))}
@@ -715,8 +718,8 @@ function ExpenseDetailWorkspace({ id }: { id: string }) {
               <span />
               <span />
               <span className="text-sm font-semibold">{t("total")}</span>
-              <span className="text-right text-sm font-mono font-bold tabular-nums">
-                {expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}
+              <span className="text-end text-sm font-mono font-bold tabular-nums">
+                <BidiText>{expenseUiMoney(expenseUiMinor(claim, "totalAmount"), claim.currencyCode, unitPresentation)}</BidiText>
               </span>
             </div>
           </div>

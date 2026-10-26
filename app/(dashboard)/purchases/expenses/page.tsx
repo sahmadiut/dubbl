@@ -1,4 +1,6 @@
 "use client";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -59,14 +61,14 @@ function buildColumns(t: ExpenseTranslator, unitPresentation: NumberPresentation
       key: "title",
       header: t("columnTitle"),
       sortKey: "title",
-      render: (r) => <span className="text-sm font-medium">{r.title}</span>,
+      render: (r) => <span className="text-sm font-medium"><BidiText>{r.title}</BidiText></span>,
     },
     {
       key: "submittedBy",
       header: t("submittedBy"),
       render: (r) => (
         <span className="text-sm">
-          {r.submittedByUser?.name || r.submittedByUser?.email || "-"}
+          <BidiText>{r.submittedByUser?.name || r.submittedByUser?.email || "-"}</BidiText>
         </span>
       ),
     },
@@ -77,7 +79,7 @@ function buildColumns(t: ExpenseTranslator, unitPresentation: NumberPresentation
       className: "w-28",
       render: (r) => (
         <span className="text-sm">
-          {new Date(r.createdAt).toLocaleDateString()}
+          <IdentifierText>{new Date(r.createdAt).toLocaleDateString()}</IdentifierText>
         </span>
       ),
     },
@@ -87,7 +89,7 @@ function buildColumns(t: ExpenseTranslator, unitPresentation: NumberPresentation
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {expenseStatusLabel(t, r.status)}
+          <BidiText>{expenseStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -95,10 +97,10 @@ function buildColumns(t: ExpenseTranslator, unitPresentation: NumberPresentation
       key: "total",
       header: t("amount"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {expenseUiMoney(expenseUiMinor(r, "totalAmount"), r.currencyCode, unitPresentation)}
+          <BidiText>{expenseUiMoney(expenseUiMinor(r, "totalAmount"), r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -286,10 +288,10 @@ function ExpensesWorkspace() {
               { label: t("approved"), desc: t("approvedStep"), color: "bg-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
               { label: t("paid"), desc: t("paidStep"), color: "bg-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
             ].map(({ label, desc, color, bg }, i) => (
-              <div key={label} className={`relative flex flex-col items-center py-6 px-3 text-center border-r last:border-r-0 ${bg}`}>
+              <div key={label} className={`relative flex flex-col items-center py-6 px-3 text-center border-e last:border-e-0 ${bg}`}>
                 <div className={`absolute top-0 left-0 right-0 h-1 ${color} opacity-30`} />
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-bold text-muted-foreground/50 tabular-nums">{i + 1}</span>
+                  <span className="text-xs font-bold text-muted-foreground/50 tabular-nums"><BidiText>{i + 1}</BidiText></span>
                   <div className={`size-2.5 rounded-full ${color}`} />
                 </div>
                 <p className="text-sm font-medium">{label}</p>
@@ -305,7 +307,7 @@ function ExpensesWorkspace() {
                 <div className="h-2 w-28 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-20 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-16 rounded bg-muted-foreground/20 hidden sm:block" />
-                <div className="ml-auto h-2 w-16 rounded bg-muted-foreground/20" />
+                <div className="ms-auto h-2 w-16 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-16 rounded bg-muted-foreground/20" />
               </div>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -318,7 +320,7 @@ function ExpensesWorkspace() {
                     i % 3 === 1 ? "bg-emerald-100 text-emerald-400 dark:bg-emerald-900/40 dark:text-emerald-500" :
                     "bg-purple-100 text-purple-400 dark:bg-purple-900/40 dark:text-purple-500"
                   }`}>
-                    {expenseStatusLabel(t, i % 3 === 0 ? "submitted" : i % 3 === 1 ? "approved" : "paid")}
+                    <BidiText>{expenseStatusLabel(t, i % 3 === 0 ? "submitted" : i % 3 === 1 ? "approved" : "paid")}</BidiText>
                   </div>
                   <div className={`h-2.5 rounded bg-muted/40 ${i % 2 === 0 ? "w-16" : "w-14"}`} />
                 </div>
@@ -339,7 +341,7 @@ function ExpensesWorkspace() {
                 size="lg"
                 className="mt-6 bg-emerald-600 hover:bg-emerald-700"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newClaim")}</Button>
             </div>
           </div>
@@ -361,7 +363,7 @@ function ExpensesWorkspace() {
             onClick={() => openDrawer("expense")}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newExpense")}</Button>
         </PageHeader>
 
@@ -370,30 +372,30 @@ function ExpensesWorkspace() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">{t("total")}</p>
-            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight">
-              {totalAmount}
+            <p className="text-lg sm:text-2xl font-bold [overflow-wrap:anywhere] font-mono tabular-nums tracking-tight">
+              <BidiText>{totalAmount}</BidiText>
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-blue-500" />
               {t("pending")}</p>
-            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
-              {pendingAmount}
+            <p className="text-lg sm:text-2xl font-bold [overflow-wrap:anywhere] font-mono tabular-nums tracking-tight text-blue-600 dark:text-blue-400">
+              <BidiText>{pendingAmount}</BidiText>
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-emerald-500" />
               {t("approved")}</p>
-            <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
-              {approvedAmount}
+            <p className="text-lg sm:text-2xl font-bold [overflow-wrap:anywhere] font-mono tabular-nums tracking-tight text-emerald-600 dark:text-emerald-400">
+              <BidiText>{approvedAmount}</BidiText>
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">{t("claims")}</p>
             <p className="text-lg sm:text-2xl font-bold tabular-nums tracking-tight">
-              {countsData?.total || 0}
+              <BidiText>{countsData?.total || 0}</BidiText>
             </p>
           </div>
         </div>
@@ -403,30 +405,30 @@ function ExpensesWorkspace() {
         {/* Filters */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+            <Tabs dir={localeDirection(unitPresentation.locale)} value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
-                <TabsTrigger value="all" className="whitespace-nowrap">{t("all")} ({countsData?.total || 0})</TabsTrigger>
-                <TabsTrigger value="draft" className="whitespace-nowrap">{t("draft")} ({statusCounts.draft || 0})</TabsTrigger>
-                <TabsTrigger value="submitted" className="whitespace-nowrap">{t("submitted")} ({statusCounts.submitted || 0})</TabsTrigger>
-                <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")} ({statusCounts.approved || 0})</TabsTrigger>
-                <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")} ({statusCounts.rejected || 0})</TabsTrigger>
-                <TabsTrigger value="paid" className="whitespace-nowrap">{t("paid")} ({statusCounts.paid || 0})</TabsTrigger>
+                <TabsTrigger value="all" className="whitespace-nowrap">{t("all")} <BidiText>{`(${countsData?.total || 0})`}</BidiText></TabsTrigger>
+                <TabsTrigger value="draft" className="whitespace-nowrap">{t("draft")} <BidiText>{`(${statusCounts.draft || 0})`}</BidiText></TabsTrigger>
+                <TabsTrigger value="submitted" className="whitespace-nowrap">{t("submitted")} <BidiText>{`(${statusCounts.submitted || 0})`}</BidiText></TabsTrigger>
+                <TabsTrigger value="approved" className="whitespace-nowrap">{t("approved")} <BidiText>{`(${statusCounts.approved || 0})`}</BidiText></TabsTrigger>
+                <TabsTrigger value="rejected" className="whitespace-nowrap">{t("rejected")} <BidiText>{`(${statusCounts.rejected || 0})`}</BidiText></TabsTrigger>
+                <TabsTrigger value="paid" className="whitespace-nowrap">{t("paid")} <BidiText>{`(${statusCounts.paid || 0})`}</BidiText></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input dir="auto" aria-label={t("search")}
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("startDateFilter")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
@@ -435,7 +437,7 @@ function ExpensesWorkspace() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("endDateFilter")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -444,7 +446,7 @@ function ExpensesWorkspace() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <Select
+          <Select dir={localeDirection(unitPresentation.locale)}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -452,7 +454,7 @@ function ExpensesWorkspace() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-44 text-xs">
               <SelectValue placeholder={t("sortBy")}>{expenseSortLabel(t, `${sortBy}:${sortOrder}`)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -468,13 +470,13 @@ function ExpensesWorkspace() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto whitespace-normal text-xs text-muted-foreground"
               onClick={() => {
                 setDateFrom("");
                 setDateTo("");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearDates")}</Button>
           )}
         </div>

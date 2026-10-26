@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -96,14 +98,14 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
       sortKey: "number",
       className: "w-32",
       render: (r) => (
-        <span className="font-mono text-sm">{r.billNumber}</span>
+        <span className="font-mono text-sm"><IdentifierText>{r.billNumber}</IdentifierText></span>
       ),
     },
     {
       key: "contact",
       header: t("supplier"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -111,7 +113,7 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.issueDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.issueDate}</IdentifierText></span>,
     },
     {
       key: "due",
@@ -122,9 +124,9 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
         const info = getDueInfo(r.dueDate, r.status, t);
         return (
           <div className="flex items-center gap-2">
-            <span className="text-sm">{r.dueDate}</span>
+            <span className="text-sm"><IdentifierText>{r.dueDate}</IdentifierText></span>
             {info && (
-              <span className={`text-[11px] ${info.color}`}>{info.label}</span>
+              <span className={`text-[11px] ${info.color}`}><BidiText>{info.label}</BidiText></span>
             )}
           </div>
         );
@@ -136,7 +138,7 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {billStatusLabel(r.status, t)}
+          <BidiText>{billStatusLabel(r.status, t)}</BidiText>
         </Badge>
       ),
     },
@@ -144,10 +146,10 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{formatMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -155,13 +157,13 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
       key: "due-amount",
       header: t("balance"),
       sortKey: "amountDue",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => {
         const color =
           r.amountDue > 0n && r.status !== "draft" ? "text-amber-600" : "";
         return (
           <span className={`font-mono text-sm tabular-nums ${color}`}>
-            {formatMoney(r.amountDue, r.currencyCode, unitPresentation)}
+            <BidiText>{formatMoney(r.amountDue, r.currencyCode, unitPresentation)}</BidiText>
           </span>
         );
       },
@@ -375,7 +377,7 @@ export default function BillsPage() {
               <div className="h-2 w-24 rounded bg-muted-foreground/20" />
               <div className="h-2 w-14 rounded bg-muted-foreground/20 hidden sm:block" />
               <div className="h-2 w-14 rounded bg-muted-foreground/20 hidden sm:block" />
-              <div className="ml-auto h-2 w-16 rounded bg-muted-foreground/20" />
+              <div className="ms-auto h-2 w-16 rounded bg-muted-foreground/20" />
               <div className="h-2 w-16 rounded bg-muted-foreground/20" />
             </div>
             {Array.from({ length: 8 }).map((_, i) => (
@@ -415,7 +417,7 @@ export default function BillsPage() {
               size="lg"
               className="mt-6 bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newBill")}
             </Button>
           </div>
@@ -476,7 +478,7 @@ export default function BillsPage() {
                 <BillCurrencyAmounts amounts={countsData?.currencies.map(group => ({ currencyCode: group.currencyCode, amount: group.outstanding })) ?? null} />
               </p>
             </div>
-            <div className="flex gap-6 sm:gap-8">
+            <div className="flex flex-wrap gap-6 sm:gap-8">
               <div>
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                   <span className="size-1.5 rounded-full bg-red-500" />{t("overdue")}
@@ -487,14 +489,14 @@ export default function BillsPage() {
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("title")}</p>
-                <p className="mt-0.5 text-lg font-semibold tabular-nums">{countsData?.total ?? listTotal}</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums"><BidiText>{countsData?.total ?? listTotal}</BidiText></p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
                   <span className="size-1.5 rounded-full bg-emerald-500" />{t("paid")}
                 </p>
                 <p className="mt-0.5 text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {countsData ? statusCounts.paid || 0 : "—"}
+                  <BidiText>{countsData ? statusCounts.paid || 0 : "\u2014"}</BidiText>
                 </p>
               </div>
             </div>
@@ -514,7 +516,7 @@ export default function BillsPage() {
               ] as const).map(({ key, color }) => {
                 const pct = billUiPercent(aging[key].amount, agingTotal, 2);
                 if (pct === 0) return null;
-                return <div key={key} className={`${color} h-full first:rounded-l-full last:rounded-r-full`} style={{ width: `${pct}%` }} />;
+                return <div key={key} className={`${color} h-full first:rounded-s-full last:rounded-e-full`} style={{ width: `${pct}%` }} />;
               })}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2">
@@ -524,14 +526,14 @@ export default function BillsPage() {
                 { key: "31-60" as const, color: "bg-orange-500", label: t("daysThirtySixty") },
                 { key: "60+" as const, color: "bg-red-500", label: t("daysSixtyPlus") },
               ] as const).map(({ key, color, label }) => (
-                <div key={key} className="flex items-center justify-between gap-3">
+                <div key={key} className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className={`size-2 rounded-full ${color}`} />
                     {label}
                   </div>
                   <p className="text-xs font-mono font-medium tabular-nums">
-                    {formatMoney(aging[key].amount, currencyCode, unitPresentation)}
-                    <span className="text-muted-foreground font-normal ml-1.5">({aging[key].count})</span>
+                    <BidiText>{formatMoney(aging[key].amount, currencyCode, unitPresentation)}</BidiText>
+                    <span className="text-muted-foreground font-normal ms-1.5"><BidiText>{`(${aging[key].count})`}</BidiText></span>
                   </p>
                 </div>
               ))}
@@ -557,17 +559,17 @@ export default function BillsPage() {
                   <button
                     key={b.id}
                     onClick={() => router.push(`/purchases/${b.id}`)}
-                    className="flex items-center gap-3 rounded-lg border bg-background/50 px-3 py-2 text-left hover:bg-accent transition-colors"
+                    className="flex max-w-full flex-wrap items-center gap-3 rounded-lg border bg-background/50 px-3 py-2 text-start hover:bg-accent transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-xs font-mono font-medium">{b.billNumber}</p>
+                      <p className="text-xs font-mono font-medium"><IdentifierText>{b.billNumber}</IdentifierText></p>
                       <p className="text-[11px] text-muted-foreground truncate max-w-[120px]">
-                        {b.contact?.name || t("noSupplier")}
+                        <BidiText>{b.contact?.name || t("noSupplier")}</BidiText>
                       </p>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-end shrink-0">
                       <p className="text-xs font-mono font-semibold tabular-nums">
-                        {formatMoney(b.amountDue, b.currencyCode, unitPresentation)}
+                        <BidiText>{formatMoney(b.amountDue, b.currencyCode, unitPresentation)}</BidiText>
                       </p>
                       <p className="text-[11px] text-amber-600 dark:text-amber-400">
                         {days === 0 ? t("today") : days === 1 ? t("tomorrow") : t("days", { count: days })}
@@ -587,8 +589,8 @@ export default function BillsPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-                <TabsList>
+              <Tabs dir={localeDirection(unitPresentation.locale)} value={statusFilter} onValueChange={setStatusFilter}>
+                <TabsList className="max-w-full">
                   <TabsTrigger value="all" className="whitespace-nowrap">{t("allTab", { count: countsData?.total ?? listTotal })}</TabsTrigger>
                   <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftTab", { count: statusCounts.draft || 0 })}</TabsTrigger>
                   <TabsTrigger value="received" className="whitespace-nowrap" title={t("receivedHint")}>{t("receivedTab", { count: statusCounts.received || 0 })}</TabsTrigger>
@@ -602,24 +604,25 @@ export default function BillsPage() {
             <Button
               onClick={() => openDrawer("bill")}
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newBill")}
             </Button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
+                aria-label={t("search")} dir="auto"
                 placeholder={t("search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="ps-9"
               />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div role="group" aria-label={t("startDate")} className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
               <DatePicker
                 value={dateFrom}
@@ -628,7 +631,7 @@ export default function BillsPage() {
                 className="h-8 w-40 text-xs"
               />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div role="group" aria-label={t("endDate")} className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
               <DatePicker
                 value={dateTo}
@@ -638,6 +641,7 @@ export default function BillsPage() {
               />
             </div>
             <Select
+              dir={localeDirection(unitPresentation.locale)}
               value={`${sortBy}:${sortOrder}`}
               onValueChange={(v) => {
                 const [key, order] = v.split(":");
@@ -645,7 +649,7 @@ export default function BillsPage() {
                 setSortOrder(order as "asc" | "desc");
               }}
             >
-              <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-44 max-w-full text-xs *:data-[slot=select-value]:line-clamp-none">
                 <SelectValue placeholder={t("sortBy")} />
               </SelectTrigger>
               <SelectContent>
@@ -670,7 +674,7 @@ export default function BillsPage() {
                   setDateTo("");
                 }}
               >
-                <X className="mr-1 size-3" />
+                <X className="me-1 size-3" />
                 {t("clearDates")}
               </Button>
             )}

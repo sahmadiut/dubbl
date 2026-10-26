@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useState, useEffect, useCallback } from "react";
@@ -258,17 +260,17 @@ export default function BillDetailPage() {
       <div className="space-y-6">
         {/* Top bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-              <Link href="/purchases"><ArrowLeft className="size-4" /></Link>
+              <Link href="/purchases" aria-label={t("back")}><ArrowLeft className="size-4 rtl:rotate-180" /></Link>
             </Button>
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-lg font-semibold tracking-tight">{b.billNumber}</h1>
-                <Badge variant="outline" className={sc.class}>{billStatusLabel(b.status, t)}</Badge>
+              <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+                <h1 className="text-lg font-semibold tracking-tight"><IdentifierText>{b.billNumber}</IdentifierText></h1>
+                <Badge variant="outline" className={sc.class}><BidiText>{billStatusLabel(b.status, t)}</BidiText></Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {t("supplierDue", { name: b.contact?.name || t("unknownSupplier"), date: b.dueDate })}
+                <BidiText>{t("supplierDue", { name: b.contact?.name || t("unknownSupplier"), date: b.dueDate })}</BidiText>
               </p>
             </div>
           </div>
@@ -277,10 +279,11 @@ export default function BillDetailPage() {
               variant="outline"
               size="sm"
               asChild
+              className="h-auto min-h-8 max-w-full whitespace-normal"
               title={t("statementHint")}
             >
               <Link href={`/contacts/${b.contactId}/statement`}>
-                <FileBarChart className="mr-2 size-3.5" />{t("statement")}
+                <FileBarChart className="me-2 size-3.5" />{t("statement")}
               </Link>
             </Button>
             {b.status === "pending_approval" && (
@@ -289,26 +292,27 @@ export default function BillDetailPage() {
                   size="sm"
                   onClick={handleApprove}
                   loading={approving}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700"
                   title={t("approveHint")}
                 >
-                  <ThumbsUp className="mr-2 size-3.5" />{t("approve")}
+                  <ThumbsUp className="me-2 size-3.5" />{t("approve")}
                 </Button>
                 <Dialog open={rejectOpen} onOpenChange={(o) => { setRejectOpen(o); if (!o) setRejectReason(""); }}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" title={t("rejectHint")}>
-                      <X className="mr-2 size-3.5" />{t("reject")}
+                    <Button variant="outline" size="sm" className="h-auto min-h-8 max-w-full whitespace-normal text-red-600 hover:text-red-700" title={t("rejectHint")}>
+                      <X className="me-2 size-3.5" />{t("reject")}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent dir={localeDirection(unitPresentation.locale)} className="max-h-dvh overflow-y-auto">
                     <DialogHeader><DialogTitle>{t("rejectTitle")}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">
                         {t("rejectDescription")}
                       </p>
                       <div className="space-y-2">
-                        <Label>{t("reason")}</Label>
+                        <Label htmlFor="bill-reject-reason">{t("reason")}</Label>
                         <Input
+                          id="bill-reject-reason" dir="auto"
                           value={rejectReason}
                           onChange={(e) => setRejectReason(e.target.value)}
                           placeholder={t("reasonPlaceholder")}
@@ -323,18 +327,18 @@ export default function BillDetailPage() {
               </>
             )}
             {b.status === "draft" && (
-              <Button size="sm" onClick={handleReceive} className="bg-emerald-600 hover:bg-emerald-700" title={t("approveHint")}>
-                <Check className="mr-2 size-3.5" />{t("addToBooks")}
+              <Button size="sm" onClick={handleReceive} className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700" title={t("approveHint")}>
+                <Check className="me-2 size-3.5" />{t("addToBooks")}
               </Button>
             )}
             {["received", "partial", "overdue"].includes(b.status) && (
               <Dialog open={payOpen} onOpenChange={setPayOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                    <DollarSign className="mr-2 size-3.5" />{t("recordPayment")}
+                  <Button size="sm" className="h-auto min-h-8 max-w-full whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+                    <DollarSign className="me-2 size-3.5" />{t("recordPayment")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent dir={localeDirection(unitPresentation.locale)} className="max-h-dvh overflow-y-auto">
                   <DialogHeader><DialogTitle>{t("recordPayment")}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -344,8 +348,8 @@ export default function BillDetailPage() {
                         <p role="alert" className="text-xs text-destructive">{t("paymentTooHigh")}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("date")}</Label>
-                      <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
+                      <Label htmlFor="bill-payment-date">{t("date")}</Label>
+                      <Input id="bill-payment-date" dir="ltr" type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
                     </div>
                     <Button onClick={handlePay} loading={paying} disabled={paying || !billUiPaymentValid(payAmount, b.currencyCode, b.amountDue)} className="w-full bg-emerald-600 hover:bg-emerald-700">{t("recordPayment")}</Button>
                   </div>
@@ -358,14 +362,15 @@ export default function BillDetailPage() {
                 size="sm"
                 onClick={handleSupplierCredit}
                 loading={creditingSupplier}
+                className="h-auto min-h-8 max-w-full whitespace-normal"
                 title={t("creditHint")}
               >
-                <Undo2 className="mr-2 size-3.5" />{t("recordCredit")}
+                <Undo2 className="me-2 size-3.5" />{t("recordCredit")}
               </Button>
             )}
             {b.status !== "void" && b.status !== "paid" && (
-              <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 hover:text-red-700" title={t("cancelHint")}>
-                <Ban className="mr-2 size-3.5" />{t("cancelBill")}
+              <Button variant="outline" size="sm" onClick={handleVoid} className="h-auto min-h-8 max-w-full whitespace-normal text-red-600 hover:text-red-700" title={t("cancelHint")}>
+                <Ban className="me-2 size-3.5" />{t("cancelBill")}
               </Button>
             )}
           </div>
@@ -381,21 +386,21 @@ export default function BillDetailPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">{t("from")}</p>
-                <p className="text-sm font-semibold">{b.contact?.name || t("unknownSupplier")}</p>
+                <p className="text-sm font-semibold"><BidiText>{b.contact?.name || t("unknownSupplier")}</BidiText></p>
               </div>
-              <div className="sm:text-right">
+              <div className="sm:text-end">
                 <div className="space-y-1.5">
-                  <div className="flex sm:justify-end items-center gap-3">
+                  <div className="flex flex-wrap sm:justify-end items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("bill")}</span>
-                    <span className="text-sm font-mono font-semibold">{b.billNumber}</span>
+                    <span className="text-sm font-mono font-semibold"><IdentifierText>{b.billNumber}</IdentifierText></span>
                   </div>
-                  <div className="flex sm:justify-end items-center gap-3">
+                  <div className="flex flex-wrap sm:justify-end items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("issued")}</span>
-                    <span className="text-sm">{b.issueDate}</span>
+                    <span className="text-sm"><IdentifierText>{b.issueDate}</IdentifierText></span>
                   </div>
-                  <div className="flex sm:justify-end items-center gap-3">
+                  <div className="flex flex-wrap sm:justify-end items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("due")}</span>
-                    <span className="text-sm">{b.dueDate}</span>
+                    <span className="text-sm"><IdentifierText>{b.dueDate}</IdentifierText></span>
                   </div>
                 </div>
               </div>
@@ -407,24 +412,24 @@ export default function BillDetailPage() {
             <table className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/20">
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-6">{t("lineDescription")}</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-20">{t("quantity")}</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("price")}</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28 sm:pr-6">{t("amount")}</th>
+                  <th className="px-4 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-6">{t("lineDescription")}</th>
+                  <th className="px-4 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-20">{t("quantity")}</th>
+                  <th className="px-4 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("price")}</th>
+                  <th className="px-4 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28 sm:pe-6">{t("amount")}</th>
                 </tr>
               </thead>
               <tbody>
                 {b.lines.map((line, i) => (
                   <tr key={line.id} className={i < b.lines.length - 1 ? "border-b border-dashed" : ""}>
                     <td className="px-4 py-3 sm:px-6">
-                      <p>{line.description}</p>
+                      <p><BidiText>{line.description}</BidiText></p>
                       {line.account && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{line.account.code} · {line.account.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5"><IdentifierText>{line.account.code}</IdentifierText>{" \u00b7 "}<BidiText>{line.account.name}</BidiText></p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums">{line.quantity / 100}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, b.currencyCode, unitPresentation)}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums font-medium sm:pr-6">{formatMoney(line.amount, b.currencyCode, unitPresentation)}</td>
+                    <td className="px-4 py-3 text-end font-mono tabular-nums"><BidiText>{line.quantity / 100}</BidiText></td>
+                    <td className="px-4 py-3 text-end font-mono tabular-nums text-muted-foreground"><BidiText>{formatMoney(line.unitPrice, b.currencyCode, unitPresentation)}</BidiText></td>
+                    <td className="px-4 py-3 text-end font-mono tabular-nums font-medium sm:pe-6"><BidiText>{formatMoney(line.amount, b.currencyCode, unitPresentation)}</BidiText></td>
                   </tr>
                 ))}
               </tbody>
@@ -435,29 +440,29 @@ export default function BillDetailPage() {
           <div className="border-t bg-muted/10 px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex justify-end">
               <div className="w-full max-w-xs space-y-1.5">
-                <div className="flex justify-between text-sm">
+                <div className="flex flex-wrap justify-between gap-2 text-sm">
                   <span className="text-muted-foreground">{t("subtotal")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(b.subtotal, b.currencyCode, unitPresentation)}</span>
+                  <span className="font-mono tabular-nums"><BidiText>{formatMoney(b.subtotal, b.currencyCode, unitPresentation)}</BidiText></span>
                 </div>
                 {b.taxTotal > 0n && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex flex-wrap justify-between gap-2 text-sm">
                     <span className="text-muted-foreground">{t("tax")}</span>
-                    <span className="font-mono tabular-nums">{formatMoney(b.taxTotal, b.currencyCode, unitPresentation)}</span>
+                    <span className="font-mono tabular-nums"><BidiText>{formatMoney(b.taxTotal, b.currencyCode, unitPresentation)}</BidiText></span>
                   </div>
                 )}
                 <div className="h-px bg-border my-1" />
-                <div className="flex justify-between text-sm font-semibold">
+                <div className="flex flex-wrap justify-between gap-2 text-sm font-semibold">
                   <span>{t("total")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(b.total, b.currencyCode, unitPresentation)}</span>
+                  <span className="font-mono tabular-nums"><BidiText>{formatMoney(b.total, b.currencyCode, unitPresentation)}</BidiText></span>
                 </div>
                 {base && base.baseCurrency !== b.currencyCode && (
                   <>
-                    <div className="flex justify-between text-xs text-muted-foreground">
+                    <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
                       <span>{t("inCurrency", { currency: currencyLabel(base.baseCurrency, unitPresentation.locale) })}</span>
                       <span className="font-mono tabular-nums">
-                        {base.amounts.total == null
+                        <BidiText>{base.amounts.total == null
                           ? "—"
-                          : `≈ ${formatMoney(base.amounts.total, base.baseCurrency, unitPresentation)}`}
+                          : `\u2248 ${formatMoney(base.amounts.total, base.baseCurrency, unitPresentation)}`}</BidiText>
                       </span>
                     </div>
                     <RateNote
@@ -477,7 +482,7 @@ export default function BillDetailPage() {
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("paymentStatus")}</p>
-              <span className="text-xs font-mono text-muted-foreground">{billUiPercent(b.amountPaid, b.total)}%</span>
+              <span className="text-xs font-mono text-muted-foreground"><BidiText>{`${billUiPercent(b.amountPaid, b.total)}%`}</BidiText></span>
             </div>
             <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden mb-4">
               <div
@@ -485,7 +490,7 @@ export default function BillDetailPage() {
                 style={{ width: `${billUiPercent(b.amountPaid, b.total)}%` }}
               />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("total")}</p>
                 <div className="text-sm font-mono font-semibold mt-0.5">
@@ -499,7 +504,7 @@ export default function BillDetailPage() {
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("paid")}</p>
-                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(b.amountPaid, b.currencyCode, unitPresentation)}</p>
+                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5"><BidiText>{formatMoney(b.amountPaid, b.currencyCode, unitPresentation)}</BidiText></p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("due")}</p>
@@ -520,22 +525,22 @@ export default function BillDetailPage() {
             <div className="space-y-3">
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("issued")}</p>
-                <p className="text-sm mt-0.5">{b.issueDate}</p>
+                <p className="text-sm mt-0.5"><IdentifierText>{b.issueDate}</IdentifierText></p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("due")}</p>
-                <p className="text-sm mt-0.5">{b.dueDate}</p>
+                <p className="text-sm mt-0.5"><IdentifierText>{b.dueDate}</IdentifierText></p>
               </div>
               {b.rejectionReason && (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("lastRejection")}</p>
-                  <p className="text-sm mt-0.5 whitespace-pre-wrap text-red-600">{b.rejectionReason}</p>
+                  <p className="text-sm mt-0.5 whitespace-pre-wrap text-red-600"><BidiText>{b.rejectionReason}</BidiText></p>
                 </div>
               )}
               {b.notes ? (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("notes")}</p>
-                  <p className="text-sm mt-0.5 whitespace-pre-wrap">{b.notes}</p>
+                  <p className="text-sm mt-0.5 whitespace-pre-wrap"><BidiText>{b.notes}</BidiText></p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("noNotes")}</p>
@@ -560,17 +565,17 @@ export default function BillDetailPage() {
               {b.lines.map((line) => (
                 <div
                   key={line.id}
-                  className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm truncate">{line.description}</p>
+                    <p className="text-sm truncate"><BidiText>{line.description}</BidiText></p>
                     <p className="text-xs text-muted-foreground">
-                      {line.quantity / 100} × {formatMoney(line.unitPrice, b.currencyCode, unitPresentation)}
+                      <BidiText>{`${line.quantity / 100} \u00d7 ${formatMoney(line.unitPrice, b.currencyCode, unitPresentation)}`}</BidiText>
                     </p>
                   </div>
                   {line.goodsReceiptLineId ? (
                     <Badge variant="outline" className="shrink-0 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      <PackageCheck className="mr-1 size-3" />{t("matched")}
+                      <PackageCheck className="me-1 size-3" />{t("matched")}
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="shrink-0 text-muted-foreground">

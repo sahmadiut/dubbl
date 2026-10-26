@@ -2,7 +2,9 @@
 
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { recurringInvoiceFrequencyLabel, recurringInvoiceStatusLabel, type RecurringInvoiceTranslate, type RecurringInvoiceReadError } from "@/i18n/recurring-invoice-presentation";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -58,13 +60,13 @@ function buildColumns(t: RecurringInvoiceTranslate): Column<RecurringTemplate>[]
       key: "name",
       header: t("name"),
       sortKey: "name",
-      render: (r) => <span className="text-sm font-medium">{r.name}</span>,
+      render: (r) => <span className="text-sm font-medium"><BidiText>{r.name}</BidiText></span>,
     },
     {
       key: "contact",
       header: t("customer"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -74,7 +76,7 @@ function buildColumns(t: RecurringInvoiceTranslate): Column<RecurringTemplate>[]
       className: "w-32",
       render: (r) => (
         <span className="text-sm">
-          {recurringInvoiceFrequencyLabel(t, r.frequency)}
+          <BidiText>{recurringInvoiceFrequencyLabel(t, r.frequency)}</BidiText>
         </span>
       ),
     },
@@ -84,7 +86,7 @@ function buildColumns(t: RecurringInvoiceTranslate): Column<RecurringTemplate>[]
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {recurringInvoiceStatusLabel(t, r.status)}
+          <BidiText>{recurringInvoiceStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -93,22 +95,22 @@ function buildColumns(t: RecurringInvoiceTranslate): Column<RecurringTemplate>[]
       header: t("nextRun"),
       sortKey: "nextRun",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.nextRunDate || "-"}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.nextRunDate || "-"}</IdentifierText></span>,
     },
     {
       key: "startDate",
       header: t("startDate"),
       sortKey: "startDate",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.startDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.startDate}</IdentifierText></span>,
     },
     {
       key: "occurrences",
       header: t("occurrences"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {r.occurrencesGenerated} / {r.maxOccurrences ?? "\u221E"}
+          <IdentifierText>{r.occurrencesGenerated} / {r.maxOccurrences ?? "\u221E"}</IdentifierText>
         </span>
       ),
     },
@@ -341,9 +343,9 @@ function RecurringInvoicesContent() {
             </div>
             <Button
               onClick={() => openDrawer("recurring")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="h-auto whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newTemplate")}
             </Button>
           </div>
@@ -351,8 +353,8 @@ function RecurringInvoicesContent() {
           <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-[1fr_1fr] items-start">
             {/* Left: Calendar */}
             <div className="rounded-xl border bg-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-                <p className="text-sm font-medium">{monthName}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b bg-muted/30">
+                <p className="text-sm font-medium"><BidiText>{monthName}</BidiText></p>
                 <RefreshCw className="size-3.5 text-indigo-500" />
               </div>
               <div className="p-3">
@@ -376,7 +378,7 @@ function RecurringInvoicesContent() {
                           ${isToday && !isRecurring ? "bg-muted font-medium" : ""}
                           ${!isRecurring && !isToday ? "text-muted-foreground" : ""}
                         `}>
-                          {day}
+                          <IdentifierText>{day}</IdentifierText>
                         </div>
                       </div>
                     );
@@ -397,7 +399,7 @@ function RecurringInvoicesContent() {
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("example")}</p>
                 </div>
                 <div className="p-3 sm:p-5 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-medium">{t("exampleName")}</p>
                       <p className="text-xs text-muted-foreground">{t("exampleCustomer")}</p>
@@ -412,7 +414,7 @@ function RecurringInvoicesContent() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">{t("amount")}</p>
-                      <p className="font-medium font-mono mt-0.5">{exampleMoney(29900n, "USD", unitPresentation)}</p>
+                      <p className="font-medium font-mono mt-0.5"><IdentifierText>{exampleMoney(29900n, "USD", unitPresentation)}</IdentifierText></p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">{t("nextInvoice")}</p>
@@ -420,7 +422,7 @@ function RecurringInvoicesContent() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">{t("generated")}</p>
-                      <p className="font-medium font-mono mt-0.5">12 / &infin;</p>
+                      <p className="font-medium font-mono mt-0.5"><IdentifierText>12 / &infin;</IdentifierText></p>
                     </div>
                   </div>
                 </div>
@@ -459,20 +461,20 @@ function RecurringInvoicesContent() {
           <div className="flex gap-3 overflow-x-auto pb-1">
             {upcoming.map((u) => (
               <div key={u.templateName} className="rounded-lg border px-4 py-3 min-w-[220px] shrink-0">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{u.templateName}</p>
+                    <p className="text-sm font-medium"><BidiText>{u.templateName}</BidiText></p>
                     {u.contactName && (
-                      <p className="text-xs text-muted-foreground truncate">{u.contactName}</p>
+                      <p className="text-xs text-muted-foreground"><BidiText>{u.contactName}</BidiText></p>
                     )}
                   </div>
-                  <p className="text-sm font-mono font-semibold tabular-nums shrink-0 ml-2">{recurringInvoiceUiMoney(u.lineTotal, u.currencyCode, unitPresentation)}</p>
+                  <p className="text-sm font-mono font-semibold tabular-nums shrink-0 ms-2"><IdentifierText>{recurringInvoiceUiMoney(u.lineTotal, u.currencyCode, unitPresentation)}</IdentifierText></p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {u.dates.map((d) => (
                     <div key={d.date} className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="size-3" />
-                      <span>{d.date}</span>
+                      <span><IdentifierText>{d.date}</IdentifierText></span>
                     </div>
                   ))}
                 </div>
@@ -487,8 +489,8 @@ function RecurringInvoicesContent() {
       {/* Template table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={localeDirection(unitPresentation.locale)} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="active" className="whitespace-nowrap">{t("active")}</TabsTrigger>
               <TabsTrigger value="paused" className="whitespace-nowrap">{t("paused")}</TabsTrigger>
@@ -499,28 +501,31 @@ function RecurringInvoicesContent() {
           <Button
             onClick={() => openDrawer("recurring")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newRecurring")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative min-w-0 max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              aria-label={t("search")}
+              dir="auto"
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
           <Select
+            dir={localeDirection(unitPresentation.locale)}
             value={frequencyFilter}
             onValueChange={setFrequencyFilter}
           >
-            <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectTrigger aria-label={t("frequencyPlaceholder")} className="h-8 w-40 max-w-full text-xs">
               <SelectValue placeholder={t("frequencyPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
@@ -534,6 +539,7 @@ function RecurringInvoicesContent() {
             </SelectContent>
           </Select>
           <Select
+            dir={localeDirection(unitPresentation.locale)}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -541,7 +547,7 @@ function RecurringInvoicesContent() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-44 max-w-full text-xs">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -559,7 +565,7 @@ function RecurringInvoicesContent() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setFrequencyFilter("all"); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}
@@ -585,7 +591,7 @@ function RecurringInvoicesContent() {
         {/* Infinite scroll sentinel & count */}
         {!refetching && !pendingSearch && filteredTemplates.length > 0 && (
           <>
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <p className="text-xs text-muted-foreground">
                 {t("showing", { loaded: templates.length, total: totalCount })}
               </p>

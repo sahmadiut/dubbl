@@ -2,8 +2,10 @@
 
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { revenueMethodLabel, revenueStatusLabel, revenueScheduleValid, type RevenueScheduleTranslate, type RevenueReadError } from "@/i18n/revenue-schedule-presentation";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -52,7 +54,7 @@ function buildColumns(t: RevenueScheduleTranslate, unitPresentation: NumberPrese
       header: t("period"),
       render: (r) => (
         <span className="text-sm">
-          {r.startDate} &ndash; {r.endDate}
+          <IdentifierText>{r.startDate} &ndash; {r.endDate}</IdentifierText>
         </span>
       ),
     },
@@ -62,7 +64,7 @@ function buildColumns(t: RevenueScheduleTranslate, unitPresentation: NumberPrese
       className: "w-40",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
-          {revenueMethodLabel(t, r.method)}
+          <BidiText>{revenueMethodLabel(t, r.method)}</BidiText>
         </span>
       ),
     },
@@ -72,37 +74,37 @@ function buildColumns(t: RevenueScheduleTranslate, unitPresentation: NumberPrese
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={Object.hasOwn(statusColors, r.status) ? statusColors[r.status] : ""}>
-          {revenueStatusLabel(t, r.status)}
+          <BidiText>{revenueStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
     {
       key: "total",
       header: t("total"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.totalAmount, unitPresentation)}
+          <IdentifierText>{formatMoney(r.totalAmount, unitPresentation)}</IdentifierText>
         </span>
       ),
     },
     {
       key: "recognized",
       header: t("recognized"),
-      className: "w-32 text-right",
+      className: "w-32 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums text-emerald-600">
-          {formatMoney(r.recognizedAmount, unitPresentation)}
+          <IdentifierText>{formatMoney(r.recognizedAmount, unitPresentation)}</IdentifierText>
         </span>
       ),
     },
     {
       key: "remaining",
       header: t("remaining"),
-      className: "w-32 text-right",
+      className: "w-32 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums text-amber-600">
-          {formatMoney(r.totalAmount - r.recognizedAmount, unitPresentation)}
+          <IdentifierText>{formatMoney(r.totalAmount - r.recognizedAmount, unitPresentation)}</IdentifierText>
         </span>
       ),
     },
@@ -256,9 +258,9 @@ export default function RevenueSchedulesPage() {
             </div>
             <Button
               onClick={() => openDrawer("revenueSchedule")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="h-auto whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700 shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newSchedule")}
             </Button>
           </div>
@@ -270,7 +272,7 @@ export default function RevenueSchedulesPage() {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                       <CalendarClock className="size-3.5 text-blue-500" />
@@ -280,9 +282,9 @@ export default function RevenueSchedulesPage() {
                       <p className="text-[11px] text-muted-foreground">{t("exampleInvoice")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{exampleMoney(120000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><IdentifierText>{exampleMoney(120000n, "USD", unitPresentation)}</IdentifierText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                       <TrendingUp className="size-3.5 text-emerald-500" />
@@ -292,14 +294,14 @@ export default function RevenueSchedulesPage() {
                       <p className="text-[11px] text-muted-foreground">{t("spreadEvenly")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(10000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400"><IdentifierText>{"+" + exampleMoney(10000n, "USD", unitPresentation)}</IdentifierText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("afterYear")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{exampleMoney(120000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-bold"><IdentifierText>{exampleMoney(120000n, "USD", unitPresentation)}</IdentifierText></span>
                 </div>
               </div>
             </div>
@@ -311,25 +313,25 @@ export default function RevenueSchedulesPage() {
                 {
                   title: t("annualTitle"),
                   desc: t("annualDescription"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("retainerTitle"),
                   desc: t("retainerDescription"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("deliveryTitle"),
                   desc: t("deliveryDescription"),
-                  color: "border-l-teal-400",
+                  color: "border-s-teal-400",
                 },
                 {
                   title: t("projectTitle"),
                   desc: t("projectDescription"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -356,8 +358,8 @@ export default function RevenueSchedulesPage() {
       {/* Revenue schedule table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={localeDirection(unitPresentation.locale)} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="active" className="whitespace-nowrap" title={t("activeHint")}>{t("activeTab")}</TabsTrigger>
               <TabsTrigger value="completed" className="whitespace-nowrap" title={t("completedHint")}>{t("completedTab")}</TabsTrigger>
@@ -368,21 +370,23 @@ export default function RevenueSchedulesPage() {
           <Button
             onClick={() => openDrawer("revenueSchedule")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newSchedule")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative min-w-0 max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              aria-label={t("search")}
+              dir="auto"
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
           {hasFilters && (
@@ -392,7 +396,7 @@ export default function RevenueSchedulesPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}
@@ -415,7 +419,7 @@ export default function RevenueSchedulesPage() {
         {/* Infinite scroll sentinel & count */}
         {!refetching && !pendingSearch && filteredSchedules.length > 0 && (
           <>
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <p className="text-xs text-muted-foreground">
                 {t("showing", { loaded: schedules.length, total: totalCount })}
               </p>

@@ -2,6 +2,7 @@
 
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { revenueMethodLabel, revenueStatusLabel, revenueScheduleValid, type RevenueReadError } from "@/i18n/revenue-schedule-presentation";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -145,30 +146,30 @@ export default function RevenueScheduleDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t("detailTitle")} description={t("detailDescription", { start: rs.startDate, end: rs.endDate, method: revenueMethodLabel(t, rs.method) })}>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/revenue-schedules"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+        <Button variant="outline" size="sm" className="h-auto whitespace-normal text-start" asChild>
+          <Link href="/sales/revenue-schedules"><ArrowLeft className="me-2 size-4 rtl:rotate-180" />{t("back")}</Link>
         </Button>
         {rs.status === "active" && nextEntry && (
           <Button
             size="sm"
             onClick={handleRecognize}
             loading={recognizing}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal text-start bg-emerald-600 hover:bg-emerald-700"
             title={t("recognizeHint")}
           >
-            <TrendingUp className="mr-2 size-4" />{t("recognize")}
+            <TrendingUp className="me-2 size-4" />{t("recognize")}
           </Button>
         )}
         {rs.status === "active" && (
-          <Button variant="outline" size="sm" onClick={handleCancel} className="text-red-600" title={t("cancelHint")}>
-            <Ban className="mr-2 size-4" />{t("cancelSchedule")}
+          <Button variant="outline" size="sm" onClick={handleCancel} className="h-auto whitespace-normal text-start text-red-600" title={t("cancelHint")}>
+            <Ban className="me-2 size-4" />{t("cancelSchedule")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={Object.hasOwn(statusColors, rs.status) ? statusColors[rs.status] : ""}>
-          {revenueStatusLabel(t, rs.status)}
+          <BidiText>{revenueStatusLabel(t, rs.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
           {t("spread", { method: revenueMethodLabel(t, rs.method) })}
@@ -178,32 +179,32 @@ export default function RevenueScheduleDetailPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("total")}</p>
-          <p className="text-xl font-bold font-mono">{formatMoney(rs.totalAmount, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono"><IdentifierText>{formatMoney(rs.totalAmount, unitPresentation)}</IdentifierText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("recognized")}</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">{formatMoney(rs.recognizedAmount, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono text-emerald-600"><IdentifierText>{formatMoney(rs.recognizedAmount, unitPresentation)}</IdentifierText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("remaining")}</p>
-          <p className="text-xl font-bold font-mono text-amber-600">{formatMoney(remaining, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono text-amber-600"><IdentifierText>{formatMoney(remaining, unitPresentation)}</IdentifierText></p>
         </div>
       </div>
 
       <div className="rounded-lg border overflow-x-auto">
         <div className="grid min-w-[400px] grid-cols-[1fr_140px_120px] gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground">
           <span>{t("period")}</span>
-          <span className="text-right">{t("amount")}</span>
-          <span className="text-right">{t("countedHeading")}</span>
+          <span className="text-end">{t("amount")}</span>
+          <span className="text-end">{t("countedHeading")}</span>
         </div>
         {sortedEntries.map((entry) => (
           <div key={entry.id} className="grid min-w-[400px] grid-cols-[1fr_140px_120px] gap-2 border-b px-4 py-2 last:border-b-0 items-center">
-            <span className="text-sm">{entry.periodDate}</span>
-            <span className="text-right text-sm font-mono font-medium">{formatMoney(entry.amount, unitPresentation)}</span>
-            <span className="text-right text-sm">
+            <span className="text-sm"><IdentifierText>{entry.periodDate}</IdentifierText></span>
+            <span className="text-end text-sm font-mono font-medium"><IdentifierText>{formatMoney(entry.amount, unitPresentation)}</IdentifierText></span>
+            <span className="text-end text-sm">
               {entry.recognized ? (
                 <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                  <Check className="mr-1 size-3" />{t("counted")}
+                  <Check className="me-1 size-3" />{t("counted")}
                 </Badge>
               ) : (
                 <span className="text-xs text-muted-foreground">{t("notYet")}</span>

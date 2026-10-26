@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { recurringInvoiceFrequencyLabel, recurringInvoiceStatusLabel, type RecurringInvoiceReadError } from "@/i18n/recurring-invoice-presentation";
 
 import { useState, useEffect } from "react";
@@ -162,9 +163,9 @@ export default function RecurringDetailPage() {
         title={template.name}
         description={t("contact", { name: template.contact?.name || t("unknown") })}
       >
-        <Button variant="outline" size="sm" asChild>
+        <Button variant="outline" size="sm" className="h-auto whitespace-normal text-start" asChild>
           <Link href="/sales/recurring">
-            <ArrowLeft className="mr-2 size-4" />
+            <ArrowLeft className="me-2 size-4 rtl:rotate-180" />
             {t("back")}
           </Link>
         </Button>
@@ -173,16 +174,17 @@ export default function RecurringDetailPage() {
             variant="outline"
             size="sm"
             onClick={handleToggleStatus}
+            className="h-auto whitespace-normal text-start"
             loading={toggling}
           >
             {template.status === "active" ? (
               <>
-                <Pause className="mr-2 size-4" />
+                <Pause className="me-2 size-4" />
                 {t("pause")}
               </>
             ) : (
               <>
-                <Play className="mr-2 size-4" />
+                <Play className="me-2 size-4" />
                 {t("resume")}
               </>
             )}
@@ -193,9 +195,9 @@ export default function RecurringDetailPage() {
           size="sm"
           onClick={handleDelete}
           loading={deleting}
-          className="text-red-600"
+          className="h-auto whitespace-normal text-start text-red-600"
         >
-          <Trash2 className="mr-2 size-4" />
+          <Trash2 className="me-2 size-4" />
           {t("delete")}
         </Button>
       </PageHeader>
@@ -205,11 +207,11 @@ export default function RecurringDetailPage() {
           variant="outline"
           className={statusColors[template.status] || ""}
         >
-          {recurringInvoiceStatusLabel(t, template.status)}
+          <BidiText>{recurringInvoiceStatusLabel(t, template.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("schedule", { frequency: recurringInvoiceFrequencyLabel(t, template.frequency), start: template.startDate, end: template.endDate || t("noEndDate") })}
-          {template.nextRunDate && t("nextRunHint", { date: template.nextRunDate })}
+          <BidiText>{t("schedule", { frequency: recurringInvoiceFrequencyLabel(t, template.frequency), start: template.startDate, end: template.endDate || t("noEndDate") })}
+          {template.nextRunDate && t("nextRunHint", { date: template.nextRunDate })}</BidiText>
         </span>
       </div>
 
@@ -217,22 +219,22 @@ export default function RecurringDetailPage() {
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("occurrences")}</p>
           <p className="text-xl font-bold font-mono">
-            {template.occurrencesGenerated} /{" "}
+            <IdentifierText>{template.occurrencesGenerated} /{" "}
             {template.maxOccurrences != null
               ? template.maxOccurrences
-              : "\u221E"}
+              : "\u221E"}</IdentifierText>
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("nextRun")}</p>
           <p className="text-xl font-bold font-mono">
-            {template.nextRunDate || t("notApplicable")}
+            <IdentifierText>{template.nextRunDate || t("notApplicable")}</IdentifierText>
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("frequency")}</p>
           <p className="text-xl font-bold font-mono">
-            {recurringInvoiceFrequencyLabel(t, template.frequency)}
+            <BidiText>{recurringInvoiceFrequencyLabel(t, template.frequency)}</BidiText>
           </p>
         </div>
       </div>
@@ -244,7 +246,7 @@ export default function RecurringDetailPage() {
           <p className="text-xs font-medium text-muted-foreground mb-1">
             {t("notes")}
           </p>
-          <p className="text-sm">{template.notes}</p>
+          <p className="text-sm"><BidiText>{template.notes}</BidiText></p>
         </div>
       )}
 

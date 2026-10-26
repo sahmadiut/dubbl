@@ -1,0 +1,30 @@
+# RTL-038 recurring sales and revenue schedule bidi acceptance
+
+Codex (`codex-batch-task05`), client date 2026-10-27, selected live next RTL-038 from clean baseline 8753d5dc946e476c78e7b18b2270e6af01392d22. This is exactly one bounded task and first local commit in the owner's next pair; no push is performed here. AGENTS, task, exhaustive ownership, existing RTL-037 evidence, DEC-005 and DEC-008 were consulted.
+
+## Exhaustive ownership audit
+
+| Assigned source | Repair and retained behavior |
+|---|---|
+| `app/(dashboard)/sales/recurring/page.tsx` | Isolate caller template/customer text, unknown frequency/status labels, canonical dates, full occurrence ratios and gross upcoming amounts, calendar/sample tokens. Replace physical icon/search/money spacing and alignment with logical properties; bound tabs/search/select widths, explicitly direct tabs/selects by language and name search/frequency/sort controls; wrap CTA/example/upcoming rows. Preserve client search, frequency/status/sort callbacks, canonical raw routes and drawer action, scoped requests/abort/generation/pagination guards, preview currency/gross meaning and summary counts. |
+| `app/(dashboard)/sales/recurring/[id]/page.tsx` | Isolate caller notes, finite-label fallbacks, schedule phrase, canonical next-run date and entire occurrence ratio. Logical spacing, mirrored back arrow and wrapping action labels. Existing PageHeader independently isolates string title/description. Preserve scoped template read/adaptation, context/abort/error boundaries, raw status PATCH and confirmed DELETE, exact line contracts. Shared recurring money details remain RTL-048-owned. |
+| `app/(dashboard)/sales/revenue-schedules/page.tsx` | Isolate complete date range, method/status fallback text and exact total/recognized/remaining amounts; group signed example amount in one boundary. Logical numeric alignment, icon/search/accent placement, bounded locale-directed tabs, named auto-direction search and wrapping example/CTA rows. Preserve safe integer/bigint sum behavior, cancellation exclusion, status/search filtering, pagination/error boundaries and raw row/create callbacks. Existing StatCard independently isolates complete string values. |
+| `app/(dashboard)/sales/revenue-schedules/[id]/page.tsx` | Isolate complete exact summary/period amounts, canonical period date and status fallback. Logical amounts/headings/icons, mirrored back arrow, wrapping action text and existing local table scroll. Preserve schedule validation, recognized/remaining arithmetic, next-entry recognition target and exact scoped POST, confirmed cancellation DELETE and refresh/error outcomes. Existing PageHeader independently isolates description/date-range string. |
+
+All four registry-owned sources are audited. Existing source calendar/numeral choices and copy stay unchanged; this task adds isolation without recasting dates or schedule semantics. Shared editors remain RTL-021; `RecurringInvoiceMoneyDetails` remains RTL-048, including its still-unqualified internal alignment/text. Parents RTL-015/010/008/002 retain independent integration acceptance. No API, MCP operation, schema, migration, provider, Stripe, financial algorithm or output-builder change; existing operations retain MCP parity.
+
+## Executed verification
+
+- New `tests/rtl-sales-recurring-revenue.test.ts`: five actual production-page/provider/callback/CSS cases across en-US/fa-IR x latn/arabext. Real shared components and presentation providers execute with controlled state/effect/navigation/portal boundaries. Covers long escaped mixed caller values, low exact bigint money digits, complete occurrence ratios/dates, directed raw status/frequency/sort/search/navigation/create callbacks, scoped raw pause PATCH and next-entry recognition POST, complete signed empty examples and installed Tailwind logical CSS/wrapping/scroll properties.
+- Final command `node --import tsx --test --test-concurrency=1 tests/rtl-sales-recurring-revenue.test.ts tests/recurring-invoice-catalogs.test.ts tests/recurring-invoice-ui-money.test.ts tests/recurring-invoice-wire.test.ts tests/revenue-schedule-catalogs.test.ts tests/revenue-wire.test.ts tests/sales-catalog-integration.test.ts`: 40/40 passed, zero failures/skips/cancellations. Retained suites cover creation, line/quantity/price rounding, aliases/ranges, preview gross totals, scoped stale/cancelled reads, status/deletion/recognition/cancellation payloads and shared sales composition.
+- `npx tsc --noEmit`: passed.
+- `npm run lint`: passed, zero errors and 21 existing warnings.
+- `pnpm i18n:check`: 10723 paired keys. `node --import tsx .agentic/scripts/verify_legacy_money.mjs`: all nine checks passed.
+- `python .agentic/scripts/money_inventory.py --write` and `node --import tsx .agentic/scripts/verify_money_inventory.mjs`: 417 columns, 1898 consumer files, 2519 scanned files; all hashes and occurrences verified. Structured comparison against HEAD confirms unchanged schema columns; changed consumers are exactly four owned pages plus the new test, which is the only added scanned path.
+- Controller, links and whitespace checks are run at closeout. No build, dev server or application database writes.
+
+Initial coding checks found broad replacement accidentally touched two React keys/stat-card value props and a direction property not present on Presentation. Those edits were corrected to original key/value contracts and localeDirection; final tests/typecheck verify the resulting code. A test infinity literal was normalized to a Unicode escape after the PowerShell pipe encoded it incorrectly. No failures were concealed.
+
+## Qualification boundaries
+
+Approve only bounded source/component/installed-CSS technical acceptance. Browser geometry, keyboard/caret/focus/assistive technology, native Persian language/accounting/legal review, real DB/REST/MCP/provider/output execution, production IRR, deployment and hosted CI were not performed. DEC-005 removes screenshot requirements but does not waive these later qualification gates.

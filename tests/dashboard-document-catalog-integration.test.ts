@@ -53,7 +53,8 @@ test("LOC-071 reconciles four routes, eleven shared surfaces and nine paired nam
   assert.equal(files.length, 15);
   assert.deepEqual([...found].sort(), [...namespaces].sort());
   assert.deepEqual(exceptions.sort(), [...stripeCopy].sort(), "DEC-008 exception inventory must remain explicit");
-  assert.equal(namespaces.reduce((n, ns) => n + Object.keys(en[ns]).length, 0), 341);
+  // Includes the shared confirmation title, cancel and confirm defaults.
+  assert.equal(namespaces.reduce((n, ns) => n + Object.keys(en[ns]).length, 0), 344);
   for (const ns of namespaces) {
     assert.deepEqual(Object.keys(en[ns]).sort(), Object.keys(fa[ns]).sort());
     for (const [key, value] of Object.entries(fa[ns])) { assert.match(value, /[\u0600-\u06ff]/, `${ns}.${key}`); assert.ok(!value.includes("???")); }

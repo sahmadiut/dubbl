@@ -93,7 +93,11 @@ test("cost-center delete message preserves escaped identity, emphasis and condit
       const html = renderWithPresentation(createElement(CostCenterDeleteDescription, { code: "ENG", name: '<script>org</script>', hasChildren }), locale);
       assert.ok(html.includes('ENG · &lt;script&gt;org&lt;/script&gt;'));
       assert.ok(!html.includes('<script>'));
-      assert.ok(html.includes('class="font-medium text-foreground"'));
+      const identity = html.match(/<bdi\b[^>]*>[\s\S]*?<\/bdi>/g)?.find(node => node.includes('&lt;script&gt;org&lt;/script&gt;'));
+      assert.ok(identity, "caller identity remains isolated");
+      assert.match(identity, /\bdir="auto"/);
+      const identityClasses = new Set(identity.match(/\bclass="([^"]*)"/)?.[1].split(/\s+/));
+      for (const token of ["font-medium", "text-foreground", "[unicode-bidi:isolate]"]) assert.ok(identityClasses.has(token), token);
       assert.equal(html.includes(messages.SettingsCostCenters.warningThisCostCenterHasChildrenDeletingItWillOrphanItsChild), hasChildren);
     }
     const t = createTranslator({ locale, messages, namespace: "SettingsGeneral" });

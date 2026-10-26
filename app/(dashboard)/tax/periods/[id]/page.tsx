@@ -1,9 +1,12 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
-import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useState, useEffect, useCallback, useId } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { localeDirection } from "@/i18n/locale";
 import { taxPeriodTypeKey, taxPeriodStatusKey } from "@/lib/i18n/tax-period-presentation";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -103,6 +106,9 @@ function SettleSheet({
   netAmount: bigint | null;
   currency: string;
 }) {
+  const fieldId = useId();
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const presentation = usePresentation();
   const t = useTranslations("TaxPeriods");
   const [bankGlAccountId, setBankGlAccountId] = useState("");
@@ -184,22 +190,22 @@ function SettleSheet({
         if (!v) onClose();
       }}
     >
-      <SheetContent>
+      <SheetContent dir={controlDirection} className="overflow-y-auto max-h-dvh">
         <SheetHeader>
           <SheetTitle>{t("settlementTitle")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleSettle} className="space-y-4 px-4">
           <p className="text-sm text-muted-foreground">
-            {t("settlementHelp", { name: period.name })}
+            {t.rich("settlementHelp", { name: period.name, em: (chunks) => <BidiText>{chunks}</BidiText> })}
           </p>
 
           <div className="space-y-2">
-            <Label>{t("whatHappened")}</Label>
-            <Select
+            <Label htmlFor={`${fieldId}-direction`}>{t("whatHappened")}</Label>
+            <Select dir={controlDirection}
               value={direction}
               onValueChange={(v) => setDirection(v as "pay" | "refund")}
             >
-              <SelectTrigger>
+              <SelectTrigger id={`${fieldId}-direction`} className="min-w-0 data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -212,24 +218,24 @@ function SettleSheet({
           </div>
 
           <div className="space-y-2">
-            <Label>
+            <Label id={`${fieldId}-bankGlAccountId`}>
               {direction === "refund"
                 ? t("refundAccount")
                 : t("paymentAccount")}
             </Label>
-            <AccountPicker
+            <div role="group" aria-labelledby={`${fieldId}-bankGlAccountId`}><AccountPicker
               value={bankGlAccountId}
               onChange={setBankGlAccountId}
               typeFilter={["asset"]}
               currencyFilter={currency}
               subTypeFilter="bank"
               placeholder={t("accountPlaceholder")}
-            />
+            /></div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tax-settlement-amount">{t("amountCurrency", { currency: currencyLabel(currency, presentation.locale) })}</Label>
-            <Input
+            <Label htmlFor="tax-settlement-amount">{t.rich("amountCurrency", { currency: currencyLabel(currency, presentation.locale), em: (chunks) => <BidiText>{chunks}</BidiText> })}</Label>
+            <Input dir="ltr"
               id="tax-settlement-amount"
               inputMode="decimal"
               value={amount}
@@ -242,8 +248,8 @@ function SettleSheet({
           <TaxSettlementPreview amount={amount} currency={currency} />
 
           <div className="space-y-2">
-            <Label>{t("date")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-date`}>{t("date")}</Label>
+            <Input dir="ltr" id={`${fieldId}-date`}
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -252,8 +258,8 @@ function SettleSheet({
           </div>
 
           <div className="space-y-2">
-            <Label>{t("reference")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-reference`}>{t("reference")}</Label>
+            <Input dir="ltr" id={`${fieldId}-reference`}
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               placeholder={t("referencePlaceholder")}
@@ -338,7 +344,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
         <PageHeader title={t("notFound")}>
           <Button variant="outline" size="sm" asChild>
             <Link href="/tax/periods">
-              <ArrowLeft className="mr-2 size-4" />
+              <ArrowLeft className="me-2 size-4 rtl:rotate-180" />
               {t("back")}
             </Link>
           </Button>
@@ -365,39 +371,39 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
       >
         <Button variant="outline" size="sm" asChild>
           <Link href="/tax/periods">
-            <ArrowLeft className="mr-2 size-4" />
+            <ArrowLeft className="me-2 size-4 rtl:rotate-180" />
             {t("back")}
           </Link>
         </Button>
       </PageHeader>
 
       {/* Status + meta */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+      <div className="flex flex-wrap gap-y-2 flex-wrap items-center gap-2 sm:gap-3">
         <Badge
           variant="outline"
           className={cn(STATUS_STYLES[period.status] || "")}
         >
           {t(taxPeriodStatusKey(period.status))}
         </Badge>
-        <span className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+        <span className="flex flex-wrap gap-y-2 items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
           <CalendarDays className="size-3.5" />
           {t(taxPeriodTypeKey(period.type))}
         </span>
         {period.filedAt && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            {t("submittedDate", { date: fmtDate(period.filedAt) })}
+            {t.rich("submittedDate", { date: fmtDate(period.filedAt), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
           </span>
         )}
         {period.filedReference && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            {t("referenceValue", { reference: period.filedReference })}
+            {t.rich("referenceValue", { reference: period.filedReference, em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
           </span>
         )}
       </div>
 
       {/* Settle action */}
       {isFiled && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4">
+        <div className="flex flex-wrap gap-y-2 flex-wrap items-center gap-3 rounded-lg border bg-card p-4">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
             <Banknote className="size-4 text-emerald-600 dark:text-emerald-400" />
           </div>
@@ -407,9 +413,9 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
               {netAmount == null
                 ? t("settleHelp")
                 : netAmount < 0
-                  ? t("refundDue", { amount: taxUiMoney(taxUiAbs(netAmount), currency, presentation) })
+                  ? t.rich("refundDue", { amount: taxUiMoney(taxUiAbs(netAmount), currency, presentation), em: (chunks) => <BidiText>{chunks}</BidiText> })
                   : netAmount > 0
-                    ? t("paymentDue", { amount: taxUiMoney(netAmount, currency, presentation) })
+                    ? t.rich("paymentDue", { amount: taxUiMoney(netAmount, currency, presentation), em: (chunks) => <BidiText>{chunks}</BidiText> })
                     : t("nothingDue")}
             </p>
           </div>
@@ -418,7 +424,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
             className="bg-emerald-600 hover:bg-emerald-700"
             onClick={() => setSettleOpen(true)}
           >
-            <Banknote className="mr-1.5 size-3.5" />
+            <Banknote className="me-1.5 size-3.5" />
             {t("recordSettlement")}
           </Button>
         </div>
@@ -431,16 +437,16 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
             {t("returnBoxes")}
           </p>
           <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[520px]">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="w-16 px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                  <th className="w-16 px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">
                     {t("box")}
                   </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                  <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">
                     {t("boxDescription")}
                   </th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">
+                  <th className="px-4 py-2.5 text-end text-xs font-medium text-muted-foreground">
                     {t("amount")}
                   </th>
                 </tr>
@@ -458,18 +464,18 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
                       )}
                     >
                       <td className="px-4 py-2.5 font-mono text-muted-foreground">
-                        {line.boxNumber}
+                        <IdentifierText>{line.boxNumber}</IdentifierText>
                       </td>
                       <td className="px-4 py-2.5">
-                        {line.label}
+                        <BidiText>{line.label}</BidiText>
                         {line.sourceDescription && (
-                          <span className="ml-2 text-[11px] text-muted-foreground">
-                            {line.sourceDescription}
+                          <span className="ms-2 text-[11px] text-muted-foreground">
+                            <BidiText>{line.sourceDescription}</BidiText>
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums">
-                        {taxUiMoney(line.amount, currency, presentation)}
+                      <td className="px-4 py-2.5 text-end font-mono tabular-nums">
+                        <BidiText>{taxUiMoney(line.amount, currency, presentation)}</BidiText>
                       </td>
                     </tr>
                   );
@@ -478,7 +484,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
             </table>
           </div>
           {netAmount != null && (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <p className="flex flex-wrap gap-y-2 items-center gap-1.5 text-xs text-muted-foreground">
               <CheckCircle2 className="size-3.5 text-emerald-600" />
               {netAmount < 0
                 ? t("negativeBoxHelp")
@@ -504,7 +510,7 @@ function TaxPeriodWorkspace({ id, orgId }: { id: string; orgId: string | null })
       {period.notes && (
         <div className="rounded-lg border p-4">
           <p className="mb-1 text-xs font-medium text-muted-foreground">{t("notes")}</p>
-          <p className="text-sm">{period.notes}</p>
+          <p className="text-sm"><BidiText>{period.notes}</BidiText></p>
         </div>
       )}
 

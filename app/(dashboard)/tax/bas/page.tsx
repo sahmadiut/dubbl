@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -106,7 +108,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
         />
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" asChild>
           <Link href="/tax/periods">
-            <ArrowUpRight className="size-3.5" />
+            <ArrowUpRight className="size-3.5 rtl:rotate-180" />
             {t("taxPeriods")}
           </Link>
         </Button>
@@ -129,13 +131,13 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
             </h3>
             <div className="mt-4 space-y-3">
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpRight className="size-3.5 text-blue-500" />
+                <div className="flex flex-wrap gap-y-2 items-center justify-between text-sm">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-2">
+                    <ArrowUpRight className="size-3.5 text-blue-500 rtl:rotate-180" />
                     <span className="text-muted-foreground">{t("salesComparison")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-blue-600 dark:text-blue-400">
-                    {taxUiMoney(gstOnSales, currency!, presentation)}
+                    <BidiText>{taxUiMoney(gstOnSales, currency!, presentation)}</BidiText>
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -146,13 +148,13 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-y-2 items-center justify-between text-sm">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-2">
                     <ArrowDownLeft className="size-3.5 text-orange-500" />
                     <span className="text-muted-foreground">{t("purchasesComparison")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium text-orange-600 dark:text-orange-400">
-                    {taxUiMoney(gstOnPurchases, currency!, presentation)}
+                    <BidiText>{taxUiMoney(gstOnPurchases, currency!, presentation)}</BidiText>
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -162,7 +164,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t pt-3">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between border-t pt-3">
                 <span className="text-sm font-medium">
                   {netGst >= 0 ? t("netPayable") : t("netRefund")}
                 </span>
@@ -170,7 +172,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                   "font-mono text-sm tabular-nums font-semibold",
                   netGst >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netGst), currency!, presentation)}
+                  <BidiText>{taxUiMoney(taxUiAbs(netGst), currency!, presentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -184,7 +186,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                 ? "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/20"
                 : "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20"
             )}>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between">
                 <div>
                   <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                     {netField.amount < 0 ? t("atoRefund") : t("atoPayable")}
@@ -193,7 +195,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                     "mt-1 text-2xl font-bold font-mono tabular-nums",
                     netField.amount >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                   )}>
-                    {taxUiMoney(taxUiAbs(netField.amount), currency!, presentation)}
+                    <BidiText>{taxUiMoney(taxUiAbs(netField.amount), currency!, presentation)}</BidiText>
                   </p>
                 </div>
                 <div className={cn(
@@ -203,7 +205,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                     : "bg-emerald-100 dark:bg-emerald-900/40"
                 )}>
                   {netField.amount >= 0 ? (
-                    <ArrowUpRight className="size-5 text-red-600 dark:text-red-400" />
+                    <ArrowUpRight className="size-5 text-red-600 dark:text-red-400 rtl:rotate-180" />
                   ) : (
                     <ArrowDownLeft className="size-5 text-emerald-600 dark:text-emerald-400" />
                   )}
@@ -215,11 +217,11 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
           {/* GST fields */}
           {gstFields.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap gap-y-2 items-center gap-2 mb-2">
                 <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t("gstInformation")}</h3>
                 <Badge variant="outline" className="text-[10px]">G1-G11, 1A-1B</Badge>
               </div>
-              <div className="rounded-lg border overflow-hidden">
+              <div className="rounded-lg border overflow-x-auto">
                 {gstFields.map((f, i) => {
                   const isGstTotal = f.field === "1A" || f.field === "1B";
                   return (
@@ -231,23 +233,23 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                         isGstTotal && "bg-muted/30"
                       )}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap gap-y-2 items-center gap-3">
                         <div className={cn(
                           "flex size-8 items-center justify-center rounded-md text-[10px] font-bold font-mono",
                           isGstTotal
                             ? "bg-blue-600 text-white dark:bg-blue-500"
                             : "bg-muted text-muted-foreground"
                         )}>
-                          {f.field}
+                          <IdentifierText>{f.field}</IdentifierText>
                         </div>
-                        <p className={cn("text-sm", isGstTotal && "font-medium")}>{fieldLabel(f)}</p>
+                        <p className={cn("text-sm", isGstTotal && "font-medium")}><BidiText>{fieldLabel(f)}</BidiText></p>
                       </div>
                       <span className={cn(
                         "font-mono text-sm tabular-nums font-medium",
                         f.field === "1A" && "text-blue-600 dark:text-blue-400",
                         f.field === "1B" && "text-orange-600 dark:text-orange-400"
                       )}>
-                        {taxUiMoney(f.amount, currency!, presentation)}
+                        <BidiText>{taxUiMoney(f.amount, currency!, presentation)}</BidiText>
                       </span>
                     </div>
                   );
@@ -260,7 +262,7 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
           {otherFields.length > 0 && (
             <div>
               <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground mb-2">{t("otherObligations")}</h3>
-              <div className="rounded-lg border overflow-hidden">
+              <div className="rounded-lg border overflow-x-auto">
                 {otherFields.map((f, i) => (
                   <div
                     key={f.field}
@@ -269,13 +271,13 @@ function BasPageWorkspace({ orgId }: { orgId: string | null }) {
                       i < otherFields.length - 1 && "border-b"
                     )}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap gap-y-2 items-center gap-3">
                       <div className="flex size-8 items-center justify-center rounded-md bg-muted text-[10px] font-bold font-mono text-muted-foreground">
-                        {f.field}
+                        <IdentifierText>{f.field}</IdentifierText>
                       </div>
-                      <p className="text-sm">{fieldLabel(f)}</p>
+                      <p className="text-sm"><BidiText>{fieldLabel(f)}</BidiText></p>
                     </div>
-                    <span className="font-mono text-sm tabular-nums font-medium">{taxUiMoney(f.amount, currency!, presentation)}</span>
+                    <span className="font-mono text-sm tabular-nums font-medium"><BidiText>{taxUiMoney(f.amount, currency!, presentation)}</BidiText></span>
                   </div>
                 ))}
               </div>

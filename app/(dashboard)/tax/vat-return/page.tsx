@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
@@ -166,7 +168,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
         />
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" asChild>
           <Link href="/tax/periods">
-            <ArrowUpRight className="size-3.5" />
+            <ArrowUpRight className="size-3.5 rtl:rotate-180" />
             {t("taxPeriods")}
           </Link>
         </Button>
@@ -184,8 +186,8 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
           <Label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("countVat")}
           </Label>
-          <div className="inline-flex rounded-md border p-0.5">
-            <Button
+          <div role="group" aria-label={t("countVat")} className="inline-flex flex-wrap gap-y-2 rounded-md border p-0.5">
+            <Button aria-pressed={basis === "accrual"}
               type="button"
               size="sm"
               variant={basis === "accrual" ? "secondary" : "ghost"}
@@ -194,7 +196,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
             >
               {t("accrual")}
             </Button>
-            <Button
+            <Button aria-pressed={basis === "cash"}
               type="button"
               size="sm"
               variant={basis === "cash" ? "secondary" : "ghost"}
@@ -212,7 +214,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-y-2 items-center gap-2">
             <Switch
               id="flat-rate-toggle"
               checked={flatRateOn}
@@ -222,8 +224,8 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               {t("flatRate")}
             </Label>
           </div>
-          <div className="flex items-center gap-2">
-            <Input
+          <div className="flex flex-wrap gap-y-2 items-center gap-2">
+            <Input dir="ltr"
               type="number"
               inputMode="decimal"
               step="0.1"
@@ -255,13 +257,13 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
             </h3>
             <div className="mt-4 space-y-3">
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpRight className="size-3.5 text-blue-500" />
+                <div className="flex flex-wrap gap-y-2 items-center justify-between text-sm">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-2">
+                    <ArrowUpRight className="size-3.5 text-blue-500 rtl:rotate-180" />
                     <span className="text-muted-foreground">{t("outputVat")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
-                    {taxUiMoney(outputVat, currency!, presentation)}
+                    <BidiText>{taxUiMoney(outputVat, currency!, presentation)}</BidiText>
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -272,13 +274,13 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-y-2 items-center justify-between text-sm">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-2">
                     <ArrowDownLeft className="size-3.5 text-orange-500" />
                     <span className="text-muted-foreground">{t("inputVat")}</span>
                   </div>
                   <span className="font-mono text-sm tabular-nums font-medium">
-                    {taxUiMoney(inputVat, currency!, presentation)}
+                    <BidiText>{taxUiMoney(inputVat, currency!, presentation)}</BidiText>
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-muted">
@@ -288,7 +290,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t pt-3">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between border-t pt-3">
                 <span className="text-sm font-medium">
                   {netVat >= 0 ? t("netDue") : t("netRefund")}
                 </span>
@@ -296,7 +298,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                   "font-mono text-sm tabular-nums font-semibold",
                   netVat >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netVat), currency!, presentation)}
+                  <BidiText>{taxUiMoney(taxUiAbs(netVat), currency!, presentation)}</BidiText>
                 </span>
               </div>
             </div>
@@ -309,7 +311,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
               ? "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/20"
               : "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/20"
           )}>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-y-2 items-center justify-between">
               <div>
                 <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
                   {netVat >= 0 ? t("boxFiveDue") : t("boxFiveRefund")}
@@ -318,7 +320,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                   "mt-1 text-2xl font-bold font-mono tabular-nums",
                   netVat >= 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
                 )}>
-                  {taxUiMoney(taxUiAbs(netVat), currency!, presentation)}
+                  <BidiText>{taxUiMoney(taxUiAbs(netVat), currency!, presentation)}</BidiText>
                 </p>
               </div>
               <div className={cn(
@@ -328,7 +330,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                   : "bg-emerald-100 dark:bg-emerald-900/40"
               )}>
                 {netVat >= 0 ? (
-                  <ArrowUpRight className="size-5 text-red-600 dark:text-red-400" />
+                  <ArrowUpRight className="size-5 text-red-600 dark:text-red-400 rtl:rotate-180" />
                 ) : (
                   <ArrowDownLeft className="size-5 text-emerald-600 dark:text-emerald-400" />
                 )}
@@ -344,7 +346,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
             <p className="text-[11px] text-muted-foreground mb-2">
               {t("drillHelp")}
             </p>
-            <div className="rounded-lg border overflow-hidden">
+            <div className="rounded-lg border overflow-x-auto">
               {boxes.map((b, i) => {
                 const labelKey = vatBoxLabelKey(b.box);
                 const isKey = b.box === KEY_BOX;
@@ -356,12 +358,12 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
 
                 const rowInner = (
                   <>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap gap-y-2 items-center gap-3">
                       {isDrillable && (
                         isOpen ? (
                           <ChevronDown className="size-4 text-muted-foreground shrink-0" />
                         ) : (
-                          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                          <ChevronRight className="size-4 text-muted-foreground shrink-0 rtl:rotate-180" />
                         )
                       )}
                       <div className={cn(
@@ -370,16 +372,16 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                           ? "bg-emerald-600 text-white dark:bg-emerald-500"
                           : "bg-muted text-muted-foreground"
                       )}>
-                        {b.box}
+                        <IdentifierText>{b.box}</IdentifierText>
                       </div>
                       <div>
-                        <p className={cn("text-sm", isKey && "font-semibold")}>{labelKey ? t(labelKey) : b.label}</p>
+                        <p className={cn("text-sm", isKey && "font-semibold")}><BidiText>{labelKey ? t(labelKey) : b.label}</BidiText></p>
                         {isCalc && (
                           <Badge variant="outline" className="text-[9px] mt-0.5">{t("calculated")}</Badge>
                         )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <p className={cn(
                         "font-mono text-sm tabular-nums",
                         isKey && "text-base font-bold",
@@ -387,7 +389,7 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                         isKey && netVat < 0 && "text-emerald-600 dark:text-emerald-400",
                         !isKey && "font-medium"
                       )}>
-                        {taxUiMoney(taxUiAbs(b.amount), currency!, presentation)}
+                        <BidiText>{taxUiMoney(taxUiAbs(b.amount), currency!, presentation)}</BidiText>
                       </p>
                     </div>
                   </>
@@ -407,12 +409,12 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                         type="button"
                         onClick={() => toggleDrill(b.box)}
                         aria-expanded={isOpen}
-                        className="flex w-full items-center justify-between px-4 py-3.5 text-left transition-colors hover:bg-muted/50"
+                        className="flex flex-wrap gap-y-2 w-full items-center justify-between px-4 py-3.5 text-start transition-colors hover:bg-muted/50"
                       >
                         {rowInner}
                       </button>
                     ) : (
-                      <div className="flex items-center justify-between px-4 py-3.5">
+                      <div className="flex flex-wrap gap-y-2 items-center justify-between px-4 py-3.5">
                         {rowInner}
                       </div>
                     )}
@@ -427,38 +429,38 @@ function VatReturnPageWorkspace({ orgId }: { orgId: string | null }) {
                           </p>
                         ) : (
                           <div className="overflow-x-auto">
-                            <table className="w-full text-xs">
+                            <table className="w-full text-xs min-w-[520px]">
                               <thead>
-                                <tr className="text-left text-muted-foreground">
-                                  <th className="py-1.5 pr-3 font-medium">{t("date")}</th>
-                                  <th className="py-1.5 pr-3 font-medium">{t("entry")}</th>
-                                  <th className="py-1.5 pr-3 font-medium">{t("transactionDescription")}</th>
-                                  <th className="py-1.5 pr-3 font-medium">{t("reference")}</th>
-                                  <th className="py-1.5 pl-3 text-right font-medium">{t("amount")}</th>
+                                <tr className="text-start text-muted-foreground">
+                                  <th className="py-1.5 pe-3 font-medium">{t("date")}</th>
+                                  <th className="py-1.5 pe-3 font-medium">{t("entry")}</th>
+                                  <th className="py-1.5 pe-3 font-medium">{t("transactionDescription")}</th>
+                                  <th className="py-1.5 pe-3 font-medium">{t("reference")}</th>
+                                  <th className="py-1.5 ps-3 text-end font-medium">{t("amount")}</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {rows.map((t) => (
                                   <tr key={t.journalLineId} className="border-t border-border/60">
-                                    <td className="py-1.5 pr-3 whitespace-nowrap tabular-nums">{t.date}</td>
-                                    <td className="py-1.5 pr-3 whitespace-nowrap font-mono">
-                                      #{t.entryNumber}
+                                    <td className="py-1.5 pe-3 whitespace-nowrap tabular-nums"><IdentifierText>{t.date}</IdentifierText></td>
+                                    <td className="py-1.5 pe-3 whitespace-nowrap font-mono">
+                                      <IdentifierText>#{t.entryNumber}</IdentifierText>
                                     </td>
-                                    <td className="py-1.5 pr-3">{t.description || "—"}</td>
-                                    <td className="py-1.5 pr-3 text-muted-foreground">{t.reference || "—"}</td>
-                                    <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
-                                      {taxUiMoney(t.amount, currency!, presentation)}
+                                    <td className="py-1.5 pe-3"><BidiText>{t.description || "—"}</BidiText></td>
+                                    <td className="py-1.5 pe-3 text-muted-foreground"><IdentifierText>{t.reference || "—"}</IdentifierText></td>
+                                    <td className="py-1.5 ps-3 text-end font-mono tabular-nums">
+                                      <BidiText>{taxUiMoney(t.amount, currency!, presentation)}</BidiText>
                                     </td>
                                   </tr>
                                 ))}
                               </tbody>
                               <tfoot>
                                 <tr className="border-t border-border font-medium">
-                                  <td className="py-1.5 pr-3" colSpan={4}>
+                                  <td className="py-1.5 pe-3" colSpan={4}>
                                     {t("totalLines", { count: rows.length })}
                                   </td>
-                                  <td className="py-1.5 pl-3 text-right font-mono tabular-nums">
-                                    {taxUiMoney(rows.reduce((s, t) => s + t.amount, 0n), currency!, presentation)}
+                                  <td className="py-1.5 ps-3 text-end font-mono tabular-nums">
+                                    <BidiText>{taxUiMoney(rows.reduce((s, t) => s + t.amount, 0n), currency!, presentation)}</BidiText>
                                   </td>
                                 </tr>
                               </tfoot>

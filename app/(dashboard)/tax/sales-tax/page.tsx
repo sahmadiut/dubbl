@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -95,7 +97,7 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
         />
         <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" asChild>
           <Link href="/tax/periods">
-            <ArrowUpRight className="size-3.5" />
+            <ArrowUpRight className="size-3.5 rtl:rotate-180" />
             {t("taxPeriods")}
           </Link>
         </Button>
@@ -114,24 +116,24 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
           {/* Summary KPIs */}
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-blue-700/70 dark:text-blue-400/70">{t("taxCollected")}</p>
                 <Receipt className="size-4 text-blue-500/50" />
               </div>
               <p className="mt-1 break-all text-xl font-bold font-mono tabular-nums text-blue-700 dark:text-blue-300">
-                {taxUiMoney(totalCollected, currency!, presentation)}
+                <BidiText>{taxUiMoney(totalCollected, currency!, presentation)}</BidiText>
               </p>
               <p className="text-[11px] text-blue-600/60 dark:text-blue-400/60 mt-0.5">
                 {t("invoiceCount", { count: totalInvoices })}
               </p>
             </div>
             <div className="rounded-lg border bg-card p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("taxableSales")}</p>
                 <FileText className="size-4 text-muted-foreground/50" />
               </div>
               <p className="mt-1 break-all text-xl font-bold font-mono tabular-nums">
-                {taxUiMoney(totalTaxable, currency!, presentation)}
+                <BidiText>{taxUiMoney(totalTaxable, currency!, presentation)}</BidiText>
               </p>
               <div className="mt-2 h-1.5 rounded-full bg-muted">
                 <div
@@ -141,12 +143,12 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
               </div>
             </div>
             <div className="rounded-lg border bg-card p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("exemptSales")}</p>
                 <MapPin className="size-4 text-muted-foreground/50" />
               </div>
               <p className="mt-1 break-all text-xl font-bold font-mono tabular-nums">
-                {taxUiMoney(exemptAmount, currency!, presentation)}
+                <BidiText>{taxUiMoney(exemptAmount, currency!, presentation)}</BidiText>
               </p>
               <div className="mt-2 h-1.5 rounded-full bg-muted">
                 <div
@@ -167,27 +169,26 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
                 const pct = taxUiPercent(b.taxCollected, totalCollected);
                 return (
                   <div key={i} className="rounded-lg border bg-card p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap gap-y-2 items-center justify-between mb-3">
+                      <div className="flex flex-wrap gap-y-2 items-center gap-3">
                         <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
                           <Receipt className="size-4 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{b.taxRateName || t("noTaxRate")}</p>
+                          <p className="text-sm font-medium"><BidiText>{b.taxRateName || t("noTaxRate")}</BidiText></p>
                           <p className="text-xs text-muted-foreground">
-                            {t("rateInvoices", {
+                            {t.rich("rateInvoices", {
                               rate: b.taxRatePercent != null ? `${(b.taxRatePercent / 100).toFixed(2)}%` : t("notAvailable"),
-                              count: b.invoiceCount,
-                            })}
+                              count: b.invoiceCount, em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-end">
                         <p className="text-sm font-semibold font-mono tabular-nums text-blue-600 dark:text-blue-400">
-                          {taxUiMoney(b.taxCollected, currency!, presentation)}
+                          <BidiText>{taxUiMoney(b.taxCollected, currency!, presentation)}</BidiText>
                         </p>
                         <p className="text-xs text-muted-foreground font-mono tabular-nums">
-                          {t("onAmount", { amount: taxUiMoney(b.taxableAmount, currency!, presentation) })}
+                          {t.rich("onAmount", { amount: taxUiMoney(b.taxableAmount, currency!, presentation), em: (chunks) => <BidiText>{chunks}</BidiText> })}
                         </p>
                       </div>
                     </div>
@@ -205,9 +206,9 @@ function SalesTaxPageWorkspace({ orgId }: { orgId: string | null }) {
 
           {/* Total */}
           <div className="rounded-lg border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20 px-5 py-3.5">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-wrap gap-y-2 justify-between items-center">
               <span className="text-sm font-semibold">{t("totalTaxCollected")}</span>
-              <span className="font-mono text-base tabular-nums font-bold text-blue-600 dark:text-blue-400">{taxUiMoney(totalCollected, currency!, presentation)}</span>
+              <span className="font-mono text-base tabular-nums font-bold text-blue-600 dark:text-blue-400"><BidiText>{taxUiMoney(totalCollected, currency!, presentation)}</BidiText></span>
             </div>
           </div>
         </ContentReveal>

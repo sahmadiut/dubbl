@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
+import { useState, useEffect, useId } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { localeDirection } from "@/i18n/locale";
 import { Plus, Scale, Percent, Pencil, Trash2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -91,6 +94,8 @@ const TYPE_COLORS = {
 // Compound-tax editor: lets the user split a rate into named sub-components
 // (e.g. GST + PST), each with its own % and optional ledger account.
 function ComponentsEditor({ components, setComponents }: { components: TaxComponent[]; setComponents: (c: TaxComponent[]) => void }) {
+  const fieldId = useId();
+
   const t = useTranslations("TaxRates");
   function update(i: number, patch: Partial<TaxComponent>) {
     setComponents(components.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -100,7 +105,7 @@ function ComponentsEditor({ components, setComponents }: { components: TaxCompon
   }
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap gap-y-2 items-center justify-between">
         <Label>{t("parts")}</Label>
         <Button
           type="button"
@@ -109,7 +114,7 @@ function ComponentsEditor({ components, setComponents }: { components: TaxCompon
           className="h-7 text-xs"
           onClick={() => setComponents([...components, { name: "", rate: 0, accountId: null }])}
         >
-          <Plus className="mr-1 size-3" />{t("addPart")}
+          <Plus className="me-1 size-3" />{t("addPart")}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
@@ -119,14 +124,14 @@ function ComponentsEditor({ components, setComponents }: { components: TaxCompon
         <div className="space-y-3 rounded-md border p-3">
           {components.map((c, i) => (
             <div key={i} className="space-y-2 rounded-md bg-muted/30 p-2">
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap gap-y-2 items-end gap-2">
                 <div className="flex-1 space-y-1">
-                  <Label className="text-xs">{t("partName")}</Label>
-                  <Input value={c.name} onChange={(e) => update(i, { name: e.target.value })} placeholder={t("partPlaceholder")} />
+                  <Label htmlFor={`${fieldId}-cname${i}`} className="text-xs">{t("partName")}</Label>
+                  <Input dir="auto" id={`${fieldId}-cname${i}`} value={c.name} onChange={(e) => update(i, { name: e.target.value })} placeholder={t("partPlaceholder")} />
                 </div>
                 <div className="w-24 space-y-1">
-                  <Label className="text-xs">{t("rate")}</Label>
-                  <Input
+                  <Label htmlFor={`${fieldId}-crate0crate100toString${i}`} className="text-xs">{t("rate")}</Label>
+                  <Input dir="ltr" id={`${fieldId}-crate0crate100toString${i}`}
                     type="number"
                     step="0.01"
                     value={c.rate === 0 ? "" : (c.rate / 100).toString()}
@@ -139,8 +144,8 @@ function ComponentsEditor({ components, setComponents }: { components: TaxCompon
                 </Button>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("account")}</Label>
-                <AccountPicker value={c.accountId ?? ""} onChange={(id) => update(i, { accountId: id || null })} placeholder={t("defaultAccount")} />
+                <Label id={`${fieldId}-caccountId${i}`} className="text-xs">{t("account")}</Label>
+                <div role="group" aria-labelledby={`${fieldId}-caccountId${i}`}><AccountPicker value={c.accountId ?? ""} onChange={(id) => update(i, { accountId: id || null })} placeholder={t("defaultAccount")} /></div>
               </div>
             </div>
           ))}
@@ -162,19 +167,22 @@ function TaxRateFormFields({
   recoverable: string; setRecoverable: (v: string) => void;
   components: TaxComponent[]; setComponents: (c: TaxComponent[]) => void;
 }) {
+  const fieldId = useId();
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxRates");
   const kindHelp = KIND_OPTIONS.find((k) => k.value === kind)?.help;
   return (
     <>
-      <div className="space-y-2"><Label>{t("name")}</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} required /></div>
-      <div className="space-y-2"><Label>{t("rate")}</Label><Input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="10.00" required /></div>
-      <div className="space-y-2"><Label>{t("appliesTo")}</Label>
-        <Select value={type} onValueChange={setType}><SelectTrigger><SelectValue /></SelectTrigger>
+      <div className="space-y-2"><Label htmlFor={`${fieldId}-name`}>{t("name")}</Label><Input dir="auto" id={`${fieldId}-name`} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} required /></div>
+      <div className="space-y-2"><Label htmlFor={`${fieldId}-rate`}>{t("rate")}</Label><Input dir="ltr" id={`${fieldId}-rate`} type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="10.00" required /></div>
+      <div className="space-y-2"><Label htmlFor={`${fieldId}-type`}>{t("appliesTo")}</Label>
+        <Select dir={controlDirection} value={type} onValueChange={setType}><SelectTrigger id={`${fieldId}-type`} className="min-w-0 data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="sales">{t("type_sales")}</SelectItem><SelectItem value="purchase">{t("type_purchase")}</SelectItem><SelectItem value="both">{t("type_both")}</SelectItem></SelectContent>
         </Select>
       </div>
-      <div className="space-y-2"><Label>{t("treatment")}</Label>
-        <Select value={kind} onValueChange={setKind}><SelectTrigger><SelectValue /></SelectTrigger>
+      <div className="space-y-2"><Label htmlFor={`${fieldId}-kind`}>{t("treatment")}</Label>
+        <Select dir={controlDirection} value={kind} onValueChange={setKind}><SelectTrigger id={`${fieldId}-kind`} className="min-w-0 data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none"><SelectValue /></SelectTrigger>
           <SelectContent>
             {KIND_OPTIONS.map((k) => (<SelectItem key={k.value} value={k.value}>{t(k.label)}</SelectItem>))}
           </SelectContent>
@@ -183,8 +191,8 @@ function TaxRateFormFields({
       </div>
       {RECOVERABLE_KINDS.has(kind) && (
         <div className="space-y-2">
-          <Label>{t("reclaimable")}</Label>
-          <Input
+          <Label htmlFor={`${fieldId}-recoverable`}>{t("reclaimable")}</Label>
+          <Input dir="ltr" id={`${fieldId}-recoverable`}
             type="number"
             step="0.01"
             min="0"
@@ -231,6 +239,8 @@ interface CountryProfile {
 // Shown when the org has no tax rates yet: one click seeds the country's
 // standard tax rates so the user doesn't have to type them all out by hand.
 function QuickSetup({ orgId, onSeeded }: { orgId: string | null; onSeeded: () => void }) {
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxRates");
   const [profiles, setProfiles] = useState<CountryProfile[]>([]);
   const [recommended, setRecommended] = useState<string | null>(null);
@@ -296,18 +306,18 @@ function QuickSetup({ orgId, onSeeded }: { orgId: string | null; onSeeded: () =>
       <h3 className="mt-3 text-base font-semibold">{t("setupTitle")}</h3>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         {recommendedName
-          ? t("setupRecommended", { country: recommendedName })
+          ? t.rich("setupRecommended", { country: recommendedName, em: (chunks) => <BidiText>{chunks}</BidiText> })
           : t("setupDescription")}
       </p>
       <div className="mx-auto mt-4 flex max-w-sm flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
         {profiles.length > 0 && (
-          <Select value={country} onValueChange={setCountry}>
-            <SelectTrigger className="sm:w-56 bg-background">
+          <Select dir={controlDirection} value={country} onValueChange={setCountry}>
+            <SelectTrigger className="sm:w-56 bg-background min-w-0 data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("chooseCountry")} />
             </SelectTrigger>
             <SelectContent>
               {profiles.map((p) => (
-                <SelectItem key={p.country} value={p.country}>{p.countryName}</SelectItem>
+                <SelectItem key={p.country} value={p.country}><BidiText>{p.countryName}</BidiText></SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -317,7 +327,7 @@ function QuickSetup({ orgId, onSeeded }: { orgId: string | null; onSeeded: () =>
           disabled={seeding || (profiles.length > 0 && !country)}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
-          <Sparkles className="mr-1.5 size-3.5" />
+          <Sparkles className="me-1.5 size-3.5" />
           {seeding ? t("settingUp") : t("quickSetup")}
         </Button>
       </div>
@@ -326,6 +336,8 @@ function QuickSetup({ orgId, onSeeded }: { orgId: string | null; onSeeded: () =>
 }
 
 function CreateTaxRateDialog({ open, setOpen, onCreated, orgId }: { open: boolean; setOpen: (v: boolean) => void; onCreated: () => void; orgId: string | null }) {
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxRates");
   const [name, setName] = useState("");
   const [rate, setRate] = useState("");
@@ -363,10 +375,10 @@ function CreateTaxRateDialog({ open, setOpen, onCreated, orgId }: { open: boolea
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-1.5 size-3.5" />{t("addRate")}
+          <Plus className="me-1.5 size-3.5" />{t("addRate")}
         </Button>
       </SheetTrigger>
-      <SheetContent className="overflow-y-auto">
+      <SheetContent dir={controlDirection} className="overflow-y-auto">
         <SheetHeader><SheetTitle>{t("newRate")}</SheetTitle></SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4 pb-6">
           <TaxRateFormFields
@@ -385,6 +397,8 @@ function CreateTaxRateDialog({ open, setOpen, onCreated, orgId }: { open: boolea
 }
 
 export default function TaxRatesPage() {
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxRates");
   const [rates, setRates] = useState<TaxRate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -464,14 +478,14 @@ export default function TaxRatesPage() {
       {/* Summary KPIs */}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-y-2 items-center justify-between">
             <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t("totalRates")}</p>
             <Scale className="size-4 text-muted-foreground/50" />
           </div>
           <p className="mt-1 text-2xl font-bold tabular-nums">{rates.length}</p>
         </div>
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-950/20 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-y-2 items-center justify-between">
             <p className="text-[11px] font-medium uppercase tracking-wide text-blue-700/70 dark:text-blue-400/70">{t("salesRates")}</p>
             <div className="size-4 rounded bg-blue-500/20 flex items-center justify-center">
               <div className="size-1.5 rounded-full bg-blue-500" />
@@ -481,7 +495,7 @@ export default function TaxRatesPage() {
           <p className="text-[11px] text-blue-600/60 dark:text-blue-400/60 mt-0.5">{t("onInvoices")}</p>
         </div>
         <div className="rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-800/40 dark:bg-orange-950/20 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-y-2 items-center justify-between">
             <p className="text-[11px] font-medium uppercase tracking-wide text-orange-700/70 dark:text-orange-400/70">{t("purchaseRates")}</p>
             <div className="size-4 rounded bg-orange-500/20 flex items-center justify-center">
               <div className="size-1.5 rounded-full bg-orange-500" />
@@ -508,39 +522,39 @@ export default function TaxRatesPage() {
                 key={rate.id}
                 className="group rounded-lg border bg-card p-4 transition-colors hover:bg-muted/20"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-wrap gap-y-2 items-center justify-between mb-3">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-3">
                     <div className={cn("flex size-10 items-center justify-center rounded-xl", colors.icon)}>
                       <Percent className="size-4" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{rate.name}</p>
+                      <div className="flex flex-wrap gap-y-2 items-center gap-2">
+                        <p className="text-sm font-medium"><BidiText>{rate.name}</BidiText></p>
                         {rate.isDefault && (
                           <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 text-[10px]" variant="outline">
                             {t("default")}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground capitalize">{typeLabel}</p>
+                      <p className="text-xs text-muted-foreground capitalize"><BidiText>{typeLabel}</BidiText></p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-3">
+                    <div className="text-end">
                       <p className={cn("font-mono text-lg font-bold tabular-nums", colors.text)}>
-                        {(rate.rate / 100).toFixed(2)}%
+                        <IdentifierText>{(rate.rate / 100).toFixed(2)}%</IdentifierText>
                       </p>
                     </div>
                     <Badge variant="outline" className={cn(
                       "capitalize text-[10px] min-w-[58px] justify-center",
                       colors.bg, colors.border, colors.text
                     )}>
-                      {typeLabel}
+                      <BidiText>{typeLabel}</BidiText>
                     </Badge>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="size-8 text-muted-foreground hover:text-foreground opacity-100 transition-opacity"
                       aria-label={t("editRate")}
                       onClick={() => openEdit(rate)}
                     >
@@ -561,7 +575,7 @@ export default function TaxRatesPage() {
       )}
 
       <Sheet open={!!editing} onOpenChange={(v) => { if (!v) setEditing(null); }}>
-        <SheetContent className="overflow-y-auto">
+        <SheetContent dir={controlDirection} className="overflow-y-auto">
           <SheetHeader><SheetTitle>{t("editRate")}</SheetTitle></SheetHeader>
           <form onSubmit={handleEdit} className="space-y-4 px-4">
             <TaxRateFormFields

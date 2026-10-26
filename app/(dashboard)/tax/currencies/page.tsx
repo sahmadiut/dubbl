@@ -1,9 +1,12 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { currencyLabel } from "@/i18n/currency-labels";
 import { usePresentation } from "@/i18n/provider";
-import { useState, useEffect, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useState, useEffect, useMemo, useId } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { localeDirection } from "@/i18n/locale";
 import { taxUiMinor, taxUiCurrency, taxUiMoney, taxUiRate, taxUiRateInput } from "@/lib/money/tax-ui";
 import {
   Plus,
@@ -85,6 +88,9 @@ function AddCurrencySheet({
   setOpen: (v: boolean) => void;
   onCreated: () => void;
 }) {
+  const fieldId = useId();
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxCurrencies");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -126,14 +132,14 @@ function AddCurrencySheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent>
+      <SheetContent dir={controlDirection} className="overflow-y-auto max-h-dvh">
         <SheetHeader>
           <SheetTitle>{t("addCurrency")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4">
           <div className="space-y-2">
-            <Label>{t("code")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-code`}>{t("code")}</Label>
+            <Input dir="ltr" id={`${fieldId}-code`}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={t("codePlaceholder")}
@@ -142,8 +148,8 @@ function AddCurrencySheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("name")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-name`}>{t("name")}</Label>
+            <Input dir="auto" id={`${fieldId}-name`}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("namePlaceholder")}
@@ -151,8 +157,8 @@ function AddCurrencySheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("symbol")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-symbol`}>{t("symbol")}</Label>
+            <Input dir="auto" id={`${fieldId}-symbol`}
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
               placeholder={t("symbolPlaceholder")}
@@ -160,8 +166,8 @@ function AddCurrencySheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("decimalPlaces")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-decimalPlaces`}>{t("decimalPlaces")}</Label>
+            <Input dir="ltr" id={`${fieldId}-decimalPlaces`}
               type="number"
               min="0"
               max="4"
@@ -197,6 +203,9 @@ function AddRateSheet({
   onCreated: () => void;
   orgId: string | null;
 }) {
+  const fieldId = useId();
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxCurrencies");
   const [baseCurrency, setBaseCurrency] = useState("");
   const [targetCurrency, setTargetCurrency] = useState("");
@@ -247,22 +256,22 @@ function AddRateSheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent>
+      <SheetContent dir={controlDirection} className="overflow-y-auto max-h-dvh">
         <SheetHeader>
           <SheetTitle>{t("newRate")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4">
           <div className="space-y-2">
-            <Label>{t("baseCurrency")}</Label>
-            <CurrencySelect value={baseCurrency} onValueChange={setBaseCurrency} />
+            <Label id={`${fieldId}-baseCurrency`}>{t("baseCurrency")}</Label>
+            <div role="group" aria-labelledby={`${fieldId}-baseCurrency`}><CurrencySelect value={baseCurrency} onValueChange={setBaseCurrency} /></div>
           </div>
           <div className="space-y-2">
-            <Label>{t("targetCurrency")}</Label>
-            <CurrencySelect value={targetCurrency} onValueChange={setTargetCurrency} />
+            <Label id={`${fieldId}-targetCurrency`}>{t("targetCurrency")}</Label>
+            <div role="group" aria-labelledby={`${fieldId}-targetCurrency`}><CurrencySelect value={targetCurrency} onValueChange={setTargetCurrency} /></div>
           </div>
           <div className="space-y-2">
-            <Label>{t("rate")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-rate`}>{t("rate")}</Label>
+            <Input dir="ltr" id={`${fieldId}-rate`}
               type="number"
               step="0.000001"
               min="0"
@@ -276,8 +285,8 @@ function AddRateSheet({
             </p>
           </div>
           <div className="space-y-2">
-            <Label>{t("date")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-date`}>{t("date")}</Label>
+            <Input dir="ltr" id={`${fieldId}-date`}
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -436,7 +445,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           variant="outline"
           onClick={() => setCurrencySheetOpen(true)}
         >
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {t("addCurrency")}
         </Button>
         <Button
@@ -444,7 +453,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           className="bg-emerald-600 hover:bg-emerald-700"
           onClick={() => setSheetOpen(true)}
         >
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {t("addRate")}
         </Button>
       </PageHeader>
@@ -456,7 +465,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
             {t("organizationCurrency")}
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
-            {currencyLabel(baseCurrency, presentation.locale)}
+            <BidiText>{currencyLabel(baseCurrency, presentation.locale)}</BidiText>
           </p>
           <p className="mt-1 text-[12px] text-emerald-600/60 dark:text-emerald-400/50">
             {t("baseHelp")}
@@ -497,13 +506,13 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
       {/* Unrealised FX Gains & Losses */}
       {fxReport && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-y-2 items-center gap-2">
             <ArrowRightLeft className="size-4 text-muted-foreground" />
             <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
               {t("fxTitle")}
             </h3>
             <span className="text-[11px] text-muted-foreground/70">
-              {t("fxEstimate", { currency: currencyLabel(fxReport.defaultCurrency, presentation.locale) })}
+              {t.rich("fxEstimate", { currency: currencyLabel(fxReport.defaultCurrency, presentation.locale), em: (chunks) => <BidiText>{chunks}</BidiText> })}
             </span>
           </div>
 
@@ -530,10 +539,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                         : "text-red-600 dark:text-red-400"
                     }`}
                   >
-                    {taxUiMoney(
+                    <BidiText>{taxUiMoney(
                       fxReport.summary.netUnrealizedGainLoss,
                       fxReport.defaultCurrency, presentation
-                    )}
+                    )}</BidiText>
                   </p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
@@ -541,10 +550,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                     {t("gains")}
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {taxUiMoney(
+                    <BidiText>{taxUiMoney(
                       fxReport.summary.totalUnrealizedGain,
                       fxReport.defaultCurrency, presentation
-                    )}
+                    )}</BidiText>
                   </p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
@@ -552,10 +561,10 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                     {t("losses")}
                   </p>
                   <p className="mt-1 text-xl font-bold tabular-nums text-red-600 dark:text-red-400">
-                    {taxUiMoney(
+                    <BidiText>{taxUiMoney(
                       fxReport.summary.totalUnrealizedLoss,
                       fxReport.defaultCurrency, presentation
-                    )}
+                    )}</BidiText>
                   </p>
                 </div>
               </div>
@@ -564,17 +573,17 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 {fxReport.items.map((item) => (
                   <div
                     key={`${item.type}-${item.id}`}
-                    className="flex items-center justify-between px-4 py-3"
+                    className="flex flex-wrap gap-y-2 items-center justify-between px-4 py-3"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap gap-y-2 items-center gap-3">
                       <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
                         {item.type === "invoice" ? t("invoice") : item.type === "bill" ? t("bill") : item.type}
                       </span>
                       <span className="font-mono text-sm font-medium">
-                        {item.number}
+                        <IdentifierText>{item.number}</IdentifierText>
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {t("amountDue", { amount: taxUiMoney(item.amountDue, item.currencyCode, presentation) })}
+                        {t.rich("amountDue", { amount: taxUiMoney(item.amountDue, item.currencyCode, presentation), em: (chunks) => <BidiText>{chunks}</BidiText> })}
                       </span>
                     </div>
                     <span
@@ -584,12 +593,12 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                           : "text-red-600 dark:text-red-400"
                       }`}
                     >
-                      {item.unrealizedGainLoss === null
+                      <BidiText>{item.unrealizedGainLoss === null
                         ? "—"
                         : taxUiMoney(
                             item.unrealizedGainLoss,
                             fxReport.defaultCurrency, presentation
-                          )}
+                          )}</BidiText>
                     </span>
                   </div>
                 ))}
@@ -603,7 +612,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
 
       {/* Exchange Rates Section */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap gap-y-2 items-center gap-2">
           <ArrowRightLeft className="size-4 text-muted-foreground" />
           <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("exchangeRates")}
@@ -623,25 +632,25 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 key={rate.id}
                 className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 font-mono text-sm font-semibold">
-                    <span>{currencyLabel(rate.baseCurrency, presentation.locale)}</span>
+                <div className="flex flex-wrap gap-y-2 items-center gap-3">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-1.5 font-mono text-sm font-semibold">
+                    <span><BidiText>{currencyLabel(rate.baseCurrency, presentation.locale)}</BidiText></span>
                     <ArrowRightLeft className="size-3 text-muted-foreground" />
-                    <span>{currencyLabel(rate.targetCurrency, presentation.locale)}</span>
+                    <span><BidiText>{currencyLabel(rate.targetCurrency, presentation.locale)}</BidiText></span>
                   </div>
                   <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                    {taxUiRate(rate.rate, rate.rateExact)}
+                    <IdentifierText>{taxUiRate(rate.rate, rate.rateExact)}</IdentifierText>
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 text-[12px] text-muted-foreground">
+                <div className="flex flex-wrap gap-y-2 items-center gap-2">
+                  <div className="flex flex-wrap gap-y-2 items-center gap-1 text-[12px] text-muted-foreground">
                     <CalendarDays className="size-3" />
                     <span>
-                      {new Date(rate.date).toLocaleDateString("en-US", {
+                      <IdentifierText>{new Date(rate.date).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
-                      })}
+                      })}</IdentifierText>
                     </span>
                   </div>
                   <Badge
@@ -669,7 +678,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
 
       {/* Currency Reference Section (Collapsible) */}
       <Collapsible open={refOpen} onOpenChange={setRefOpen}>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap gap-y-2 items-center gap-2">
           <Coins className="size-4 text-muted-foreground" />
           <h3 className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
             {t("reference")}
@@ -680,14 +689,14 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
             </span>
           )}
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="ml-auto h-7 px-2">
+            <Button variant="ghost" size="sm" className="ms-auto h-7 px-2">
               <ChevronDown
                 className={cn(
                   "size-4 transition-transform",
                   refOpen && "rotate-180"
                 )}
               />
-              <span className="ml-1 text-xs">
+              <span className="ms-1 text-xs">
                 {refOpen ? t("hide") : t("show")}
               </span>
             </Button>
@@ -704,12 +713,12 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
           ) : (
             <>
               <div className="relative max-w-sm">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input aria-label={t("filterPlaceholder")} dir="auto"
                   placeholder={t("filterPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
+                  className="ps-9"
                 />
               </div>
 
@@ -717,7 +726,7 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Search className="mb-3 size-10 text-muted-foreground/40" />
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t("noMatches", { query: search })}
+                    {t.rich("noMatches", { query: search, em: (chunks) => <BidiText>{chunks}</BidiText> })}
                   </p>
                   <p className="mt-1 text-[12px] text-muted-foreground/70">
                     {t("trySearch")}
@@ -731,21 +740,21 @@ function CurrenciesWorkspace({ orgId }: { orgId: string | null }) {
                         key={c.id}
                         className="group relative rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50"
                       >
-                        <div className="flex items-start justify-between">
+                        <div className="flex flex-wrap gap-y-2 items-start justify-between">
                           <span className="font-mono text-base font-bold tracking-wide">
-                            {c.code}
+                            <IdentifierText>{c.code}</IdentifierText>
                           </span>
                           {c.symbol && c.symbol !== c.code && (
                             <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                              {c.symbol}
+                              <IdentifierText>{c.symbol}</IdentifierText>
                             </span>
                           )}
                         </div>
-                        <p className="mt-2 truncate text-[13px] text-muted-foreground">
-                          {currencyLabel(c.code, presentation.locale, c.name)}
+                        <p className="mt-2 min-w-0 [overflow-wrap:anywhere] text-[13px] text-muted-foreground">
+                          <BidiText>{currencyLabel(c.code, presentation.locale, c.name)}</BidiText>
                         </p>
                         {currencyLabel(c.code, presentation.locale, c.name) !== c.name &&
-                          <p className="mt-1 truncate text-xs text-muted-foreground">{c.name}</p>}
+                          <p className="mt-1 min-w-0 [overflow-wrap:anywhere] text-xs text-muted-foreground"><BidiText>{c.name}</BidiText></p>}
                         <p className="mt-1.5 text-[11px] text-muted-foreground/60">
                           {t("decimals", { count: c.decimalPlaces })}
                         </p>

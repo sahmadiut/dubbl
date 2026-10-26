@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
+import { useState, useEffect, useCallback, useId } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { localeDirection } from "@/i18n/locale";
 import { taxPeriodTypeKey } from "@/lib/i18n/tax-period-presentation";
 import Link from "next/link";
 import {
@@ -62,14 +65,14 @@ function getDaysUntil(dateStr: string): number {
 function getFilingStatus(period: TaxPeriod, t: ReturnType<typeof useTranslations<"TaxPeriods">>): {
   label: string;
   variant: "overdue" | "due-soon" | "filed" | "open";
-  daysText: string;
+  daysText: React.ReactNode;
 } {
   if (period.status === "filed") {
     return {
       label: t("filed"),
       variant: "filed",
       daysText: period.filedAt
-        ? t("submittedDate", { date: new Date(period.filedAt).toLocaleDateString() })
+        ? t.rich("submittedDate", { date: new Date(period.filedAt).toLocaleDateString(), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })
         : t("filed"),
     };
   }
@@ -127,6 +130,9 @@ function CreatePeriodSheet({
   onCreated: () => void;
   orgId: string | null;
 }) {
+  const fieldId = useId();
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxPeriods");
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -173,18 +179,18 @@ function CreatePeriodSheet({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="mr-1.5 size-3.5" />
+          <Plus className="me-1.5 size-3.5" />
           {t("newPeriod")}
         </Button>
       </SheetTrigger>
-      <SheetContent>
+      <SheetContent dir={controlDirection} className="overflow-y-auto max-h-dvh">
         <SheetHeader>
           <SheetTitle>{t("newPeriod")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleCreate} className="space-y-4 px-4">
           <div className="space-y-2">
-            <Label>{t("name")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-name`}>{t("name")}</Label>
+            <Input dir="auto" id={`${fieldId}-name`}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("namePlaceholder")}
@@ -192,8 +198,8 @@ function CreatePeriodSheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("startDate")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-startDate`}>{t("startDate")}</Label>
+            <Input dir="ltr" id={`${fieldId}-startDate`}
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -201,8 +207,8 @@ function CreatePeriodSheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("endDate")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-endDate`}>{t("endDate")}</Label>
+            <Input dir="ltr" id={`${fieldId}-endDate`}
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
@@ -210,9 +216,9 @@ function CreatePeriodSheet({
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("type")}</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger>
+            <Label htmlFor={`${fieldId}-type`}>{t("type")}</Label>
+            <Select dir={controlDirection} value={type} onValueChange={setType}>
+              <SelectTrigger id={`${fieldId}-type`} className="min-w-0 data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -223,8 +229,8 @@ function CreatePeriodSheet({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t("notes")}</Label>
-            <Textarea
+            <Label htmlFor={`${fieldId}-notes`}>{t("notes")}</Label>
+            <Textarea dir="auto" id={`${fieldId}-notes`}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t("notesPlaceholder")}
@@ -258,6 +264,9 @@ function FileSheet({
   onFiled: () => void;
   orgId: string | null;
 }) {
+  const fieldId = useId();
+  const controlDirection = localeDirection(useLocale() === "fa-IR" ? "fa-IR" : "en-US");
+
   const t = useTranslations("TaxPeriods");
   const [reference, setReference] = useState("");
   const [saving, setSaving] = useState(false);
@@ -294,17 +303,17 @@ function FileSheet({
         if (!v) onClose();
       }}
     >
-      <SheetContent>
+      <SheetContent dir={controlDirection} className="overflow-y-auto max-h-dvh">
         <SheetHeader>
           <SheetTitle>{t("markSubmitted")}</SheetTitle>
         </SheetHeader>
         <form onSubmit={handleFile} className="space-y-4 px-4">
           <p className="text-sm text-muted-foreground">
-            {t("fileHelp", { name: period?.name ?? "" })}
+            {t.rich("fileHelp", { name: period?.name ?? "", em: (chunks) => <BidiText>{chunks}</BidiText> })}
           </p>
           <div className="space-y-2">
-            <Label>{t("referenceNumber")}</Label>
-            <Input
+            <Label htmlFor={`${fieldId}-reference`}>{t("referenceNumber")}</Label>
+            <Input dir="ltr" id={`${fieldId}-reference`}
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               placeholder={t("referenceNumberPlaceholder")}
@@ -346,7 +355,7 @@ function EmptyState({
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 rounded-xl border px-4 py-3"
+              className="flex flex-wrap gap-y-2 items-center gap-3 rounded-xl border px-4 py-3"
             >
               <div className="size-9 rounded-lg bg-muted" />
               <div className="space-y-1.5">
@@ -356,14 +365,14 @@ function EmptyState({
             </div>
           ))}
         </div>
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-x-auto rounded-lg border">
           <div className="flex h-10 items-center gap-4 border-b bg-muted/30 px-4">
             <div className="h-2 w-14 rounded bg-muted-foreground/20" />
             <div className="h-2 w-20 rounded bg-muted-foreground/20" />
             <div className="hidden h-2 w-12 rounded bg-muted-foreground/20 sm:block" />
             <div className="hidden h-2 w-12 rounded bg-muted-foreground/20 sm:block" />
             <div className="hidden h-2 w-16 rounded bg-muted-foreground/20 sm:block" />
-            <div className="ml-auto h-2 w-14 rounded bg-muted-foreground/20" />
+            <div className="ms-auto h-2 w-14 rounded bg-muted-foreground/20" />
           </div>
           {Array.from({ length: 6 }).map((_, i) => (
             <div
@@ -379,7 +388,7 @@ function EmptyState({
               <div className="hidden h-2.5 w-16 rounded bg-muted/40 sm:block" />
               <div className="hidden h-5 w-12 shrink-0 rounded-full border bg-muted/30 px-2.5 py-0.5 sm:block" />
               <div className="hidden h-2.5 w-20 rounded bg-muted/40 sm:block" />
-              <div className="ml-auto h-2.5 w-10 rounded bg-muted/30" />
+              <div className="ms-auto h-2.5 w-10 rounded bg-muted/30" />
             </div>
           ))}
         </div>
@@ -498,7 +507,7 @@ export default function TaxPeriodsPage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* Total */}
-            <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3">
+            <div className="flex flex-wrap gap-y-2 items-center gap-3 rounded-xl border bg-card px-4 py-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
                 <CalendarDays className="size-4 text-muted-foreground" />
               </div>
@@ -511,7 +520,7 @@ export default function TaxPeriodsPage() {
             </div>
 
             {/* Open */}
-            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800/40 dark:bg-blue-950/20">
+            <div className="flex flex-wrap gap-y-2 items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800/40 dark:bg-blue-950/20">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
                 <Clock className="size-4 text-blue-600 dark:text-blue-400" />
               </div>
@@ -524,7 +533,7 @@ export default function TaxPeriodsPage() {
             </div>
 
             {/* Filed */}
-            <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+            <div className="flex flex-wrap gap-y-2 items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800/40 dark:bg-emerald-950/20">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
                 <FileCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
               </div>
@@ -538,7 +547,7 @@ export default function TaxPeriodsPage() {
 
             {/* Progress */}
             <div className="flex flex-col justify-center gap-2 rounded-xl border bg-card px-4 py-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-y-2 items-center justify-between">
                 <p className="text-xs text-muted-foreground">{t("submittedSoFar")}</p>
                 <p className="text-xs font-medium tabular-nums">
                   {progressPercent}%
@@ -562,26 +571,26 @@ export default function TaxPeriodsPage() {
           </p>
 
           {/* Table */}
-          <div className="overflow-hidden rounded-lg border">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm min-w-[520px]">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                  <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">
                     {t("name")}
                   </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                  <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">
                     {t("period")}
                   </th>
-                  <th className="hidden px-4 py-2.5 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+                  <th className="hidden px-4 py-2.5 text-start text-xs font-medium text-muted-foreground sm:table-cell">
                     {t("type")}
                   </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                  <th className="px-4 py-2.5 text-start text-xs font-medium text-muted-foreground">
                     {t("status")}
                   </th>
-                  <th className="hidden px-4 py-2.5 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+                  <th className="hidden px-4 py-2.5 text-start text-xs font-medium text-muted-foreground sm:table-cell">
                     {t("dueSubmitted")}
                   </th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">
+                  <th className="px-4 py-2.5 text-end text-xs font-medium text-muted-foreground">
                     {t("actions")}
                   </th>
                 </tr>
@@ -601,23 +610,23 @@ export default function TaxPeriodsPage() {
                     >
                       <td className="px-4 py-2.5 font-medium">
                         <Link href={`/tax/periods/${p.id}`} className="hover:underline hover:text-emerald-700 dark:hover:text-emerald-400">
-                          {p.name}
+                          <BidiText>{p.name}</BidiText>
                         </Link>
                       </td>
                       <td className="px-4 py-2.5 text-muted-foreground">
                         <span className="whitespace-nowrap">
-                          {new Date(p.startDate).toLocaleDateString("en-US", {
+                          <IdentifierText>{new Date(p.startDate).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
-                          })}
+                          })}</IdentifierText>
                         </span>
                         {" · "}
                         <span className="whitespace-nowrap">
-                          {new Date(p.endDate).toLocaleDateString("en-US", {
+                          <IdentifierText>{new Date(p.endDate).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
-                          })}
+                          })}</IdentifierText>
                         </span>
                       </td>
                       <td className="hidden px-4 py-2.5 capitalize text-muted-foreground sm:table-cell">
@@ -651,8 +660,8 @@ export default function TaxPeriodsPage() {
                           {filing_status.daysText}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="px-4 py-2.5 text-end">
+                        <div className="flex flex-wrap gap-y-2 items-center justify-end gap-1">
                           {p.status === "open" && (
                             <Button
                               variant="ghost"
@@ -660,7 +669,7 @@ export default function TaxPeriodsPage() {
                               className="h-7 text-xs"
                               onClick={() => setFiling(p)}
                             >
-                              <FileCheck className="mr-1 size-3" />
+                              <FileCheck className="me-1 size-3" />
                               {t("markSubmittedShort")}
                             </Button>
                           )}

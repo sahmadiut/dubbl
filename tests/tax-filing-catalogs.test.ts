@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -20,6 +21,7 @@ import fa from "../messages/fa-IR.json";
 const locales = ["en-US", "fa-IR"] as const;
 type Locale = typeof locales[number];
 const caller = '<script>شرح & reference</script>';
+const copyMarkup = (html: string) => html + visibleText(html);
 const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 const basIds = ["G1", "G2", "G3", "G10", "G11", "1A", "1B", "NET"];
 const scheduleIds = ["1", "2", "8", "9", "10", "13", "15", "16a", "16b", "17", "18", "20a", "20b", "21", "22", "23", "24a", "24b", "25", "26", "27"];
@@ -38,7 +40,7 @@ const specs = [
     response: { lines: [{ line: "1", label: caller, amount: 1250, amountMinor: "1250" }], totalIncome: 2500, totalIncomeMinor: "2500", totalExpenses: 1250, totalExpensesMinor: "1250", netProfit: 1250, netProfitMinor: "1250" } },
 ] as const;
 type Spec = typeof specs[number];
-const translator = (spec: Spec, locale: Locale) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: spec.namespace });
+const translator = (spec: Spec, locale: Locale) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: spec.namespace });
 const states = (spec: Spec, patch: Record<number, unknown> = {}) => Object.assign([...spec.state], patch);
 type Tree = ReactElement<Record<string, unknown>>;
 function nodes(node: ReactNode): Tree[] {
@@ -83,8 +85,8 @@ test("BAS renders bilingual summaries, statutory IDs, known labels and refund/ze
     const t = translator(spec, locale);
     const h = loaded(spec, states(spec, { 2: basRows.map(row => row.field === "NET" ? { ...row, amount } : row), 4: currency }));
     const html = renderWithPresentation(createElement(h.Page, { orgId: "org-a" }), locale);
-    for (const key of ["title", "description", "print", "taxPeriods", "comparison", "salesComparison", "purchasesComparison", "gstInformation", amount < 0n ? "netRefund" : "netPayable", amount < 0n ? "atoRefund" : "atoPayable"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const id of basIds.filter(id => id !== "NET")) assert.ok(html.includes(escape(t(basFieldLabelKey(id)!))) && html.includes(id));
+    for (const key of ["title", "description", "print", "taxPeriods", "comparison", "salesComparison", "purchasesComparison", "gstInformation", amount < 0n ? "netRefund" : "netPayable", amount < 0n ? "atoRefund" : "atoPayable"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
+    for (const id of basIds.filter(id => id !== "NET")) assert.ok(copyMarkup(html).includes(escape(t(basFieldLabelKey(id)!))) && html.includes(id));
     assert.ok(!html.includes("wire-") && html.includes("G1-G11, 1A-1B"));
     assert.ok(html.includes(escape(taxUiMoney(amount < 0n ? -amount : amount, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.deepEqual(h.titles, [t("documentTitle")]);
@@ -98,8 +100,8 @@ test("Schedule C renders all current subtype labels, sections, worksheet warning
     const lines = [...scheduleRows, { line: "31", label: caller, amount: profit }];
     const h = loaded(spec, states(spec, { 2: lines, 5: profit, 7: currency }));
     const html = renderWithPresentation(createElement(h.Page, { orgId: "org-a" }), locale);
-    for (const key of ["title", "description", "print", "worksheetNoticeTitle", "worksheetNotice", "comparison", "grossIncome", "totalExpenses", "netProfitLoss", "incomePart", "incomeLines", "expensesPart", "expenseLines", "summary", profit < 0n ? "lineLoss" : "lineProfit"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const id of scheduleIds) assert.ok(html.includes(escape(t(scheduleCLineLabelKey(id)!))), id);
+    for (const key of ["title", "description", "print", "worksheetNoticeTitle", "worksheetNotice", "comparison", "grossIncome", "totalExpenses", "netProfitLoss", "incomePart", "incomeLines", "expensesPart", "expenseLines", "summary", profit < 0n ? "lineLoss" : "lineProfit"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
+    for (const id of scheduleIds) assert.ok(copyMarkup(html).includes(escape(t(scheduleCLineLabelKey(id)!))), id);
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>") && !html.includes("wire-"));
     assert.ok(html.includes(escape(taxUiMoney(profit < 0n ? -profit : profit, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(html.includes("opacity-40"));
@@ -114,11 +116,11 @@ test("sales tax renders bilingual ICU plurals, missing rates, caller data and ex
     const rows = [{ ...salesRows[0], taxableAmount: 9007199254740991n, taxCollected: 9007199254740991n, invoiceCount: count }, { ...salesRows[1], taxableAmount: 2n, taxCollected: 2n, invoiceCount: 0 }];
     const h = loaded(spec, states(spec, { 2: rows, 5: currency }));
     const html = renderWithPresentation(createElement(h.Page, { orgId: "org-a" }), locale);
-    for (const key of ["title", "description", "print", "taxPeriods", "taxCollected", "taxableSales", "exemptSales", "breakdown", "noTaxRate", "totalTaxCollected"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("invoiceCount", { count }))));
-    assert.ok(html.includes(escape(t("rateInvoices", { rate: "14.50%", count }))));
-    assert.ok(html.includes(escape(t("rateInvoices", { rate: t("notAvailable"), count: 0 }))));
-    assert.ok(html.includes(escape(t("onAmount", { amount: taxUiMoney(9007199254740991n, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+    for (const key of ["title", "description", "print", "taxPeriods", "taxCollected", "taxableSales", "exemptSales", "breakdown", "noTaxRate", "totalTaxCollected"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
+    assert.ok(copyMarkup(html).includes(escape(t("invoiceCount", { count }))));
+    assert.ok(copyMarkup(html).includes(escape(t("rateInvoices", { rate: "14.50%", count }))));
+    assert.ok(copyMarkup(html).includes(escape(t("rateInvoices", { rate: t("notAvailable"), count: 0 }))));
+    assert.ok(copyMarkup(html).includes(escape(t("onAmount", { amount: taxUiMoney(9007199254740991n, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
     assert.ok(html.includes(escape(taxUiMoney(9007199254740993n, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.deepEqual(h.titles, [t("documentTitle")]);
@@ -143,7 +145,7 @@ test("all report loading, empty and error states render with real shared control
     const patch = mode === "loading" ? { [spec.loadingIndex]: true } : mode === "error" ? { [spec.errorIndex]: t("loadFailed") } : { 2: [] };
     const html = renderWithPresentation(createElement(loaded(spec, states(spec, patch)).Page, { orgId: "org-a" }), locale);
     if (mode === "loading") assert.ok(html.includes(escape((locale === "en-US" ? en : fa).SharedUI.loading2)));
-    if (mode === "error") assert.ok(html.includes('role="alert"') && html.includes(escape(t("loadFailed"))));
+    if (mode === "error") assert.ok(html.includes('role="alert"') && copyMarkup(html).includes(escape(t("loadFailed"))));
     if (spec.route !== "schedule-c") assert.ok(html.includes('href="/tax/periods"'));
   }
 });

@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -11,6 +12,7 @@ import ts from "typescript";
 import * as AccountPicker from "../components/dashboard/account-picker";
 import * as BrandLoader from "../components/dashboard/brand-loader";
 import * as SettlementPreview from "../components/dashboard/tax-settlement-preview";
+import { IdentifierText } from "../components/ui/bidi-text";
 import { taxUiMinor, taxUiCurrency, taxUiRows, taxUiMoney, taxUiSettlement } from "../lib/money/tax-ui";
 import { taxPeriodTypeKey, taxPeriodStatusKey } from "../lib/i18n/tax-period-presentation";
 import { renderWithPresentation } from "./helpers/presentation";
@@ -22,8 +24,9 @@ const detail = "app/(dashboard)/tax/periods/[id]/page.tsx";
 const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = '<script>دوره & data</script>';
+const copyMarkup = (html: string) => html + visibleText(html);
 const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
-const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "TaxPeriods" });
+const translator = (locale: typeof locales[number]) => createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "TaxPeriods" });
 
 // Execute production templates with real next-intl/shared controls. Only local
 // state/effects and sheet portals are controlled; Select triggers remain real.
@@ -37,7 +40,7 @@ function loaded(path: string, states: unknown[] = [], directLocale?: typeof loca
   const inline = ({ children }: { children: ReactNode }) => createElement("div", null, children);
   const load = (id: string) => {
     if (id === "react") return { ...React, useState: (initial: unknown) => { const i = index++; return [i < states.length ? states[i] : typeof initial === "function" ? initial() : initial, noop]; }, useEffect: noop, useCallback: (fn: unknown) => fn };
-    if (id === "next-intl") return directLocale ? { useTranslations: () => translator(directLocale) } : nextIntl;
+    if (id === "next-intl") return directLocale ? { useTranslations: () => translator(directLocale), useLocale: () => directLocale } : nextIntl;
     if (id.endsWith("/account-picker")) return AccountPicker;
     if (id.endsWith("/brand-loader")) return BrandLoader;
     if (id.endsWith("/tax-settlement-preview")) return SettlementPreview;
@@ -75,9 +78,9 @@ test("tax period list renders bilingual headings, status/type labels, plurals, l
     const periods = [period, { ...period, id: "period-b", type: "monthly", status: "open" }, { ...period, id: "period-c", type: "annual", status: "open" }];
     const Page = loaded(list, [periods, false, false, period]).default;
     const html = renderWithPresentation(createElement(Page), locale);
-    for (const key of ["title", "description", "newPeriod", "name", "period", "type", "status", "dueSubmitted", "actions", "totalPeriods", "open", "filed", "submittedSoFar", "allPeriods", "markSubmittedShort", "monthly", "quarterly", "annual", "markSubmitted", "referenceNumber"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("submittedCount", { count: 1, total: 3 }))));
-    assert.ok(html.includes(escape(t("fileHelp", { name: caller }))));
+    for (const key of ["title", "description", "newPeriod", "name", "period", "type", "status", "dueSubmitted", "actions", "totalPeriods", "open", "filed", "submittedSoFar", "allPeriods", "markSubmittedShort", "monthly", "quarterly", "annual", "markSubmitted", "referenceNumber"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
+    assert.ok(copyMarkup(html).includes(escape(t("submittedCount", { count: 1, total: 3 }))));
+    assert.ok(copyMarkup(html).includes(escape(t("fileHelp", { name: caller }))));
     assert.ok(html.includes('href="/tax/periods/period-a"') && html.includes(`aria-label="${escape(t("delete"))}"`));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Empty = loaded(list, [[], false]).default;
@@ -94,14 +97,14 @@ test("filing timing retains existing thresholds and uses actual ICU branches in 
   const fn = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "getFilingStatus")!;
   for (const locale of locales) for (const days of [-2, -1, 0, 1, 2, 14, 15]) {
     const t = translator(locale);
-    const code = ts.transpileModule(fn.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
-    const run = new Function("getDaysUntil", `${code}; return getFilingStatus;`)(() => days);
+    const code = ts.transpileModule(fn.getText(ast), { fileName: "filing-status.tsx", compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React } }).outputText;
+    const run = new Function("getDaysUntil", "React", "IdentifierText", `${code}; return getFilingStatus;`)(() => days, React, IdentifierText);
     const result = run({ ...period, status: "open" }, t);
     assert.equal(result.variant, days < 0 ? "overdue" : days <= 14 ? "due-soon" : "open");
     assert.equal(result.label, t(days < 0 ? "overdue" : days <= 14 ? "dueSoon" : "open"));
     assert.equal(result.daysText, days < 0 ? t("daysOverdue", { count: -days }) : days === 0 ? t("dueToday") : t("daysLeft", { count: days }));
     assert.equal(run({ ...period, filedAt: null }, t).daysText, t("filed"));
-    assert.equal(run(period, t).daysText, t("submittedDate", { date: new Date(period.filedAt).toLocaleDateString() }));
+    assert.equal(visibleText(renderWithPresentation(run(period, t).daysText, locale)), escape(t("submittedDate", { date: new Date(period.filedAt).toLocaleDateString() })));
     for (const count of [0, 1, 2, 12]) assert.ok(t("submittedCount", { count, total: 12 }).length);
   }
 });
@@ -112,14 +115,14 @@ test("detail renders exact signed boxes, statutory identifiers and settlement/nu
     const lines = amount === null ? [] : [{ id: "line-5", boxNumber: "5", label: caller, amount, sourceDescription: caller, sortOrder: 1 }];
     const Page = loaded(detail, [{ ...period, lines }, false, false, "USD", null]).TaxPeriodWorkspace;
     const html = renderWithPresentation(createElement(Page, { id: period.id, orgId: "org-a" }), locale);
-    for (const key of ["back", "filed", "quarterly", "settleTitle", "recordSettlement", "notes"] as const) assert.ok(html.includes(escape(t(key))), key);
-    assert.ok(html.includes(escape(t("referenceValue", { reference: caller }))));
+    for (const key of ["back", "filed", "quarterly", "settleTitle", "recordSettlement", "notes"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
+    assert.ok(copyMarkup(html).includes(escape(t("referenceValue", { reference: caller }))));
     if (amount === null) {
-      for (const key of ["settleHelp", "noBoxes", "noFrozenBoxes"] as const) assert.ok(html.includes(escape(t(key))), key);
+      for (const key of ["settleHelp", "noBoxes", "noFrozenBoxes"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
     } else {
-      for (const key of ["returnBoxes", "box", "boxDescription", "amount", amount < 0n ? "negativeBoxHelp" : "netBoxHelp"] as const) assert.ok(html.includes(escape(t(key))), key);
+      for (const key of ["returnBoxes", "box", "boxDescription", "amount", amount < 0n ? "negativeBoxHelp" : "netBoxHelp"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
       assert.ok(html.includes(escape(taxUiMoney(amount, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }))));
-      assert.ok(html.includes(escape(amount === 0n ? t("nothingDue") : t(amount < 0n ? "refundDue" : "paymentDue", { amount: taxUiMoney(amount < 0n ? -amount : amount, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+      assert.ok(copyMarkup(html).includes(escape(amount === 0n ? t("nothingDue") : t(amount < 0n ? "refundDue" : "paymentDue", { amount: taxUiMoney(amount < 0n ? -amount : amount, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
     }
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     const Open = loaded(detail, [{ ...period, status: "open" }, false, false, "USD", null]).TaxPeriodWorkspace;
@@ -134,7 +137,7 @@ test("detail loading/not-found/errors and finite status/type fallbacks render wi
     for (const loading of [true, false]) {
       const Page = loaded(detail, [null, loading, false, null, loading ? null : t("loadDetailFailed")]).TaxPeriodWorkspace;
       const html = renderWithPresentation(createElement(Page, { id: period.id, orgId: "org-a" }), locale);
-      assert.ok(html.includes(escape(t(loading ? "loading" : "notFound"))));
+      assert.ok(copyMarkup(html).includes(escape(t(loading ? "loading" : "notFound"))));
       assert.equal(html.includes('role="alert"'), !loading);
     }
     for (const value of ["constructor", "__proto__", caller]) {
@@ -142,7 +145,7 @@ test("detail loading/not-found/errors and finite status/type fallbacks render wi
       assert.equal(taxPeriodStatusKey(value), "unknownStatus");
       const Page = loaded(detail, [{ ...period, type: value, status: value }, false, false, "USD", null]).TaxPeriodWorkspace;
       const html = renderWithPresentation(createElement(Page, { id: period.id, orgId: "org-a" }), locale);
-      assert.ok(html.includes(escape(t("unknownType"))) && html.includes(escape(t("unknownStatus"))));
+      assert.ok(copyMarkup(html).includes(escape(t("unknownType"))) && copyMarkup(html).includes(escape(t("unknownStatus"))));
     }
     for (const status of ["open", "filed", "amended"]) assert.equal(taxPeriodStatusKey(status), status);
   }
@@ -158,14 +161,14 @@ test("create/file/settlement templates localize fields, busy controls and exact 
     assert.equal(create.includes('disabled=""'), busy);
     const File = loaded(list, [caller, busy]).FileSheet;
     const file = renderWithPresentation(createElement(File, { period, onClose: noop, onFiled: noop, orgId: "org-a" }), locale);
-    assert.ok(file.includes(escape(t("fileHelp", { name: caller }))) && file.includes(escape(t(busy ? "saving" : "markSubmitted"))));
+    assert.ok(copyMarkup(file).includes(escape(t("fileHelp", { name: caller }))) && copyMarkup(file).includes(escape(t(busy ? "saving" : "markSubmitted"))));
     for (const direction of ["pay", "refund"]) {
       const Settle = loaded(detail, ["bank-a", "12.50", direction, "2026-04-02", caller, busy]).SettleSheet;
       const settle = renderWithPresentation(createElement(Settle, { period, open: true, onClose: noop, onSettled: noop, orgId: "org-a", defaultIsRefund: false, netAmount: 1250n, currency: "USD" }), locale);
-      for (const key of ["settlementTitle", "whatHappened", direction === "pay" ? "paymentAccount" : "refundAccount", "accountPlaceholder", "date", "reference", busy ? "saving" : direction === "pay" ? "recordPayment" : "recordRefund"] as const) assert.ok(settle.includes(escape(t(key))), key);
-      assert.ok(settle.includes(escape(t("settlementHelp", { name: caller }))) && settle.includes(escape(t("settlementPreview", { amount: taxUiMoney(1250n, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
-      assert.ok(settle.includes('inputMode="decimal"') && settle.includes('value="12.50"') && settle.includes(escape(caller)) && !settle.includes("<script>"));
-      assert.equal(settle.includes('disabled=""'), busy);
+      for (const key of ["settlementTitle", "whatHappened", direction === "pay" ? "paymentAccount" : "refundAccount", "accountPlaceholder", "date", "reference", busy ? "saving" : direction === "pay" ? "recordPayment" : "recordRefund"] as const) assert.ok(copyMarkup(settle).includes(escape(t(key))), key);
+      assert.ok(copyMarkup(settle).includes(escape(t("settlementHelp", { name: caller }))) && copyMarkup(settle).includes(escape(t("settlementPreview", { amount: taxUiMoney(1250n, "USD", { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+      assert.ok(copyMarkup(settle).includes('inputMode="decimal"') && copyMarkup(settle).includes('value="12.50"') && copyMarkup(settle).includes(escape(caller)) && !copyMarkup(settle).includes("<script>"));
+      assert.equal(copyMarkup(settle).includes('disabled=""'), busy);
     }
   }
 });
@@ -180,7 +183,10 @@ test("actual Select element trees keep canonical period types and settlement dir
   for (const locale of locales) {
     const t = translator(locale);
     const Create = loaded(list, [], locale).CreatePeriodSheet as (props: Record<string, unknown>) => ReactNode;
-    const create = nodes(Create({ open: true, setOpen: noop, onCreated: noop, orgId: "org-a" }));
+    let createTree: ReactNode;
+    function CaptureCreate() { createTree = Create({ open: true, setOpen: noop, onCreated: noop, orgId: "org-a" }); return null; }
+    renderWithPresentation(createElement(CaptureCreate), locale);
+    const create = nodes(createTree);
     for (const value of ["monthly", "quarterly", "annual"] as const) assert.ok(create.some(el => el.props.value === value && el.props.children === t(value)));
     const Settle = loaded(detail, [], locale).SettleSheet as (props: Record<string, unknown>) => ReactNode;
     let settleTree: ReactNode;
@@ -198,11 +204,11 @@ test("settlement preview keeps currency scales, max safe values, zero and locali
     for (const [currency, amount] of [["USD", "12.50"], ["JPY", "1250"], ["IRR", "1250"], ["KWD", "1.250"], ["USD", "90071992547409.91"], ["JPY", "0"]]) {
       const preview = taxUiSettlement(amount, currency);
       const html = renderWithPresentation(createElement(SettlementPreview.TaxSettlementPreview, { amount, currency }), locale);
-      assert.ok(html.includes('role="status"') && html.includes(escape(t("settlementPreview", { amount: taxUiMoney(preview.amount, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
+      assert.ok(html.includes('role="status"') && copyMarkup(html).includes(escape(t("settlementPreview", { amount: taxUiMoney(preview.amount, currency, { locale, numerals: locale === "fa-IR" ? "arabext" : "latn" }) }))));
     }
     for (const [currency, amount] of [["USD", ""], ["USD", "0.005"], ["JPY", "0.1"], ["KWD", "0.0001"], ["USD", "90071992547409.92"], ["USD", "-1"], ["USD", "1e3"], ["USD", caller], ["BAD", "1"]]) {
       const html = renderWithPresentation(createElement(SettlementPreview.TaxSettlementPreview, { amount, currency }), locale);
-      assert.ok(html.includes('role="alert"') && html.includes(escape(t(amount === "" ? "enterAmount" : "invalidAmount"))));
+      assert.ok(html.includes('role="alert"') && copyMarkup(html).includes(escape(t(amount === "" ? "enterAmount" : "invalidAmount"))));
       assert.ok(!html.includes("<script>") && !html.includes("RangeError"));
     }
   }

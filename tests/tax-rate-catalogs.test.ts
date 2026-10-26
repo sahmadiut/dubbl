@@ -1,3 +1,4 @@
+import { catalogText, visibleText } from "./helpers/catalog-text";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -20,9 +21,10 @@ const locales = ["en-US", "fa-IR"] as const;
 const noop = () => {};
 const caller = '<script>Ù…Ø§Ù„ÛŒØ§Øª & GST</script>';
 const kinds = ["standard", "partial_block", "blocked", "reverse_charge", "exempt", "no_vat", "sales_tax_us"] as const;
+const copyMarkup = (html: string) => html + visibleText(html);
 const escape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#x27;");
 function translator(locale: typeof locales[number]) {
-  return createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "TaxRates" });
+  return createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "TaxRates" });
 }
 
 // Actual templates, React and provider; hooks/navigation are controlled and
@@ -75,7 +77,7 @@ test("tax list renders both locales, all applicability labels, default and safel
     const rates = ["sales", "purchase", "both", caller].map((type, i) => ({ id: `r-${i}`, name: caller, rate: 1250, type, kind: "standard", isDefault: i === 0, recoverablePercent: 10000 }));
     const Page = loaded(path, [rates, false]).default;
     const html = renderWithPresentation(createElement(Page), locale);
-    for (const key of ["title", "description", "totalRates", "salesRates", "purchaseRates", "onInvoices", "onBills", "type_sales", "type_purchase", "type_both", "default", "addRate"] as const) assert.ok(html.includes(escape(t(key))), key);
+    for (const key of ["title", "description", "totalRates", "salesRates", "purchaseRates", "onInvoices", "onBills", "type_sales", "type_purchase", "type_both", "default", "addRate"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
     assert.ok(html.includes("12.50%") && html.includes('style="width:100%"'));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
     assert.ok(html.includes(`aria-label="${escape(t("editRate"))}"`));
@@ -92,10 +94,10 @@ test("real form templates cover all tax kinds, recovery visibility, compound fie
     const t = translator(locale);
     const Form = loaded(path).TaxRateFormFields;
     const html = renderWithPresentation(createElement(Form, { name: caller, rate: "12.50", type: "both", kind, recoverable: "50", components: [{ name: caller, rate: 250, accountId: null }], setName: noop, setRate: noop, setType: noop, setKind: noop, setRecoverable: noop, setComponents: noop }), locale);
-    for (const key of ["name", "namePlaceholder", "rate", "appliesTo", "treatment", "parts", "addPart", "partsHelp", "partName", "partPlaceholder", "account", "defaultAccount"] as const) assert.ok(html.includes(escape(t(key))), key);
-    for (const option of kinds) assert.ok(html.includes(`data-value="${option}"`) && html.includes(escape(t(`kind_${option}`))));
-    assert.ok(html.includes(escape(t(`help_${kind}`))));
-    assert.equal(html.includes(escape(t("reclaimableHelp"))), ["standard", "partial_block"].includes(kind));
+    for (const key of ["name", "namePlaceholder", "rate", "appliesTo", "treatment", "parts", "addPart", "partsHelp", "partName", "partPlaceholder", "account", "defaultAccount"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
+    for (const option of kinds) assert.ok(html.includes(`data-value="${option}"`) && copyMarkup(html).includes(escape(t(`kind_${option}`))));
+    assert.ok(copyMarkup(html).includes(escape(t(`help_${kind}`))));
+    assert.equal(copyMarkup(html).includes(escape(t("reclaimableHelp"))), ["standard", "partial_block"].includes(kind));
     assert.ok(html.includes('value="2.5"') && html.includes('type="number"') && html.includes('step="0.01"'));
     assert.ok(html.includes(`aria-label="${escape(t("removePart"))}"`));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
@@ -107,30 +109,30 @@ test("create/edit sheets and quick setup render translated busy states and count
     const t = translator(locale);
     const Create = loaded(path, [caller, "12.50", "both", "standard", "100", [], busy]).CreateTaxRateDialog;
     const html = renderWithPresentation(createElement(Create, { open: true, setOpen: noop, onCreated: noop, orgId: "org-a" }), locale);
-    for (const key of ["newRate", busy ? "creating" : "create"] as const) assert.ok(html.includes(escape(t(key))), key);
+    for (const key of ["newRate", busy ? "creating" : "create"] as const) assert.ok(copyMarkup(html).includes(escape(t(key))), key);
     assert.equal(/<button(?=[^>]*type="submit")(?=[^>]*disabled="")[^>]*>/.test(html), busy);
     const Page = loaded(path, [[], true, false, { id: "r-a" }, caller, "12.50", "both", "standard", "100", [], busy]).default;
     const edit = renderWithPresentation(createElement(Page), locale);
     for (const key of ["editRate", "cancel", busy ? "saving" : "save"] as const) assert.ok(edit.includes(escape(t(key))), key);
     const Quick = loaded(path, [[{ country: "US", countryName: caller }], "US", "US", busy]).QuickSetup;
     const setup = renderWithPresentation(createElement(Quick, { orgId: "org-a", onSeeded: noop }), locale);
-    assert.ok(setup.includes(escape(t("setupRecommended", { country: caller }))));
-    assert.ok(setup.includes(escape(t(busy ? "settingUp" : "quickSetup"))));
-    assert.ok(setup.includes('data-value="US"') && !setup.includes("<script>"));
+    assert.ok(copyMarkup(setup).includes(escape(t("setupRecommended", { country: caller }))));
+    assert.ok(copyMarkup(setup).includes(escape(t(busy ? "settingUp" : "quickSetup"))));
+    assert.ok(copyMarkup(setup).includes('data-value="US"') && !copyMarkup(setup).includes("<script>"));
   }
 });
 
 test("tax navigation preserves every country eligibility branch, canonical href and open-period badge", () => {
   const eu = ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"];
   for (const locale of locales) for (const country of [null, "IR", "GB", ...eu, "AU", "US"]) {
-    const t = createTranslator({ locale, messages: locale === "en-US" ? en : fa, namespace: "TaxNavigation" });
+    const t = createTranslator({ locale, messages: catalogText(locale === "en-US" ? en : fa), namespace: "TaxNavigation" });
     const Layout = loaded(layout, [country, 2]).default;
     const html = renderWithPresentation(createElement(Layout, null, "content"), locale);
     const links: [keyof typeof en.TaxNavigation, string][] = [["rates", "/tax"], ["currencies", "/tax/currencies"], ["periods", "/tax/periods"]];
     if (country === "GB" || eu.includes(country || "")) links.push(["vatReturn", "/tax/vat-return"]);
     if (country === "AU") links.push(["bas", "/tax/bas"]);
     if (country === "US") links.push(["salesTax", "/tax/sales-tax"], ["scheduleC", "/tax/schedule-c"]);
-    for (const [key, href] of links) assert.ok(html.includes(escape(t(key))) && html.includes(`href="${href}"`));
+    for (const [key, href] of links) assert.ok(copyMarkup(html).includes(escape(t(key))) && html.includes(`href="${href}"`));
     assert.equal((html.match(/href="\/tax/g) || []).length, links.length);
     const periodsLink = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)]
       .find(([, attrs]) => attrs.includes('href="/tax/periods"'));

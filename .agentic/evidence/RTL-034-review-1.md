@@ -1,0 +1,15 @@
+# RTL-034 attributed self-review
+
+Codex, 2026-10-26, baseline fdbf3a3c6df6c2e2277b6b4ffead20ca091c37a9. Self-review is permitted by current START_HERE step 6 / CONTROLLER because human_review=false; no independent peer, native speaker, human or accountant is impersonated. See [attempt 1](RTL-034-attempt-1.md) for exhaustive nine-source audit, preserved contracts, actual checks, corrected failures and limits.
+
+## Findings
+
+- Eight repaired tax rate/currency/period/BAS/sales/Schedule-C/VAT views and one unchanged delegated navigation shell exhaust the assigned ownership. Caller names, statutory/technical IDs, complete journal references, canonical dates/rates and exact signed money are isolated without rewriting their values. Logical spacing/alignment, wrapping rows/actions, local table/sheet scrolling, distinct native label IDs, named picker/basis/search controls, pressed basis state and direction-aware navigation address the assigned accessibility/layout defects.
+- Forty-six existing tax consumer regressions preserve country branches, lifecycle/seeding/filing/settlement payloads and errors/retries, integer basis points, account/currency constraints, organization/cancellation guards, saved report labels/order, exact low digits/sums and canonical export/print/date/basis/drill semantics. Four new actual component/provider/callback/CSS tests independently cover four presentation combinations, escaped long Persian/English text, real isolation boundaries/labels, raw input callbacks, unchanged signed filed snapshots and comparison widths. No backend/schema/MCP/Stripe work or new operation was introduced.
+- Thirteen owned catalog values per locale add approved structural em tags only. Key count stays 10723 and names/plurals/wording remain. Fixture text comparison still includes original markup for attribute assertions and uses real production rich catalogs; actual bdi boundaries are asserted separately. The filing-status helper's daysText type is now ReactNode because its isolated date is presentation, not persisted or transmitted state.
+- Source-generation parse failures, old fixture assumptions and useLocale broad typing were caught and corrected before acceptance. Final checks passed: 50 unique tests, typecheck, scoped lint, full lint (zero errors / 21 existing warnings), catalogs, nine legacy checks, 417-column/1893-consumer inventory and whitespace. No assertion of wire/financial validation was removed to force green tests.
+- Native/browser/AT/output/legal/accounting/IRR and RTL-014/010/008/002 integration acceptance remain unclaimed; country statutory/date conventions and report worksheet limits are explicit. No required human gate is waived.
+
+## Decision
+
+Approve bounded RTL-034 technical source/component acceptance. Complete controller review and create the scoped local task commit. Do not push: this is the first task of the owner-authorized two-task batch, and the supervising parent will use a fresh agent for the next task and coordinate the push.

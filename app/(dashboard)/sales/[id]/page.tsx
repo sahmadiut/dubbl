@@ -1,5 +1,6 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -682,18 +683,18 @@ export default function InvoiceDetailPage() {
       <div className="space-y-6">
         {/* Top bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <Button variant="ghost" size="sm" asChild className="size-8 p-0">
-              <Link href="/sales" aria-label={t("back")}><ArrowLeft className="size-4" /></Link>
+              <Link href="/sales" aria-label={t("back")}><ArrowLeft className="size-4 rtl:rotate-180" /></Link>
             </Button>
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-lg font-semibold tracking-tight">{inv.invoiceNumber}</h1>
-                <Badge variant="outline" className={sc.class}>{invoiceStatusLabel(t, inv.status)}</Badge>
+              <div className="flex flex-wrap min-w-0 items-center gap-2.5">
+                <h1 className="text-lg font-semibold tracking-tight"><IdentifierText>{inv.invoiceNumber}</IdentifierText></h1>
+                <Badge variant="outline" className={sc.class}><BidiText>{invoiceStatusLabel(t, inv.status)}</BidiText></Badge>
                 {(inv.invoiceType === "deposit" || inv.invoiceType === "retainer") && (
                   <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
                     {inv.invoiceType === "deposit" ? t("depositInvoice") : t("retainerInvoice")}
-                    {inv.depositPercent != null && ` · ${(inv.depositPercent / 100).toFixed(inv.depositPercent % 100 === 0 ? 0 : 2)}%`}
+                    {inv.depositPercent != null && <>{" · "}<IdentifierText>{`${(inv.depositPercent / 100).toFixed(inv.depositPercent % 100 === 0 ? 0 : 2)}%`}</IdentifierText></>}
                   </Badge>
                 )}
                 {(inv.dunningLevel ?? 0) > 0 && (
@@ -707,8 +708,8 @@ export default function InvoiceDetailPage() {
                 )}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {inv.contact?.name || t("unknownContact")}
-                {inv.contact?.email && <span> · {inv.contact.email}</span>}
+                <BidiText>{inv.contact?.name || t("unknownContact")}</BidiText>
+                {inv.contact?.email && <span>{" · "}<IdentifierText>{inv.contact.email}</IdentifierText></span>}
               </p>
             </div>
           </div>
@@ -722,19 +723,21 @@ export default function InvoiceDetailPage() {
                   className="bg-emerald-600 hover:bg-emerald-700"
                   title={t("approveHint")}
                 >
-                  <ThumbsUp className="mr-2 size-4" />{t("approve")}</Button>
+                  <ThumbsUp className="me-2 size-4" />{t("approve")}</Button>
                 <Dialog open={rejectOpen} onOpenChange={(o) => { setRejectOpen(o); if (!o) setRejectReason(""); }}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" title={t("rejectHint")}>
-                      <X className="mr-2 size-4" />{t("reject")}</Button>
+                      <X className="me-2 size-4" />{t("reject")}</Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} className="max-h-dvh overflow-y-auto">
                     <DialogHeader><DialogTitle>{t("rejectTitle")}</DialogTitle></DialogHeader>
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">{t("rejectDescription")}</p>
                       <div className="space-y-2">
-                        <Label>{t("reason")}</Label>
+                        <Label htmlFor="invoice-reject-reason">{t("reason")}</Label>
                         <Input
+                          id="invoice-reject-reason"
+                          dir="auto"
                           value={rejectReason}
                           onChange={(e) => setRejectReason(e.target.value)}
                           placeholder={t("reasonPlaceholder")}
@@ -754,19 +757,19 @@ export default function InvoiceDetailPage() {
                 loading={submitting}
                 title={t("submitHint")}
               >
-                <ThumbsUp className="mr-2 size-4" />{t("submit")}</Button>
+                <ThumbsUp className="me-2 size-4" />{t("submit")}</Button>
             )}
             {inv.status === "draft" && (
               <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-                <Send className="mr-2 size-4" />{t("send")}</Button>
+                <Send className="me-2 size-4" />{t("send")}</Button>
             )}
             {["sent", "partial", "overdue"].includes(inv.status) && (
               <Dialog open={payOpen} onOpenChange={setPayOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                    <DollarSign className="mr-2 size-4" />{t("recordPayment")}</Button>
+                    <DollarSign className="me-2 size-4" />{t("recordPayment")}</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} className="max-h-dvh overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{t("recordPayment")}</DialogTitle>
                   </DialogHeader>
@@ -783,13 +786,13 @@ export default function InvoiceDetailPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("date")}</Label>
-                      <DatePicker value={payDate} onChange={setPayDate} placeholder={t("paymentDate")} />
+                      <Label id="invoice-payment-date-label">{t("date")}</Label>
+                      <div role="group" aria-labelledby="invoice-payment-date-label"><DatePicker value={payDate} onChange={setPayDate} placeholder={t("paymentDate")} /></div>
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("method")}</Label>
-                      <Select value={payMethod} onValueChange={setPayMethod}>
-                        <SelectTrigger>
+                      <Label htmlFor="invoice-payment-method">{t("method")}</Label>
+                      <Select dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} value={payMethod} onValueChange={setPayMethod}>
+                        <SelectTrigger id="invoice-payment-method" className="h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -803,14 +806,14 @@ export default function InvoiceDetailPage() {
                     </div>
                     {bankAccounts.length > 0 && (
                       <div className="space-y-2">
-                        <Label>{t("bankAccount")}</Label>
-                        <Select value={payBankAccountId} onValueChange={setPayBankAccountId}>
-                          <SelectTrigger>
+                        <Label htmlFor="invoice-payment-bank">{t("bankAccount")}</Label>
+                        <Select dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} value={payBankAccountId} onValueChange={setPayBankAccountId}>
+                          <SelectTrigger id="invoice-payment-bank" className="h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                             <SelectValue placeholder={t("bankPlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>
                             {bankAccounts.map((ba) => (
-                              <SelectItem key={ba.id} value={ba.id}>{ba.name}</SelectItem>
+                              <SelectItem key={ba.id} value={ba.id}><BidiText>{ba.name}</BidiText></SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -822,9 +825,9 @@ export default function InvoiceDetailPage() {
               </Dialog>
             )}
             <Button variant="outline" size="sm" onClick={handleDownloadPdf}>
-              <Download className="mr-2 size-4" />{t("downloadPdf")}</Button>
+              <Download className="me-2 size-4" />{t("downloadPdf")}</Button>
             <Button variant="outline" size="sm" onClick={handleDuplicate} loading={duplicating} title={t("duplicateHint")}>
-              <Copy className="mr-2 size-4" />{t("duplicate")}</Button>
+              <Copy className="me-2 size-4" />{t("duplicate")}</Button>
             {["sent", "partial", "overdue"].includes(inv.status) && (
               <Dialog open={interestOpen} onOpenChange={setInterestOpen}>
                 <DialogTrigger asChild>
@@ -833,9 +836,9 @@ export default function InvoiceDetailPage() {
                     size="sm"
                     title={t("interestHint")}
                   >
-                    <Percent className="mr-2 size-4" />{t("interestTitle")}</Button>
+                    <Percent className="me-2 size-4" />{t("interestTitle")}</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} className="max-h-dvh overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{t("interestTitle")}</DialogTitle>
                   </DialogHeader>
@@ -870,13 +873,13 @@ export default function InvoiceDetailPage() {
                 className="text-red-600"
                 title={t("writeOffHint")}
               >
-                <FileX className="mr-2 size-4" />{t("writeOff")}{" "}
-                <span className="ml-1 text-muted-foreground">{t("badDebt")}</span>
+                <FileX className="me-2 size-4" />{t("writeOff")}{" "}
+                <span className="ms-1 text-muted-foreground">{t("badDebt")}</span>
               </Button>
             )}
             {inv.status !== "void" && inv.status !== "paid" && (
               <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title={t("voidHint")}>
-                <Ban className="mr-2 size-4" />{t("cancelInvoice")}</Button>
+                <Ban className="me-2 size-4" />{t("cancelInvoice")}</Button>
             )}
           </div>
         </div>
@@ -914,28 +917,28 @@ export default function InvoiceDetailPage() {
               {/* Left: Bill to */}
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">{t("billTo")}</p>
-                <p className="text-sm font-semibold">{inv.contact?.name || t("unknown")}</p>
+                <p className="text-sm font-semibold"><BidiText>{inv.contact?.name || t("unknown")}</BidiText></p>
                 {inv.contact?.email && (
                   <div className="flex items-center gap-1.5 mt-1">
                     <Mail className="size-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{inv.contact.email}</span>
+                    <span className="text-xs text-muted-foreground"><IdentifierText>{inv.contact.email}</IdentifierText></span>
                   </div>
                 )}
               </div>
               {/* Right: Invoice meta */}
-              <div className="sm:text-right">
+              <div className="sm:text-end">
                 <div className="space-y-1.5">
                   <div className="flex sm:justify-end items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("invoice")}</span>
-                    <span className="text-sm font-mono font-semibold">{inv.invoiceNumber}</span>
+                    <span className="text-sm font-mono font-semibold"><IdentifierText>{inv.invoiceNumber}</IdentifierText></span>
                   </div>
                   <div className="flex sm:justify-end items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("issued")}</span>
-                    <span className="text-sm">{formatDate(inv.issueDate)}</span>
+                    <span className="text-sm"><IdentifierText>{formatDate(inv.issueDate)}</IdentifierText></span>
                   </div>
                   <div className="flex sm:justify-end items-center gap-3">
                     <span className="text-xs text-muted-foreground">{t("due")}</span>
-                    <span className="text-sm">{formatDate(inv.dueDate)}</span>
+                    <span className="text-sm"><IdentifierText>{formatDate(inv.dueDate)}</IdentifierText></span>
                     {overdueInfo && (
                       <span className={`text-[11px] font-medium ${overdueInfo.class}`}>{overdueInfo.label}</span>
                     )}
@@ -943,7 +946,7 @@ export default function InvoiceDetailPage() {
                   {inv.reference && (
                     <div className="flex sm:justify-end items-center gap-3">
                       <span className="text-xs text-muted-foreground">{t("ref")}</span>
-                      <span className="text-sm">{inv.reference}</span>
+                      <span className="text-sm"><BidiText>{inv.reference}</BidiText></span>
                     </div>
                   )}
                 </div>
@@ -956,37 +959,37 @@ export default function InvoiceDetailPage() {
             <table className="w-full min-w-[500px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/20">
-                  <th className="px-6 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-20">{t("qty")}</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("price")}</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("tax")}</th>
-                  <th className="px-6 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("amount")}</th>
+                  <th className="px-6 py-2.5 text-start text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t("description")}</th>
+                  <th className="px-4 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-20">{t("qty")}</th>
+                  <th className="px-4 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("price")}</th>
+                  <th className="px-4 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("tax")}</th>
+                  <th className="px-6 py-2.5 text-end text-[11px] font-semibold uppercase tracking-wide text-muted-foreground w-28">{t("amount")}</th>
                 </tr>
               </thead>
               <tbody>
                 {inv.lines.map((line, i) => (
                   <tr key={line.id} className={i < inv.lines.length - 1 ? "border-b border-dashed" : ""}>
                     <td className="px-6 py-3">
-                      <p>{line.description}</p>
+                      <p><BidiText>{line.description}</BidiText></p>
                       {line.account && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{line.account.code} · {line.account.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5"><IdentifierText>{line.account.code}</IdentifierText> · <BidiText>{line.account.name}</BidiText></p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums">{line.quantity / 100}</td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums text-muted-foreground">{formatMoney(line.unitPrice, inv.currencyCode, unitPresentation)}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                    <td className="px-4 py-3 text-end font-mono tabular-nums"><IdentifierText>{line.quantity / 100}</IdentifierText></td>
+                    <td className="px-4 py-3 text-end font-mono tabular-nums text-muted-foreground"><BidiText>{formatMoney(line.unitPrice, inv.currencyCode, unitPresentation)}</BidiText></td>
+                    <td className="px-4 py-3 text-end tabular-nums text-muted-foreground">
                       {line.taxRate ? (
                         <div>
-                          <span className="font-mono">{(line.taxRate.rate / 100).toFixed(2)}%</span>
+                          <span className="font-mono"><IdentifierText>{`${(line.taxRate.rate / 100).toFixed(2)}%`}</IdentifierText></span>
                           {line.taxAmount > 0 && (
-                            <p className="text-[11px] font-mono">{formatMoney(line.taxAmount, inv.currencyCode, unitPresentation)}</p>
+                            <p className="text-[11px] font-mono"><BidiText>{formatMoney(line.taxAmount, inv.currencyCode, unitPresentation)}</BidiText></p>
                           )}
                         </div>
                       ) : (
                         <span className="text-xs">{t("noTax")}</span>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-right font-mono tabular-nums font-medium">{formatMoney(line.amount, inv.currencyCode, unitPresentation)}</td>
+                    <td className="px-6 py-3 text-end font-mono tabular-nums font-medium"><BidiText>{formatMoney(line.amount, inv.currencyCode, unitPresentation)}</BidiText></td>
                   </tr>
                 ))}
               </tbody>
@@ -999,18 +1002,18 @@ export default function InvoiceDetailPage() {
               <div className="w-full max-w-xs space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("subtotal")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(inv.subtotal, inv.currencyCode, unitPresentation)}</span>
+                  <span className="font-mono tabular-nums"><BidiText>{formatMoney(inv.subtotal, inv.currencyCode, unitPresentation)}</BidiText></span>
                 </div>
                 {inv.taxTotal > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("tax")}</span>
-                    <span className="font-mono tabular-nums">{formatMoney(inv.taxTotal, inv.currencyCode, unitPresentation)}</span>
+                    <span className="font-mono tabular-nums"><BidiText>{formatMoney(inv.taxTotal, inv.currencyCode, unitPresentation)}</BidiText></span>
                   </div>
                 )}
                 <div className="h-px bg-border my-1" />
                 <div className="flex justify-between text-sm font-semibold">
                   <span>{t("total")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(inv.total, inv.currencyCode, unitPresentation)}</span>
+                  <span className="font-mono tabular-nums"><BidiText>{formatMoney(inv.total, inv.currencyCode, unitPresentation)}</BidiText></span>
                 </div>
                 {base && base.baseCurrency !== inv.currencyCode && (
                   <>
@@ -1050,9 +1053,9 @@ export default function InvoiceDetailPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Payment progress */}
           <div className="rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap gap-2 items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("paymentStatus")}</p>
-              <span className="text-xs font-mono text-muted-foreground">{paidPercent}%</span>
+              <span className="text-xs font-mono text-muted-foreground"><IdentifierText>{`${paidPercent}%`}</IdentifierText></span>
             </div>
             {/* Progress bar */}
             <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden mb-4">
@@ -1075,7 +1078,7 @@ export default function InvoiceDetailPage() {
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("paidTab")}</p>
-                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5">{formatMoney(inv.amountPaid, inv.currencyCode, unitPresentation)}</p>
+                <p className="text-sm font-mono font-semibold tabular-nums text-emerald-600 mt-0.5"><BidiText>{formatMoney(inv.amountPaid, inv.currencyCode, unitPresentation)}</BidiText></p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("due")}</p>
@@ -1098,13 +1101,13 @@ export default function InvoiceDetailPage() {
               {inv.reference && (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("reference")}</p>
-                  <p className="text-sm mt-0.5">{inv.reference}</p>
+                  <p className="text-sm mt-0.5"><BidiText>{inv.reference}</BidiText></p>
                 </div>
               )}
               {inv.notes ? (
                 <div>
                   <p className="text-[11px] text-muted-foreground">{t("notes")}</p>
-                  <p className="text-sm mt-0.5 whitespace-pre-wrap">{inv.notes}</p>
+                  <p className="text-sm mt-0.5 whitespace-pre-wrap"><BidiText>{inv.notes}</BidiText></p>
                 </div>
               ) : !inv.reference ? (
                 <p className="text-sm text-muted-foreground">{t("noNotes")}</p>
@@ -1112,7 +1115,7 @@ export default function InvoiceDetailPage() {
               <div>
                 <p className="text-[11px] text-muted-foreground">{t("dates")}</p>
                 <p className="text-sm mt-0.5">
-                  {formatDate(inv.issueDate)} · {formatDate(inv.dueDate)}
+                  <IdentifierText>{formatDate(inv.issueDate)}</IdentifierText> · <IdentifierText>{formatDate(inv.dueDate)}</IdentifierText>
                 </p>
               </div>
             </div>
@@ -1133,17 +1136,17 @@ export default function InvoiceDetailPage() {
                 {credits.map((c) => {
                   const applyAmount = c.amountRemaining < inv.amountDue ? c.amountRemaining : inv.amountDue;
                   return (
-                    <div key={c.id} className="flex items-center justify-between px-5 py-3">
+                    <div key={c.id} className="flex flex-wrap gap-2 items-center justify-between px-5 py-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 shrink-0">
                           <Wallet className="size-4 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-mono font-semibold">{formatMoney(c.amountRemaining, c.currencyCode, unitPresentation)}</span>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{invoiceCreditLabel(t, c.sourceType)}</Badge>
+                          <div className="flex flex-wrap min-w-0 items-center gap-2">
+                            <span className="text-sm font-mono font-semibold"><BidiText>{formatMoney(c.amountRemaining, c.currencyCode, unitPresentation)}</BidiText></span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0"><BidiText>{invoiceCreditLabel(t, c.sourceType)}</BidiText></Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.date)}{c.notes ? ` · ${c.notes}` : ""}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5"><IdentifierText>{formatDate(c.date)}</IdentifierText>{c.notes && <>{" · "}<BidiText>{c.notes}</BidiText></>}</p>
                         </div>
                       </div>
                       <Button
@@ -1152,9 +1155,10 @@ export default function InvoiceDetailPage() {
                         disabled={c.currencyCode !== inv.currencyCode || applyAmount <= 0n}
                         onClick={() => handleApplyCredit(c)}
                         loading={applyingCreditId === c.id}
+                        className="h-auto min-h-8 max-w-full whitespace-normal"
                         title={t("applyHint", { amount: formatMoney(applyAmount, c.currencyCode, unitPresentation) })}
                       >
-                        {t("apply", { amount: formatMoney(applyAmount, c.currencyCode, unitPresentation) })}
+                        <BidiText>{t("apply", { amount: formatMoney(applyAmount, c.currencyCode, unitPresentation) })}</BidiText>
                       </Button>
                     </div>
                   );
@@ -1166,7 +1170,7 @@ export default function InvoiceDetailPage() {
         {/* Document Details (snapshot) */}
         {inv.status !== "draft" && (
           <div className="rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap gap-2 items-center justify-between mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("documentDetails")}</p>
               <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={openSnapshotEdit}>
                 <Pencil className="size-3" />{t("edit")}</Button>
@@ -1174,19 +1178,19 @@ export default function InvoiceDetailPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-[11px] text-muted-foreground mb-1">{t("from")}</p>
-                <p className="text-sm font-medium">{senderSnapshot?.name || "-"}</p>
-                {senderSnapshot?.address && <p className="text-xs text-muted-foreground">{senderSnapshot.address}</p>}
-                {senderSnapshot?.email && <p className="text-xs text-muted-foreground">{senderSnapshot.email}</p>}
-                {senderSnapshot?.phone && <p className="text-xs text-muted-foreground">{senderSnapshot.phone}</p>}
-                {senderSnapshot?.taxId && <p className="text-xs text-muted-foreground">{t("senderTax", { value: senderSnapshot.taxId })}</p>}
-                {senderSnapshot?.registrationNumber && <p className="text-xs text-muted-foreground">{t("senderReg", { value: senderSnapshot.registrationNumber })}</p>}
+                <p className="text-sm font-medium"><BidiText>{senderSnapshot?.name || "-"}</BidiText></p>
+                {senderSnapshot?.address && <p className="text-xs text-muted-foreground"><BidiText>{senderSnapshot.address}</BidiText></p>}
+                {senderSnapshot?.email && <p className="text-xs text-muted-foreground"><IdentifierText>{senderSnapshot.email}</IdentifierText></p>}
+                {senderSnapshot?.phone && <p className="text-xs text-muted-foreground"><IdentifierText>{senderSnapshot.phone}</IdentifierText></p>}
+                {senderSnapshot?.taxId && <p className="text-xs text-muted-foreground"><BidiText>{t("senderTax", { value: senderSnapshot.taxId })}</BidiText></p>}
+                {senderSnapshot?.registrationNumber && <p className="text-xs text-muted-foreground"><BidiText>{t("senderReg", { value: senderSnapshot.registrationNumber })}</BidiText></p>}
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground mb-1">{t("billTo")}</p>
-                <p className="text-sm font-medium">{recipientSnapshot?.name || inv.contact?.name || "-"}</p>
-                {(recipientSnapshot?.address) && <p className="text-xs text-muted-foreground">{recipientSnapshot.address}</p>}
-                {(recipientSnapshot?.email || inv.contact?.email) && <p className="text-xs text-muted-foreground">{recipientSnapshot?.email || inv.contact?.email}</p>}
-                {recipientSnapshot?.taxNumber && <p className="text-xs text-muted-foreground">{t("recipientTax", { value: recipientSnapshot.taxNumber })}</p>}
+                <p className="text-sm font-medium"><BidiText>{recipientSnapshot?.name || inv.contact?.name || "-"}</BidiText></p>
+                {(recipientSnapshot?.address) && <p className="text-xs text-muted-foreground"><BidiText>{recipientSnapshot.address}</BidiText></p>}
+                {(recipientSnapshot?.email || inv.contact?.email) && <p className="text-xs text-muted-foreground"><IdentifierText>{recipientSnapshot?.email || inv.contact?.email}</IdentifierText></p>}
+                {recipientSnapshot?.taxNumber && <p className="text-xs text-muted-foreground"><BidiText>{t("recipientTax", { value: recipientSnapshot.taxNumber })}</BidiText></p>}
               </div>
             </div>
           </div>
@@ -1194,53 +1198,53 @@ export default function InvoiceDetailPage() {
 
         {/* Snapshot Edit Sheet */}
         <Sheet open={snapshotSheetOpen} onOpenChange={setSnapshotSheetOpen}>
-          <SheetContent side="right" className="sm:max-w-md w-full overflow-y-auto">
+          <SheetContent side={unitPresentation.locale === "fa-IR" ? "left" : "right"} dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} className="sm:max-w-md w-full max-h-dvh overflow-y-auto">
             <SheetHeader>
               <SheetTitle>{t("editDocument")}</SheetTitle>
             </SheetHeader>
             <div className="flex-1 space-y-4 px-4 pb-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">{t("sender")}</p>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("name")}</Label>
-                <Input value={senderName} onChange={(e) => setSenderName(e.target.value)} />
+                <Label htmlFor="invoice-senderName" className="text-xs">{t("name")}</Label>
+                <Input id="invoice-senderName" dir="auto" value={senderName} onChange={(e) => setSenderName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("address")}</Label>
-                <Textarea value={senderAddress} onChange={(e) => setSenderAddress(e.target.value)} rows={2} className="text-xs" />
+                <Label htmlFor="invoice-senderAddress" className="text-xs">{t("address")}</Label>
+                <Textarea id="invoice-senderAddress" dir="auto" value={senderAddress} onChange={(e) => setSenderAddress(e.target.value)} rows={2} className="text-xs" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("email")}</Label>
-                <Input value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
+                <Label htmlFor="invoice-senderEmail" className="text-xs">{t("email")}</Label>
+                <Input id="invoice-senderEmail" dir="ltr" value={senderEmail} onChange={(e) => setSenderEmail(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("phone")}</Label>
-                <Input value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
+                <Label htmlFor="invoice-senderPhone" className="text-xs">{t("phone")}</Label>
+                <Input id="invoice-senderPhone" dir="ltr" value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("taxId")}</Label>
-                <Input value={senderTaxId} onChange={(e) => setSenderTaxId(e.target.value)} />
+                <Label htmlFor="invoice-senderTaxId" className="text-xs">{t("taxId")}</Label>
+                <Input id="invoice-senderTaxId" dir="ltr" value={senderTaxId} onChange={(e) => setSenderTaxId(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("registrationNumber")}</Label>
-                <Input value={senderReg} onChange={(e) => setSenderReg(e.target.value)} />
+                <Label htmlFor="invoice-senderReg" className="text-xs">{t("registrationNumber")}</Label>
+                <Input id="invoice-senderReg" dir="ltr" value={senderReg} onChange={(e) => setSenderReg(e.target.value)} />
               </div>
 
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 pt-2">{t("recipient")}</p>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("name")}</Label>
-                <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
+                <Label htmlFor="invoice-recipientName" className="text-xs">{t("name")}</Label>
+                <Input id="invoice-recipientName" dir="auto" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("address")}</Label>
-                <Textarea value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} rows={2} className="text-xs" />
+                <Label htmlFor="invoice-recipientAddress" className="text-xs">{t("address")}</Label>
+                <Textarea id="invoice-recipientAddress" dir="auto" value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} rows={2} className="text-xs" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("email")}</Label>
-                <Input value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} />
+                <Label htmlFor="invoice-recipientEmail" className="text-xs">{t("email")}</Label>
+                <Input id="invoice-recipientEmail" dir="ltr" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("taxNumber")}</Label>
-                <Input value={recipientTaxNumber} onChange={(e) => setRecipientTaxNumber(e.target.value)} />
+                <Label htmlFor="invoice-recipientTaxNumber" className="text-xs">{t("taxNumber")}</Label>
+                <Input id="invoice-recipientTaxNumber" dir="ltr" value={recipientTaxNumber} onChange={(e) => setRecipientTaxNumber(e.target.value)} />
               </div>
             </div>
             <SheetFooter>
@@ -1250,7 +1254,7 @@ export default function InvoiceDetailPage() {
                 disabled={snapshotSaving || !senderName.trim()}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
-                {snapshotSaving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                {snapshotSaving ? <Loader2 className="me-2 size-4 animate-spin" /> : null}
                 {t("save")}
               </Button>
             </SheetFooter>
@@ -1266,20 +1270,20 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="divide-y">
               {payments.map((p) => (
-                <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                <div key={p.id} className="flex flex-wrap gap-2 items-center justify-between px-5 py-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 shrink-0">
                       <Banknote className="size-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-mono font-medium">{p.paymentNumber}</span>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{invoiceMethodLabel(t, p.method)}</Badge>
+                      <div className="flex flex-wrap min-w-0 items-center gap-2">
+                        <span className="text-sm font-mono font-medium"><IdentifierText>{p.paymentNumber}</IdentifierText></span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0"><BidiText>{invoiceMethodLabel(t, p.method)}</BidiText></Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formatDate(p.date)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5"><IdentifierText>{formatDate(p.date)}</IdentifierText></p>
                     </div>
                   </div>
-                  <span className="text-sm font-mono font-semibold text-emerald-600 shrink-0">{formatMoney(p.amount, p.currencyCode, unitPresentation)}</span>
+                  <span className="text-sm font-mono font-semibold text-emerald-600 shrink-0"><BidiText>{formatMoney(p.amount, p.currencyCode, unitPresentation)}</BidiText></span>
                 </div>
               ))}
             </div>

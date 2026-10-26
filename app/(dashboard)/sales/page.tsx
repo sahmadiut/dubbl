@@ -1,5 +1,6 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -110,19 +111,19 @@ function buildColumns(
       header: t("number"),
       sortKey: "number",
       className: "w-32",
-      render: (r) => <span className="font-mono text-sm">{r.invoiceNumber}</span>,
+      render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.invoiceNumber}</IdentifierText></span>,
     },
     {
       key: "contact",
       header: t("customer"),
-      render: (r) => <span className="text-sm font-medium">{r.contact?.name || "-"}</span>,
+      render: (r) => <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>,
     },
     {
       key: "date",
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.issueDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.issueDate}</IdentifierText></span>,
     },
     {
       key: "due",
@@ -132,8 +133,8 @@ function buildColumns(
       render: (r) => {
         const info = getOverdueInfo(t, r.dueDate, r.status);
         return (
-          <div className="flex items-center gap-2">
-            <span className="text-sm">{r.dueDate}</span>
+          <div className="flex flex-wrap min-w-0 items-center gap-2">
+            <span className="text-sm"><IdentifierText>{r.dueDate}</IdentifierText></span>
             {info && (
               <span className={`text-[11px] ${info.color}`}>{info.label}</span>
             )}
@@ -147,7 +148,7 @@ function buildColumns(
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {invoiceStatusLabel(t, r.status)}
+          <BidiText>{invoiceStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -155,16 +156,16 @@ function buildColumns(
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
-        <span className="font-mono text-sm tabular-nums">{formatMoney(r.total, r.currencyCode, unitPresentation)}</span>
+        <span className="font-mono text-sm tabular-nums"><BidiText>{formatMoney(r.total, r.currencyCode, unitPresentation)}</BidiText></span>
       ),
     },
     {
       key: "due-amount",
       header: t("balance"),
       sortKey: "amountDue",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => {
         const color = r.amountDue < 0
           ? "text-emerald-600"
@@ -173,7 +174,7 @@ function buildColumns(
             : "";
         return (
           <span className={`font-mono text-sm tabular-nums ${color}`}>
-            {formatMoney(r.amountDue, r.currencyCode, unitPresentation)}
+            <BidiText>{formatMoney(r.amountDue, r.currencyCode, unitPresentation)}</BidiText>
           </span>
         );
       },
@@ -507,7 +508,7 @@ export default function InvoicesPage() {
               size="lg"
               className="mt-5 bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />{t("newInvoice")}</Button>
+              <Plus className="me-2 size-4" />{t("newInvoice")}</Button>
           </div>
 
           {/* Preview stat cards (empty) */}
@@ -519,7 +520,7 @@ export default function InvoicesPage() {
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-dashed p-3 text-center">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-                <p className="mt-1 text-sm font-mono font-medium text-muted-foreground">{value}</p>
+                <p className="mt-1 text-sm font-mono font-medium text-muted-foreground"><BidiText>{value}</BidiText></p>
               </div>
             ))}
           </div>
@@ -563,13 +564,13 @@ export default function InvoicesPage() {
                 { key: "31-60" as const, color: "bg-orange-500", label: t("daysTwo") },
                 { key: "60+" as const, color: "bg-red-500", label: t("daysThree") },
               ] as const).map(({ key, color, label }) => (
-                <div key={key} className="flex items-center justify-between text-xs">
+                <div key={key} className="flex flex-wrap gap-2 items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className={`inline-block size-2 rounded-full ${color}`} />
                     <span className="text-muted-foreground">{label}</span>
                   </div>
                   <span className="font-mono tabular-nums">
-                    {aging[key]?.count || 0} · {summary?.currencyCode ? formatMoney(aging[key]?.amount || 0n, summary.currencyCode, unitPresentation) : "\u2014"}
+                    <BidiText>{aging[key]?.count || 0}</BidiText>{" · "}<BidiText>{summary?.currencyCode ? formatMoney(aging[key]?.amount || 0n, summary.currencyCode, unitPresentation) : "\u2014"}</BidiText>
                   </span>
                 </div>
               ))}
@@ -580,7 +581,7 @@ export default function InvoicesPage() {
         {/* Recent Payments */}
         {payments.length > 0 && (
           <div className="rounded-lg border p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("recentPayments")}</p>
               <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground px-2" onClick={() => router.push("/sales/payments")}>{t("viewAll")}</Button>
             </div>
@@ -588,16 +589,16 @@ export default function InvoicesPage() {
               {payments.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between py-1.5 text-sm"
+                  className="flex flex-wrap gap-2 items-center justify-between py-1.5 text-sm"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2.5 min-w-0">
                     <Banknote className="size-3.5 text-emerald-600 shrink-0" />
-                    <span className="font-mono text-xs">{p.paymentNumber}</span>
-                    <span className="text-xs text-muted-foreground truncate">{p.contact?.name || "-"}</span>
-                    <span className="text-[11px] text-muted-foreground hidden sm:inline">{p.date}</span>
+                    <span className="font-mono text-xs"><IdentifierText>{p.paymentNumber}</IdentifierText></span>
+                    <span className="min-w-0 text-xs text-muted-foreground"><BidiText>{p.contact?.name || "-"}</BidiText></span>
+                    <span className="text-[11px] text-muted-foreground hidden sm:inline"><IdentifierText>{p.date}</IdentifierText></span>
                   </div>
-                  <span className="text-xs font-mono font-medium text-emerald-600 shrink-0 ml-2">
-                    {formatMoney(p.amount, p.currencyCode, unitPresentation)}
+                  <span className="text-xs font-mono font-medium text-emerald-600 shrink-0 ms-2">
+                    <BidiText>{formatMoney(p.amount, p.currencyCode, unitPresentation)}</BidiText>
                   </span>
                 </div>
               ))}
@@ -611,8 +612,8 @@ export default function InvoicesPage() {
       {/* Invoice table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList aria-label={t("status")} className="max-w-full justify-start overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftTab")}</TabsTrigger>
               <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentTab")}</TabsTrigger>
@@ -627,17 +628,19 @@ export default function InvoicesPage() {
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />{t("newInvoice")}</Button>
+            <Plus className="me-2 size-4" />{t("newInvoice")}</Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              aria-label={t("search")}
+              dir="auto"
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
           <div className="flex items-center gap-1.5">
@@ -659,6 +662,7 @@ export default function InvoicesPage() {
             />
           </div>
           <Select
+            dir={unitPresentation.locale === "fa-IR" ? "rtl" : "ltr"}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -666,7 +670,7 @@ export default function InvoicesPage() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sort")} className="h-auto min-h-8 w-44 max-w-full text-xs *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("sort")} />
             </SelectTrigger>
             <SelectContent>
@@ -688,7 +692,7 @@ export default function InvoicesPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
-              <X className="mr-1 size-3" />{t("clearFilters")}</Button>
+              <X className="me-1 size-3" />{t("clearFilters")}</Button>
           )}
         </div>
 
@@ -712,9 +716,9 @@ export default function InvoicesPage() {
               onClick={() => runBulkAction("send-reminder", remindableSelected.map((i) => i.id))}
             >
               {bulkRunning ? (
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                <Loader2 className="me-1.5 size-3.5 animate-spin" />
               ) : (
-                <Send className="mr-1.5 size-3.5" />
+                <Send className="me-1.5 size-3.5" />
               )}
               {t("sendReminder")}
               {remindableSelected.length > 0 && ` (${remindableSelected.length})`}
@@ -727,9 +731,9 @@ export default function InvoicesPage() {
               onClick={() => runBulkAction("mark-as-sent", draftSelected.map((i) => i.id))}
             >
               {bulkRunning ? (
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                <Loader2 className="me-1.5 size-3.5 animate-spin" />
               ) : (
-                <CheckCircle2 className="mr-1.5 size-3.5" />
+                <CheckCircle2 className="me-1.5 size-3.5" />
               )}
               {t("markSent")}
               {draftSelected.length > 0 && ` (${draftSelected.length})`}
@@ -737,11 +741,11 @@ export default function InvoicesPage() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 text-xs text-muted-foreground ml-auto"
+              className="h-8 text-xs text-muted-foreground ms-auto"
               onClick={clearSelection}
               disabled={bulkRunning}
             >
-              <X className="mr-1 size-3" />{t("clear")}</Button>
+              <X className="me-1 size-3" />{t("clear")}</Button>
           </div>
         )}
 
@@ -765,7 +769,7 @@ export default function InvoicesPage() {
         {/* Infinite scroll sentinel & count */}
         {!refetching && !pendingSearch && filteredInvoices.length > 0 && (
           <>
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap gap-2 items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
                 {t("showing", { shown: invoices.length, count: totalCount })}
               </p>

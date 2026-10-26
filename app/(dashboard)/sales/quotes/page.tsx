@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
@@ -53,26 +56,26 @@ export default function QuotesPage() {
       key: "number",
       header: t("number"),
       className: "w-32",
-      render: (r) => <span className="font-mono text-sm">{r.quoteNumber}</span>,
+      render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.quoteNumber}</IdentifierText></span>,
     },
     {
       key: "contact",
       header: t("customer"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
       key: "date",
       header: t("date"),
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.issueDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.issueDate}</IdentifierText></span>,
     },
     {
       key: "expiry",
       header: t("expires"),
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.expiryDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.expiryDate}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -80,17 +83,17 @@ export default function QuotesPage() {
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {quoteStatusLabel(t, r.status)}
+          <BidiText>{quoteStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
     {
       key: "total",
       header: t("total"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {quoteUiMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{quoteUiMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -140,7 +143,7 @@ export default function QuotesPage() {
 
   if (quotes.length === 0 && statusFilter === "all") {
     return (
-      <BlurReveal>
+      <BlurReveal className="min-w-0 [overflow-wrap:anywhere]">
         <div className="flex items-start px-3 sm:px-6 pt-16 pb-12">
           <div className="grid w-full gap-10 lg:grid-cols-2 lg:gap-16 items-center">
             {/* Left: text + CTA */}
@@ -153,18 +156,18 @@ export default function QuotesPage() {
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md">
                 {t("emptyDescription")}
               </p>
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Button
                   onClick={() => openDrawer("quote")}
                   size="lg"
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start"
                 >
-                  <Plus className="mr-2 size-4" />
+                  <Plus className="me-2 size-4" />
                   {t("newQuote")}
                 </Button>
               </div>
               {/* Mini stats */}
-              <div className="mt-8 flex gap-4 sm:gap-6 text-center">
+              <div className="mt-8 flex flex-wrap gap-4 sm:gap-6 text-center">
                 {[
                   { label: t("sentHeading"), value: "0" },
                   { label: t("acceptedHeading"), value: "0" },
@@ -181,27 +184,27 @@ export default function QuotesPage() {
             {/* Right: visual conversion flow */}
             <div className="relative hidden lg:block">
               {/* Quote card */}
-              <div className="rounded-xl border bg-card p-5 shadow-sm max-w-xs ml-auto">
+              <div className="rounded-xl border bg-card p-5 shadow-sm max-w-xs ms-auto">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <ScrollText className="size-4 text-purple-500" />
-                    <span className="text-xs font-mono text-muted-foreground">QTE-0001</span>
+                    <span className="text-xs font-mono text-muted-foreground"><IdentifierText>QTE-0001</IdentifierText></span>
                   </div>
                   <span className="rounded-full border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">{t("accepted")}</span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{t("sampleWebsite")}</span>
-                    <span className="font-mono text-muted-foreground">{exampleMoney(240000n, "USD", unitPresentation)}</span>
+                    <span className="font-mono text-muted-foreground"><BidiText>{exampleMoney(240000n, "USD", unitPresentation)}</BidiText></span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{t("sampleSeo")}</span>
-                    <span className="font-mono text-muted-foreground">{exampleMoney(80000n, "USD", unitPresentation)}</span>
+                    <span className="font-mono text-muted-foreground"><BidiText>{exampleMoney(80000n, "USD", unitPresentation)}</BidiText></span>
                   </div>
                   <div className="h-px bg-border my-1" />
                   <div className="flex justify-between text-xs font-medium">
                     <span>{t("total")}</span>
-                    <span className="font-mono">{exampleMoney(320000n, "USD", unitPresentation)}</span>
+                    <span className="font-mono"><BidiText>{exampleMoney(320000n, "USD", unitPresentation)}</BidiText></span>
                   </div>
                 </div>
               </div>
@@ -216,11 +219,11 @@ export default function QuotesPage() {
               </div>
 
               {/* Invoice card (faded) */}
-              <div className="rounded-xl border border-dashed bg-card/50 p-5 max-w-xs ml-auto opacity-50">
+              <div className="rounded-xl border border-dashed bg-card/50 p-5 max-w-xs ms-auto opacity-50">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <FileText className="size-4 text-blue-500" />
-                    <span className="text-xs font-mono text-muted-foreground">INV-0001</span>
+                    <span className="text-xs font-mono text-muted-foreground"><IdentifierText>INV-0001</IdentifierText></span>
                   </div>
                   <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{t("draft")}</span>
                 </div>
@@ -228,7 +231,7 @@ export default function QuotesPage() {
                   <div className="h-2 w-28 rounded bg-muted" />
                   <div className="h-2 w-20 rounded bg-muted" />
                   <div className="h-px bg-border my-1" />
-                  <div className="h-2.5 w-24 rounded bg-muted ml-auto" />
+                  <div className="h-2.5 w-24 rounded bg-muted ms-auto" />
                 </div>
               </div>
             </div>
@@ -239,7 +242,7 @@ export default function QuotesPage() {
   }
 
   return (
-    <BlurReveal className="space-y-10">
+    <BlurReveal className="space-y-10 min-w-0 [overflow-wrap:anywhere]">
       <Section title={t("overview")} description={t("overviewDescription")}>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3 [overflow-wrap:anywhere]">
@@ -251,9 +254,9 @@ export default function QuotesPage() {
             <Button
               onClick={() => openDrawer("quote")}
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newQuote")}
             </Button>
           </div>
@@ -264,8 +267,8 @@ export default function QuotesPage() {
 
       <Section title={t("quotes")} description={t("listDescription")}>
         <div className="space-y-4">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={localeDirection(unitPresentation.locale)} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
               <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentHeading")}</TabsTrigger>

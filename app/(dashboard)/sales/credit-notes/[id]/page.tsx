@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -210,19 +213,19 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
     });
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (loading) return <div className="space-y-6 min-w-0 [overflow-wrap:anywhere]"><PageHeader title={t("loading")} /></div>;
   if (error) return <p role="alert" className="text-sm text-destructive">{error}</p>;
-  if (!cn) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
+  if (!cn) return <div className="space-y-6 min-w-0 [overflow-wrap:anywhere]"><PageHeader title={t("notFound")} /></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 [overflow-wrap:anywhere]">
       <PageHeader title={cn.creditNoteNumber} description={t("recipient", { name: cn.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/credit-notes"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+          <Link href="/sales/credit-notes"><ArrowLeft className="me-2 size-4 rtl:rotate-180" />{t("back")}</Link>
         </Button>
         {cn.status === "draft" && (
-          <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-            <Send className="mr-2 size-4" />{t("send")}
+          <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start">
+            <Send className="me-2 size-4" />{t("send")}
           </Button>
         )}
         {cn.status === "sent" && cn.amountRemaining > 0n && (
@@ -231,45 +234,46 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
             if (open) { setInvoiceLoaded(null); setApplyInvoiceId(""); setApplyAmount(""); }
           }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title={t("applyHint")}>
-                <FileText className="mr-2 size-4" />{t("applyAction")}
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start" title={t("applyHint")}>
+                <FileText className="me-2 size-4" />{t("applyAction")}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent dir={localeDirection(unitPresentation.locale)} className="max-h-dvh overflow-y-auto [overflow-wrap:anywhere]">
               <DialogHeader>
                 <DialogTitle>{t("applyTitle")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>{t("invoice")}</Label>
-                  <Select value={applyInvoiceId} onValueChange={setApplyInvoiceId}>
-                    <SelectTrigger>
+                  <Label htmlFor="credit-apply-invoice">{t("invoice")}</Label>
+                  <Select dir={localeDirection(unitPresentation.locale)} value={applyInvoiceId} onValueChange={setApplyInvoiceId}>
+                    <SelectTrigger id="credit-apply-invoice" className="h-auto min-h-9 whitespace-normal *:data-[slot=select-value]:line-clamp-none">
                       <SelectValue placeholder={t("selectInvoice")} />
                     </SelectTrigger>
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: creditNoteUiMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}
+                          <BidiText>{t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: creditNoteUiMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}</BidiText>
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          {t("noInvoices", { currency: currencyLabel(cn.currencyCode, unitPresentation.locale) })}
+                          <BidiText>{t("noInvoices", { currency: currencyLabel(cn.currencyCode, unitPresentation.locale) })}</BidiText>
                         </div>
                       )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("amount")}</Label>
+                  <p className="text-sm font-medium">{t("amount")}</p>
                   <InvoiceAmountInput
+                    label={t("amount")}
                     currency={cn.currencyCode}
                     value={applyAmount}
                     onChange={setApplyAmount}
                     placeholder={invoiceUiDecimal(cn.amountRemaining, cn.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("remainingCredit", { amount: creditNoteUiMoney(cn.amountRemaining, cn.currencyCode, unitPresentation) })}
+                    <BidiText>{t("remainingCredit", { amount: creditNoteUiMoney(cn.amountRemaining, cn.currencyCode, unitPresentation) })}</BidiText>
                   </p>
                 </div>
                 {invoiceError && <p role="alert" className="text-xs text-destructive">{invoiceError}</p>}
@@ -287,18 +291,18 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
           </Dialog>
         )}
         {cn.status !== "void" && (
-          <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600" title={t("voidHint")}>
-            <Ban className="mr-2 size-4" />{t("voidAction")}
+          <Button variant="outline" size="sm" onClick={handleVoid} className="text-red-600 h-auto min-h-8 whitespace-normal text-start" title={t("voidHint")}>
+            <Ban className="me-2 size-4" />{t("voidAction")}
           </Button>
         )}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[cn.status] || ""}>
-          {creditNoteStatusLabel(t, cn.status)}
+          <BidiText>{creditNoteStatusLabel(t, cn.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("issued", { date: cn.issueDate })}
+          <BidiText>{t("issued", { date: cn.issueDate })}</BidiText>
         </span>
       </div>
 
@@ -307,7 +311,7 @@ function CreditNoteDetail({ id, orgId }: { id: string; orgId: string | null }) {
       {cn.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{cn.notes}</p>
+          <p className="text-sm whitespace-pre-wrap"><BidiText>{cn.notes}</BidiText></p>
         </div>
       )}
 

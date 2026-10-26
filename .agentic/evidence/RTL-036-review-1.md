@@ -1,0 +1,11 @@
+# RTL-036 attributed self-review
+
+Reviewer: Codex, same task operator; kind: self. Date: 2026-10-26. This is technical self-review, not peer, human, native-language or accounting approval.
+
+Reviewed all four owned quote/credit list/detail sources, the final production diff, new actual component/callback/CSS tests, retained lifecycle/wire/money/catalog tests and inventory-only changes. Found no operation, monetary calculation, tenant/eligibility/stale-read guard, canonical identifier/value or output contract change. PageHeader already isolates its string title/description. QuoteMoneyDetails/CreditNoteMoneyDetails belong to RTL-048 and remain explicitly outside this acceptance; their unfinished inner-line bidi/alignment work is not hidden by passing this task.
+
+The presentation changes use native isolated text without modifying caller data, logical spacing/alignment/accent borders, bounded locale-directed tabs and selector/dialogs, labeled search/sort/application controls, and wrapping long action/example text. Exact quote conversion and credit application callbacks retain scoped URLs, headers, returned raw IDs and canonical amountMinor-only payload. No API/MCP operation is added or removed, no schema migration is needed, and Stripe remains untouched.
+
+Negative and compatibility evidence includes escaped long mixed caller values, low money digits, both locales and numeral systems, raw filter/sort/search/selection callbacks, retained malformed-money/conflicting-alias/read-error/stale/unmount tests and all existing credit eligibility/bounds checks. The new test fixture's numeric alias assumption and isolated compiler theme token were corrected to production behavior rather than altering financial code.
+
+Evidence: `RTL-036-attempt-1.md`, including final executed checks and exhaustive four-source ownership. All final recorded gates passed, including 44/44 tests, typecheck, full lint with zero errors/21 existing warnings, catalogs, money inventory and legacy gates. Approve this bounded technical acceptance. RTL-015/010/008/002 retain independent acceptance; shared RTL-048 and mounted browser/caret/keyboard/AT/zoom, native Persian/accounting/legal and live output/provider/hosted/deployment qualification remain unperformed. No broader gate is waived.

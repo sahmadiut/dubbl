@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { useTranslations } from "next-intl";
 import { quoteStatusLabel } from "@/i18n/quote-presentation";
 
@@ -115,25 +117,25 @@ export default function QuoteDetailPage() {
     }
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (loading) return <div className="space-y-6 min-w-0 [overflow-wrap:anywhere]"><PageHeader title={t("loading")} /></div>;
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
-  if (!q) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
+  if (!q) return <div className="space-y-6 min-w-0 [overflow-wrap:anywhere]"><PageHeader title={t("notFound")} /></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 [overflow-wrap:anywhere]">
       <PageHeader title={q.quoteNumber} description={t("recipient", { name: q.contact?.name || t("unknown") })}>
-        <Button variant="outline" size="sm" asChild><Link href="/sales/quotes"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link></Button>
-        {q.status === "draft" && <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700"><Send className="mr-2 size-4" />{t("send")}</Button>}
+        <Button variant="outline" size="sm" asChild><Link href="/sales/quotes"><ArrowLeft className="me-2 size-4 rtl:rotate-180" />{t("back")}</Link></Button>
+        {q.status === "draft" && <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start"><Send className="me-2 size-4" />{t("send")}</Button>}
         {q.status === "sent" && <>
-          <Button size="sm" onClick={() => action("accept")} className="bg-emerald-600 hover:bg-emerald-700"><Check className="mr-2 size-4" />{t("accept")}</Button>
-          <Button size="sm" variant="outline" onClick={() => action("decline")} className="text-red-600"><X className="mr-2 size-4" />{t("decline")}</Button>
+          <Button size="sm" onClick={() => action("accept")} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start"><Check className="me-2 size-4" />{t("accept")}</Button>
+          <Button size="sm" variant="outline" onClick={() => action("decline")} className="text-red-600 h-auto min-h-8 whitespace-normal text-start"><X className="me-2 size-4" />{t("decline")}</Button>
         </>}
-        {q.status === "accepted" && <Button size="sm" onClick={handleConvert} className="bg-emerald-600 hover:bg-emerald-700" title={t("convertHint")}><FileText className="mr-2 size-4" />{t("createInvoice")}</Button>}
+        {q.status === "accepted" && <Button size="sm" onClick={handleConvert} className="bg-emerald-600 hover:bg-emerald-700 h-auto min-h-8 whitespace-normal text-start" title={t("convertHint")}><FileText className="me-2 size-4" />{t("createInvoice")}</Button>}
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <Badge variant="outline" className={statusColors[q.status] || ""}>{quoteStatusLabel(t, q.status)}</Badge>
-        <span className="text-xs sm:text-sm text-muted-foreground">{t("dates", { issueDate: q.issueDate, expiryDate: q.expiryDate })}</span>
+        <Badge variant="outline" className={statusColors[q.status] || ""}><BidiText>{quoteStatusLabel(t, q.status)}</BidiText></Badge>
+        <span className="text-xs sm:text-sm text-muted-foreground"><BidiText>{t("dates", { issueDate: q.issueDate, expiryDate: q.expiryDate })}</BidiText></span>
       </div>
 
       <QuoteMoneyDetails quote={q} />

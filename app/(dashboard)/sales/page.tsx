@@ -136,7 +136,7 @@ function buildColumns(
           <div className="flex flex-wrap min-w-0 items-center gap-2">
             <span className="text-sm"><IdentifierText>{r.dueDate}</IdentifierText></span>
             {info && (
-              <span className={`text-[11px] ${info.color}`}>{info.label}</span>
+              <span className={`text-[11px] ${info.color}`}><BidiText>{info.label}</BidiText></span>
             )}
           </div>
         );

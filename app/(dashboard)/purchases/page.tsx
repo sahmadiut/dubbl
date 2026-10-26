@@ -123,7 +123,7 @@ function buildColumns(t: BillTranslator, unitPresentation: NumberPresentation = 
       render: (r) => {
         const info = getDueInfo(r.dueDate, r.status, t);
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap min-w-0 items-center gap-2">
             <span className="text-sm"><IdentifierText>{r.dueDate}</IdentifierText></span>
             {info && (
               <span className={`text-[11px] ${info.color}`}><BidiText>{info.label}</BidiText></span>

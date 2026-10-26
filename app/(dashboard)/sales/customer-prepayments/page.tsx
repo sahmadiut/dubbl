@@ -1,6 +1,8 @@
 "use client";
 
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -57,13 +59,13 @@ function buildColumns(t: CustomerPrepaymentTranslate, unitPresentation: NumberPr
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.date}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.date}</IdentifierText></span>,
     },
     {
       key: "contact",
       header: t("customer"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -72,7 +74,7 @@ function buildColumns(t: CustomerPrepaymentTranslate, unitPresentation: NumberPr
       className: "w-36",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
-          {customerPrepaymentSourceLabel(t, r.sourceType)}
+          <BidiText>{customerPrepaymentSourceLabel(t, r.sourceType)}</BidiText>
         </span>
       ),
     },
@@ -82,7 +84,7 @@ function buildColumns(t: CustomerPrepaymentTranslate, unitPresentation: NumberPr
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {customerPrepaymentStatusLabel(t, r.status)}
+          <BidiText>{customerPrepaymentStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -90,10 +92,10 @@ function buildColumns(t: CustomerPrepaymentTranslate, unitPresentation: NumberPr
       key: "amount",
       header: t("original"),
       sortKey: "amount",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {formatMoney(r.originalAmount, r.currencyCode, unitPresentation)}
+          <BidiText>{formatMoney(r.originalAmount, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -101,10 +103,10 @@ function buildColumns(t: CustomerPrepaymentTranslate, unitPresentation: NumberPr
       key: "remaining",
       header: t("remaining"),
       sortKey: "remaining",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {formatMoney(r.amountRemaining, r.currencyCode, unitPresentation)}
+          <BidiText>{formatMoney(r.amountRemaining, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -273,9 +275,9 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
             </div>
             <Button
               onClick={() => openDrawer("customerCredit")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto whitespace-normal max-w-full shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newPrepayment")}
             </Button>
           </div>
@@ -287,7 +289,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                       <Wallet className="size-3.5 text-emerald-500" />
@@ -297,26 +299,26 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                       <p className="text-[11px] text-muted-foreground">{t("creditOnAccount")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(50000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400"><BidiText>{"+" + exampleMoney(50000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-blue-50/30 dark:bg-blue-950/10">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5 bg-blue-50/30 dark:bg-blue-950/10">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">{t("putTowardsInvoice")}</p>
-                      <p className="text-[11px] text-muted-foreground">INV-0042</p>
+                      <p className="text-[11px] text-muted-foreground"><IdentifierText>INV-0042</IdentifierText></p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{exampleMoney(-30000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><BidiText>{exampleMoney(-30000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("creditLeft")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{exampleMoney(20000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-bold"><BidiText>{exampleMoney(20000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
               </div>
             </div>
@@ -328,25 +330,25 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
                 {
                   title: t("depositTitle"),
                   desc: t("depositDescription"),
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("overpaidTitle"),
                   desc: t("overpaidDescription"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("retainerTitle"),
                   desc: t("retainerDescription"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("laterTitle"),
                   desc: t("laterDescription"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -359,7 +361,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
   }
 
   return (
-    <ContentReveal className="space-y-6">
+    <ContentReveal className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3 [overflow-wrap:anywhere]">
         <StatCard title={t("receivedLoaded")} value={readError ? "—" : totals.received} icon={Wallet} />
@@ -374,8 +376,8 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
       {/* Prepayment table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={localeDirection(unitPresentation.locale)} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="open" className="whitespace-nowrap" title={t("availableHint")}>{t("available")}</TabsTrigger>
               <TabsTrigger value="applied" className="whitespace-nowrap" title={t("usedHint")}>{t("used")}</TabsTrigger>
@@ -386,24 +388,26 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
           <Button
             onClick={() => openDrawer("customerCredit")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto whitespace-normal max-w-full"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newPrepayment")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative min-w-0 max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              dir="auto"
+              aria-label={t("search")}
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("startDate")} className="flex max-w-full items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
@@ -412,7 +416,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("endDate")} className="flex max-w-full items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -422,6 +426,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
             />
           </div>
           <Select
+            dir={localeDirection(unitPresentation.locale)}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -429,7 +434,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-44 max-w-full whitespace-normal text-start text-xs *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -448,7 +453,7 @@ function CustomerPrepaymentsList({ orgId }: { orgId: string | null }) {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}

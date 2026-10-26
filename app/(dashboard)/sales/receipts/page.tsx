@@ -1,6 +1,8 @@
 "use client";
 
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -62,14 +64,14 @@ function buildColumns(t: SalesReceiptTranslate, unitPresentation: NumberPresenta
       sortKey: "number",
       className: "w-32",
       render: (r) => (
-        <span className="font-mono text-sm">{r.receiptNumber}</span>
+        <span className="font-mono text-sm"><IdentifierText>{r.receiptNumber}</IdentifierText></span>
       ),
     },
     {
       key: "contact",
       header: t("customer"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -77,7 +79,7 @@ function buildColumns(t: SalesReceiptTranslate, unitPresentation: NumberPresenta
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.date}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.date}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -85,7 +87,7 @@ function buildColumns(t: SalesReceiptTranslate, unitPresentation: NumberPresenta
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {salesReceiptStatusLabel(t, r.status)}
+          <BidiText>{salesReceiptStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -93,10 +95,10 @@ function buildColumns(t: SalesReceiptTranslate, unitPresentation: NumberPresenta
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {salesReceiptUiMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{salesReceiptUiMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -251,9 +253,9 @@ export default function SalesReceiptsPage() {
             </div>
             <Button
               onClick={() => openDrawer("salesReceipt")}
-              className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+              className="bg-emerald-600 hover:bg-emerald-700 h-auto whitespace-normal max-w-full shrink-0"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("newCashSale")}
             </Button>
           </div>
@@ -265,19 +267,19 @@ export default function SalesReceiptsPage() {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("howItWorks")}</p>
               </div>
               <div className="divide-y">
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-blue-50 dark:bg-blue-950/40">
                       <ReceiptText className="size-3.5 text-blue-500" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">{t("saleTotal")}</p>
-                      <p className="text-[11px] text-muted-foreground">SR-0001</p>
+                      <p className="text-[11px] text-muted-foreground"><IdentifierText>SR-0001</IdentifierText></p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{exampleMoney(4500n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><BidiText>{exampleMoney(4500n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
                     <div className="flex size-7 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/40">
                       <Banknote className="size-3.5 text-emerald-500" />
@@ -287,14 +289,14 @@ export default function SalesReceiptsPage() {
                       <p className="text-[11px] text-muted-foreground">{t("cashDrawer")}</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(4500n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400"><BidiText>{"+" + exampleMoney(4500n, "USD", unitPresentation)}</BidiText></span>
                 </div>
-                <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
                     <div className="size-7" />
                     <p className="text-sm font-semibold">{t("nothingOwed")}</p>
                   </div>
-                  <span className="font-mono text-sm font-bold">{exampleMoney(0n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-bold"><BidiText>{exampleMoney(0n, "USD", unitPresentation)}</BidiText></span>
                 </div>
               </div>
             </div>
@@ -306,25 +308,25 @@ export default function SalesReceiptsPage() {
                 {
                   title: t("counterTitle"),
                   desc: t("counterDescription"),
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("marketTitle"),
                   desc: t("marketDescription"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("serviceTitle"),
                   desc: t("serviceDescription"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("noInvoiceTitle"),
                   desc: t("noInvoiceDescription"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -337,7 +339,7 @@ export default function SalesReceiptsPage() {
   }
 
   return (
-    <ContentReveal className="space-y-6">
+    <ContentReveal className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {/* Top: Stats */}
       <div className="grid gap-3 sm:grid-cols-3">
@@ -350,8 +352,8 @@ export default function SalesReceiptsPage() {
       {/* Sales receipt table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={localeDirection(unitPresentation.locale)} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftHeading")}</TabsTrigger>
               <TabsTrigger value="paid" className="whitespace-nowrap">{t("paidHeading")}</TabsTrigger>
@@ -362,24 +364,26 @@ export default function SalesReceiptsPage() {
           <Button
             onClick={() => openDrawer("salesReceipt")}
             size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-emerald-600 hover:bg-emerald-700 h-auto whitespace-normal max-w-full"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newCashSale")}
           </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative min-w-0 max-w-full">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              dir="auto"
+              aria-label={t("search")}
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 max-w-full ps-8 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("startDate")} className="flex max-w-full items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
@@ -388,7 +392,7 @@ export default function SalesReceiptsPage() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("endDate")} className="flex max-w-full items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -398,6 +402,7 @@ export default function SalesReceiptsPage() {
             />
           </div>
           <Select
+            dir={localeDirection(unitPresentation.locale)}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -405,7 +410,7 @@ export default function SalesReceiptsPage() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-auto min-h-8 w-44 max-w-full whitespace-normal text-start text-xs *:data-[slot=select-value]:line-clamp-none">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -424,7 +429,7 @@ export default function SalesReceiptsPage() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}

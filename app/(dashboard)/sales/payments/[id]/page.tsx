@@ -1,5 +1,6 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { salesPaymentMethodLabel, salesPaymentDocumentLabel } from "@/i18n/sales-payment-presentation";
@@ -99,29 +100,29 @@ function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
   }, [orgId, pmt]);
 
   if (readError) return <p role="alert">{readError}</p>;
-  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
-  if (!pmt) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
+  if (loading) return <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]"><PageHeader title={t("loading")} /></div>;
+  if (!pmt) return <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]"><PageHeader title={t("notFound")} /></div>;
 
   const allocatedTotal = pmt.allocated;
   const unallocated = pmt.unallocated;
   const cur = pmt.currencyCode;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       <PageHeader
         title={t("paymentTitle", { number: pmt.paymentNumber })}
         description={t("fromCustomer", { name: pmt.contact?.name || t("unknown") })}
       >
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/payments"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+          <Link href="/sales/payments"><ArrowLeft className="rtl:rotate-180 me-2 size-4" />{t("back")}</Link>
         </Button>
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        <Badge variant="outline">{salesPaymentMethodLabel(t, pmt.method, true)}</Badge>
-        <span className="text-xs sm:text-sm text-muted-foreground">{t("received", { date: pmt.date })}</span>
-        {pmt.reference && <span className="text-xs sm:text-sm text-muted-foreground">{t("referenceValue", { reference: pmt.reference })}</span>}
-        {pmt.bankAccount && <span className="text-xs sm:text-sm text-muted-foreground">{t("intoAccount", { name: pmt.bankAccount.name })}</span>}
+        <Badge variant="outline"><BidiText>{salesPaymentMethodLabel(t, pmt.method, true)}</BidiText></Badge>
+        <span className="text-xs sm:text-sm text-muted-foreground"><BidiText>{t("received", { date: pmt.date })}</BidiText></span>
+        {pmt.reference && <span className="text-xs sm:text-sm text-muted-foreground"><BidiText>{t("referenceValue", { reference: pmt.reference })}</BidiText></span>}
+        {pmt.bankAccount && <span className="text-xs sm:text-sm text-muted-foreground"><BidiText>{t("intoAccount", { name: pmt.bankAccount.name })}</BidiText></span>}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -130,24 +131,24 @@ function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
             <Banknote className="size-3.5 text-emerald-600" />
             <p className="text-xs text-muted-foreground">{t("paymentAmount")}</p>
           </div>
-          <p className="text-xl font-bold font-mono break-all mt-1">{formatMoney(pmt.amount, cur, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono break-all mt-1"><BidiText>{formatMoney(pmt.amount, cur, unitPresentation)}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("allocated")}</p>
-          <p className="text-xl font-bold font-mono break-all text-emerald-600 mt-1">{formatMoney(allocatedTotal, cur, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono break-all text-emerald-600 mt-1"><BidiText>{formatMoney(allocatedTotal, cur, unitPresentation)}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
             <Wallet className="size-3.5 text-amber-600" />
             <p className="text-xs text-muted-foreground">{t("unallocated")}</p>
           </div>
-          <p className="text-xl font-bold font-mono break-all text-amber-600 mt-1">{formatMoney(unallocated, cur, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono break-all text-amber-600 mt-1"><BidiText>{formatMoney(unallocated, cur, unitPresentation)}</BidiText></p>
         </div>
       </div>
 
       {unallocated > 0n && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          {t("historicalBalance", { amount: formatMoney(unallocated, cur, unitPresentation) })}
+          <BidiText>{t("historicalBalance", { amount: formatMoney(unallocated, cur, unitPresentation) })}</BidiText>
         </div>
       )}
 
@@ -164,25 +165,25 @@ function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
             {pmt.allocations.map((a, idx) => {
               const inv = a.documentType === "invoice" ? invoiceLookup[a.documentId] : undefined;
               return (
-                <li key={`${a.documentId}-${idx}`} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm">
+                <li key={`${a.documentId}-${idx}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
                     <FileText className="size-3.5 text-muted-foreground" />
                     {inv ? (
                       <Link
                         href={`/sales/invoices/${a.documentId}`}
                         className="font-medium hover:underline"
                       >
-                        {inv.invoiceNumber}
+                        <IdentifierText>{inv.invoiceNumber}</IdentifierText>
                       </Link>
                     ) : (
-                      <span className="font-medium capitalize">{salesPaymentDocumentLabel(t, a.documentType)}</span>
+                      <span className="font-medium capitalize"><BidiText>{salesPaymentDocumentLabel(t, a.documentType)}</BidiText></span>
                     )}
                     {inv?.contact?.name && (
-                      <span className="text-muted-foreground">· {inv.contact.name}</span>
+                      <span className="text-muted-foreground">· <BidiText>{inv.contact.name}</BidiText></span>
                     )}
                   </div>
                   <span className="font-mono text-sm tabular-nums break-all font-medium text-emerald-600">
-                    {formatMoney(a.amount, cur, unitPresentation)}
+                    <BidiText>{formatMoney(a.amount, cur, unitPresentation)}</BidiText>
                   </span>
                 </li>
               );
@@ -194,7 +195,7 @@ function PaymentDetail({ id, orgId }: { id: string; orgId: string | null }) {
       {pmt.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{pmt.notes}</p>
+          <p className="text-sm whitespace-pre-wrap"><BidiText>{pmt.notes}</BidiText></p>
         </div>
       )}
     </div>

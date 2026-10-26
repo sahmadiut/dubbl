@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -56,19 +58,19 @@ function buildColumns(t: SalesPaymentTranslate, unitPresentation: NumberPresenta
       header: t("number"),
       sortKey: "number",
       className: "w-32",
-      render: (r) => <span className="font-mono text-sm">{r.paymentNumber}</span>,
+      render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.paymentNumber}</IdentifierText></span>,
     },
     {
       key: "contact",
       header: t("customer"),
-      render: (r) => <span className="text-sm font-medium">{r.contact?.name || "-"}</span>,
+      render: (r) => <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>,
     },
     {
       key: "date",
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.date}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.date}</IdentifierText></span>,
     },
     {
       key: "method",
@@ -76,7 +78,7 @@ function buildColumns(t: SalesPaymentTranslate, unitPresentation: NumberPresenta
       className: "w-32",
       render: (r) => (
         <Badge variant="outline" className={Object.hasOwn(methodColors, r.method) ? methodColors[r.method] : ""}>
-          {salesPaymentMethodLabel(t, r.method)}
+          <BidiText>{salesPaymentMethodLabel(t, r.method)}</BidiText>
         </Badge>
       ),
     },
@@ -84,16 +86,16 @@ function buildColumns(t: SalesPaymentTranslate, unitPresentation: NumberPresenta
       key: "reference",
       header: t("reference"),
       className: "w-32",
-      render: (r) => <span className="text-sm text-muted-foreground">{r.reference || "-"}</span>,
+      render: (r) => <span className="text-sm text-muted-foreground"><BidiText>{r.reference || "-"}</BidiText></span>,
     },
     {
       key: "amount",
       header: t("amount"),
       sortKey: "amount",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all font-medium text-emerald-600">
-          {formatMoney(r.amount, r.currencyCode, unitPresentation)}
+          <BidiText>{formatMoney(r.amount, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -221,10 +223,10 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
 
   if (!loading && payments.length === 0) {
     return (
-      <ContentReveal className="space-y-6">
+      <ContentReveal className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="size-8" asChild>
-            <Link href="/sales" aria-label={t("backInvoices")}><ArrowLeft className="size-4" /></Link>
+            <Link href="/sales" aria-label={t("backInvoices")}><ArrowLeft className="rtl:rotate-180 size-4" /></Link>
           </Button>
           <div>
             <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
@@ -241,12 +243,12 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
   }
 
   return (
-    <ContentReveal className="space-y-6">
+    <ContentReveal className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="size-8" asChild>
-            <Link href="/sales" aria-label={t("backInvoices")}><ArrowLeft className="size-4" /></Link>
+            <Link href="/sales" aria-label={t("backInvoices")}><ArrowLeft className="rtl:rotate-180 size-4" /></Link>
           </Button>
           <div>
             <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
@@ -269,18 +271,19 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+        <div className="relative min-w-0 max-w-full">
+          <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <Input
+            dir="auto"
             aria-label={t("search")}
             placeholder={t("search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-56 pl-8 text-xs"
+            className="h-8 w-56 max-w-full ps-8 text-xs"
           />
         </div>
-        <Select value={methodFilter} onValueChange={setMethodFilter}>
-          <SelectTrigger className="h-8 w-40 text-xs">
+        <Select dir={localeDirection(unitPresentation.locale)} value={methodFilter} onValueChange={setMethodFilter}>
+          <SelectTrigger aria-label={t("method")} className="h-auto min-h-8 w-40 max-w-full whitespace-normal text-start text-xs *:data-[slot=select-value]:line-clamp-none">
             <SelectValue placeholder={t("method")} />
           </SelectTrigger>
           <SelectContent>
@@ -292,7 +295,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
             <SelectItem value="other">{t("other")}</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-1.5">
+        <div role="group" aria-label={t("startDate")} className="flex max-w-full items-center gap-1.5">
           <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
           <DatePicker
             value={dateFrom}
@@ -301,7 +304,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
             className="h-8 w-40 text-xs"
           />
         </div>
-        <div className="flex items-center gap-1.5">
+        <div role="group" aria-label={t("endDate")} className="flex max-w-full items-center gap-1.5">
           <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
           <DatePicker
             value={dateTo}
@@ -311,6 +314,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
           />
         </div>
         <Select
+          dir={localeDirection(unitPresentation.locale)}
           value={`${sortBy}:${sortOrder}`}
           onValueChange={(v) => {
             const [key, order] = v.split(":");
@@ -318,7 +322,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
             setSortOrder(order as "asc" | "desc");
           }}
         >
-          <SelectTrigger className="h-8 w-40 text-xs">
+          <SelectTrigger aria-label={t("sort")} className="h-auto min-h-8 w-40 max-w-full whitespace-normal text-start text-xs *:data-[slot=select-value]:line-clamp-none">
             <SelectValue placeholder={t("sort")} />
           </SelectTrigger>
           <SelectContent>
@@ -337,7 +341,7 @@ function PaymentsList({ orgId }: { orgId: string | null }) {
             className="h-8 text-xs text-muted-foreground"
             onClick={() => { setSearch(""); setMethodFilter("all"); setDateFrom(""); setDateTo(""); }}
           >
-            <X className="mr-1 size-3" />
+            <X className="me-1 size-3" />
             {t("clearFilters")}
           </Button>
         )}

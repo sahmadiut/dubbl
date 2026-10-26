@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -160,9 +162,9 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
     }
   }
 
-  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (loading) return <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]"><PageHeader title={t("loading")} /></div>;
   if (readError) return <p role="alert" className="text-sm text-destructive">{t(readError)}</p>;
-  if (!cc) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
+  if (!cc) return <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]"><PageHeader title={t("notFound")} /></div>;
 
   let applicationValid = false;
   let applicationError = "";
@@ -173,40 +175,40 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       <PageHeader title={t("prepayment")} description={t("recipient", { name: cc.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/customer-prepayments"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+          <Link href="/sales/customer-prepayments"><ArrowLeft className="rtl:rotate-180 me-2 size-4" />{t("back")}</Link>
         </Button>
         {cc.status === "open" && cc.amountRemaining > 0n && (
           <Dialog open={applyOpen} onOpenChange={(open) => {
             setApplyOpen(open); setInvoices([]); setInvoiceError(""); setApplyInvoiceId(""); setApplyAmount("");
           }}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" title={t("applyHint")}>
-                <FileText className="mr-2 size-4" />{t("applyAction")}
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 h-auto whitespace-normal max-w-full" title={t("applyHint")}>
+                <FileText className="me-2 size-4" />{t("applyAction")}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent dir={localeDirection(unitPresentation.locale)} className="max-h-dvh overflow-y-auto [overflow-wrap:anywhere]">
               <DialogHeader>
                 <DialogTitle>{t("applyTitle")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>{t("invoice")}</Label>
-                  <Select value={applyInvoiceId} onValueChange={setApplyInvoiceId}>
-                    <SelectTrigger>
+                  <Label htmlFor="prepayment-apply-invoice">{t("invoice")}</Label>
+                  <Select dir={localeDirection(unitPresentation.locale)} value={applyInvoiceId} onValueChange={setApplyInvoiceId}>
+                    <SelectTrigger id="prepayment-apply-invoice" className="h-auto min-h-9 w-full whitespace-normal text-start *:data-[slot=select-value]:line-clamp-none">
                       <SelectValue placeholder={t("selectInvoice")} />
                     </SelectTrigger>
                     <SelectContent>
                       {invoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
-                          {t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: formatMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}
+                          <BidiText>{t("invoiceOption", { number: inv.invoiceNumber, name: inv.contact?.name || t("unknown"), amount: formatMoney(inv.amountDue, inv.currencyCode, unitPresentation) })}</BidiText>
                         </SelectItem>
                       ))}
                       {invoices.length === 0 && (
                         <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                          {t("noInvoices", { currency: currencyLabel(cc.currencyCode, unitPresentation.locale) })}
+                          <BidiText>{t("noInvoices", { currency: currencyLabel(cc.currencyCode, unitPresentation.locale) })}</BidiText>
                         </div>
                       )}
                     </SelectContent>
@@ -215,13 +217,14 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
                 <div className="space-y-2">
                   <Label>{t("amount")}</Label>
                   <InvoiceAmountInput
+                    aria-label={t("amount")}
                     currency={cc.currencyCode}
                     value={applyAmount}
                     onChange={setApplyAmount}
                     placeholder={customerPrepaymentDecimal(cc.amountRemaining, cc.currencyCode)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("availableCredit", { amount: formatMoney(cc.amountRemaining, cc.currencyCode, unitPresentation) })}
+                    <BidiText>{t("availableCredit", { amount: formatMoney(cc.amountRemaining, cc.currencyCode, unitPresentation) })}</BidiText>
                   </p>
                 </div>
                 {invoiceError && <p role="alert" className="text-sm text-destructive">{t("invoiceReadFailed")}</p>}
@@ -230,7 +233,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
                   onClick={handleApply}
                   loading={applyLoading}
                   disabled={!applicationValid || !!invoiceError}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
                 >
                   {t("applySubmit")}
                 </Button>
@@ -242,13 +245,13 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[cc.status] || ""}>
-          {customerPrepaymentStatusLabel(t, cc.status)}
+          <BidiText>{customerPrepaymentStatusLabel(t, cc.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {customerPrepaymentSourceLabel(t, cc.sourceType)}
+          <BidiText>{customerPrepaymentSourceLabel(t, cc.sourceType)}</BidiText>
         </span>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("received", { date: cc.date })}
+          <BidiText>{t("received", { date: cc.date })}</BidiText>
         </span>
       </div>
 
@@ -257,7 +260,7 @@ function CustomerPrepaymentDetail({ id, orgId }: { id: string; orgId: string | n
       {cc.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{cc.notes}</p>
+          <p className="text-sm whitespace-pre-wrap"><BidiText>{cc.notes}</BidiText></p>
         </div>
       )}
     </div>

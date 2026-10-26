@@ -1,5 +1,6 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { salesReceiptStatusLabel } from "@/i18n/sales-receipt-presentation";
@@ -79,31 +80,31 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
     return () => controller.abort();
   }, [id, orgId, t]);
 
-  if (loading) return <div className="space-y-6"><PageHeader title={t("loading")} /></div>;
+  if (loading) return <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]"><PageHeader title={t("loading")} /></div>;
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
-  if (!sr) return <div className="space-y-6"><PageHeader title={t("notFound")} /></div>;
+  if (!sr) return <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]"><PageHeader title={t("notFound")} /></div>;
 
   const paidInto = sr.bankAccount?.accountName
     || (sr.depositAccount ? `${sr.depositAccount.code} · ${sr.depositAccount.name}` : null);
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 [overflow-wrap:anywhere]">
       <PageHeader title={sr.receiptNumber} description={t("soldTo", { name: sr.contact?.name || t("unknown") })}>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/sales/receipts"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+          <Link href="/sales/receipts"><ArrowLeft className="rtl:rotate-180 me-2 size-4" />{t("back")}</Link>
         </Button>
       </PageHeader>
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[sr.status] || ""}>
-          {salesReceiptStatusLabel(t, sr.status)}
+          <BidiText>{salesReceiptStatusLabel(t, sr.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {sr.date}
+          <IdentifierText>{sr.date}</IdentifierText>
         </span>
         {sr.reference && (
           <span className="text-xs sm:text-sm text-muted-foreground">
-            {t("referenceValue", { reference: sr.reference })}
+            <BidiText>{t("referenceValue", { reference: sr.reference })}</BidiText>
           </span>
         )}
       </div>
@@ -111,7 +112,7 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("total")}</p>
-          <p className="text-xl font-bold font-mono break-all">{salesReceiptUiMoney(sr.total, sr.currencyCode, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono break-all"><BidiText>{salesReceiptUiMoney(sr.total, sr.currencyCode, unitPresentation)}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
@@ -122,7 +123,7 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
             {paidInto ? (
               <>
                 <Landmark className="size-3.5 text-muted-foreground shrink-0" />
-                {paidInto}
+                <BidiText>{paidInto}</BidiText>
               </>
             ) : (
               <span className="text-muted-foreground">{t("notRecorded")}</span>
@@ -136,7 +137,7 @@ function SalesReceiptDetailContent({ id, orgId }: { id: string; orgId: string | 
       {sr.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{sr.notes}</p>
+          <p className="text-sm whitespace-pre-wrap"><BidiText>{sr.notes}</BidiText></p>
         </div>
       )}
     </div>

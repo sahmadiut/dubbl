@@ -280,7 +280,7 @@ export default function BudgetDetailLayout({ children }: { children: React.React
                   style={{ width: `${Math.max(0, Math.min(overallPct, 100))}%` }}
                 />
               </div>
-              <span className="text-xs font-mono tabular-nums text-muted-foreground"><BidiText>{overallPct}</BidiText>%</span>
+              <span className="text-xs font-mono tabular-nums text-muted-foreground"><IdentifierText>{overallPct}%</IdentifierText></span>
             </div>
           </div>
         </div>

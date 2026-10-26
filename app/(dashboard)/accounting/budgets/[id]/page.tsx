@@ -185,7 +185,7 @@ export default function BudgetOverviewPage() {
               "text-xs font-mono tabular-nums font-medium",
               over ? "text-red-600" : overallPct > 80 ? "text-amber-600" : "text-emerald-600"
             )}>
-              <BidiText>{overallPct}</BidiText>%
+              <IdentifierText>{overallPct}%</IdentifierText>
             </span>
           </div>
         </div>
@@ -251,7 +251,7 @@ function ViewLineCard({
             {actual !== 0n ? (
               <><BidiText>{formatMoney(actual)}</BidiText> <span className="text-muted-foreground font-normal">/ <BidiText>{formatMoney(budgeted)}</BidiText></span></>
             ) : (
-              formatMoney(budgeted)
+              <BidiText>{formatMoney(budgeted)}</BidiText>
             )}
           </p>
           {actual !== 0n && (
@@ -310,9 +310,9 @@ function ViewLineCard({
                         "font-mono tabular-nums",
                         pOver ? "text-red-600" : "text-emerald-600"
                       )}>
-                        {pOver ? "+" : "-"}<BidiText>{formatMoney(budgetAbs(p.variance))}</BidiText>
+                        <BidiText>{pOver ? "+" : "-"}{formatMoney(budgetAbs(p.variance))}</BidiText>
                       </span>
-                      <span className="text-muted-foreground w-8 text-end"><BidiText>{pPct}</BidiText>%</span>
+                      <span className="text-muted-foreground w-8 text-end"><IdentifierText>{pPct}%</IdentifierText></span>
                     </>
                   )}
                 </div>
@@ -381,7 +381,7 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
                     "px-4 py-2 text-end font-mono tabular-nums text-sm",
                     variance >= 0 ? "text-emerald-600" : "text-red-600"
                   )}>
-                    {variance >= 0 ? "" : "-"}<BidiText>{formatMoney(budgetAbs(variance))}</BidiText>
+                    <BidiText>{variance >= 0 ? "" : "-"}{formatMoney(budgetAbs(variance))}</BidiText>
                   </td>
                 </tr>
               );
@@ -396,7 +396,7 @@ function PeriodBreakdownTable({ comparisons, currencyCode }: { currencyCode: str
                 "px-4 py-2 text-end font-mono tabular-nums text-sm font-semibold",
                 totVariance >= 0 ? "text-emerald-600" : "text-red-600"
               )}>
-                {totVariance >= 0 ? "" : "-"}<BidiText>{formatMoney(budgetAbs(totVariance))}</BidiText>
+                <BidiText>{totVariance >= 0 ? "" : "-"}{formatMoney(budgetAbs(totVariance))}</BidiText>
               </td>
             </tr>
           </tfoot>

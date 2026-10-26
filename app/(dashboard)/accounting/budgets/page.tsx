@@ -179,7 +179,7 @@ export default function BudgetsPage() {
               <div key={label} className="space-y-1.5">
                 <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <span className="text-sm font-medium text-muted-foreground">{label}</span>
-                  <span className={cn("text-xs font-medium", pct > 80 ? "text-amber-500/70" : "text-emerald-500/70")}><BidiText>{pct}</BidiText>%</span>
+                  <span className={cn("text-xs font-medium", pct > 80 ? "text-amber-500/70" : "text-emerald-500/70")}><IdentifierText>{pct}%</IdentifierText></span>
                 </div>
                 <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div
@@ -407,7 +407,7 @@ export default function BudgetsPage() {
                               "text-[10px] font-mono tabular-nums",
                               lineOver ? "text-red-600" : "text-muted-foreground"
                             )}>
-                              <BidiText>{linePct}</BidiText>%
+                              <IdentifierText>{linePct}%</IdentifierText>
                             </p>
                           </div>
                         </div>

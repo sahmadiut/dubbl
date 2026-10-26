@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -80,7 +83,7 @@ function buildColumns(t: RequisitionTranslate, unitPresentation: NumberPresentat
       sortKey: "number",
       className: "w-32",
       render: (r) => (
-        <span className="font-mono text-sm">{r.requisitionNumber}</span>
+        <span className="font-mono text-sm"><IdentifierText>{r.requisitionNumber}</IdentifierText></span>
       ),
     },
     {
@@ -88,7 +91,7 @@ function buildColumns(t: RequisitionTranslate, unitPresentation: NumberPresentat
       header: t("supplier"),
       render: (r) => (
         <span className="text-sm font-medium">
-          {r.contact?.name || "-"}
+          <BidiText>{r.contact?.name || "-"}</BidiText>
         </span>
       ),
     },
@@ -97,7 +100,7 @@ function buildColumns(t: RequisitionTranslate, unitPresentation: NumberPresentat
       header: t("requestDate"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.requestDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.requestDate}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -105,7 +108,7 @@ function buildColumns(t: RequisitionTranslate, unitPresentation: NumberPresentat
       className: "w-28",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {requisitionStatusLabel(t, r.status)}
+          <BidiText>{requisitionStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -113,10 +116,10 @@ function buildColumns(t: RequisitionTranslate, unitPresentation: NumberPresentat
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {procurementMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{procurementMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -347,23 +350,23 @@ function RequisitionsContent() {
 
   const createSheet = (
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="max-h-[85vh]">
+        <SheetContent dir={localeDirection(unitPresentation.locale)} className="max-h-[85vh]">
           <SheetHeader>
             <SheetTitle>{t("newPurchaseRequisition")}</SheetTitle>
           </SheetHeader>
           <div className="overflow-y-auto px-4 pb-6 space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("requestDate")}</Label>
-                <Input
+                <Label htmlFor="rtl042-requisitions-list-13318" className="text-xs">{t("requestDate")}</Label>
+                <Input id="rtl042-requisitions-list-13318" aria-label={t("requestDate")} dir="auto"
                   type="date"
                   value={formRequestDate}
                   onChange={(e) => setFormRequestDate(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{t("requiredBy")}</Label>
-                <Input
+                <Label htmlFor="rtl042-requisitions-list-13686" className="text-xs">{t("requiredBy")}</Label>
+                <Input id="rtl042-requisitions-list-13686" aria-label={t("requiredBy")} dir="auto"
                   type="date"
                   value={formRequiredDate}
                   onChange={(e) => setFormRequiredDate(e.target.value)}
@@ -372,8 +375,8 @@ function RequisitionsContent() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("reference")}</Label>
-              <Input
+              <Label htmlFor="rtl042-requisitions-list-14070" className="text-xs">{t("reference")}</Label>
+              <Input id="rtl042-requisitions-list-14070" aria-label={t("reference")} dir="auto"
                 value={formReference}
                 onChange={(e) => setFormReference(e.target.value)}
                 placeholder={t("referencePlaceholder")}
@@ -381,8 +384,8 @@ function RequisitionsContent() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("notes")}</Label>
-              <Textarea
+              <Label htmlFor="rtl042-requisitions-list-14441" className="text-xs">{t("notes")}</Label>
+              <Textarea id="rtl042-requisitions-list-14441" aria-label={t("notes")} dir="auto"
                 value={formNotes}
                 onChange={(e) => setFormNotes(e.target.value)}
                 placeholder={t("notesPlaceholder")}
@@ -391,20 +394,20 @@ function RequisitionsContent() {
             </div>
 
             <Label>{t("optionalSupplier")}</Label>
-            <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
+            <div role="group" aria-label={t("optionalSupplier")}><ContactPicker value={contactId} onChange={setContactId} type="supplier" /></div>
             <Label>{t("currency")}</Label>
-            <CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} />
+            <div role="group" aria-label={t("currency")}><CurrencySelect value={currencyCode} onValueChange={setCurrencyCode} /></div>
             <RequisitionLineEditor lines={formLines} onChange={setFormLines} currencyCode={currencyCode} />
 
             <Button
               onClick={handleCreate}
               disabled={creating || !!preview.error || formLines.some(line => !line.description.trim())}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto max-w-full whitespace-normal w-full bg-emerald-600 hover:bg-emerald-700"
             >
               {creating ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
+                <Loader2 className="me-2 size-4 animate-spin" />
               ) : (
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
               )}
               {t("createRequisition")}
             </Button>
@@ -461,10 +464,10 @@ function RequisitionsContent() {
             ].map(({ label, desc, color, bg }, i) => (
               <div
                 key={label}
-                className={`relative flex flex-col items-center py-6 px-3 text-center border-r last:border-r-0 ${bg}`}
+                className={`relative flex flex-col items-center py-6 px-3 text-center border-e last:border-e-0 ${bg}`}
               >
                 <div
-                  className={`absolute top-0 left-0 right-0 h-1 ${color} opacity-30`}
+                  className={`absolute top-0 start-0 end-0 h-1 ${color} opacity-30`}
                 />
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-bold text-muted-foreground/50 tabular-nums">
@@ -487,7 +490,7 @@ function RequisitionsContent() {
                 <div className="h-2 w-28 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-20 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-16 rounded bg-muted-foreground/20 hidden sm:block" />
-                <div className="ml-auto h-2 w-16 rounded bg-muted-foreground/20" />
+                <div className="ms-auto h-2 w-16 rounded bg-muted-foreground/20" />
                 <div className="h-2 w-16 rounded bg-muted-foreground/20" />
               </div>
               {Array.from({ length: 6 }).map((_, i) => (
@@ -538,9 +541,9 @@ function RequisitionsContent() {
               <Button
                 onClick={() => setSheetOpen(true)}
                 size="lg"
-                className="mt-6 bg-emerald-600 hover:bg-emerald-700"
+                className="h-auto max-w-full whitespace-normal mt-6 bg-emerald-600 hover:bg-emerald-700"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newRequisition")}
               </Button>
             </div>
@@ -564,9 +567,9 @@ function RequisitionsContent() {
           <Button
             size="sm"
             onClick={() => setSheetOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newRequisition")}
           </Button>
         </PageHeader>
@@ -578,10 +581,10 @@ function RequisitionsContent() {
         {/* Status tabs + search */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+            <Tabs dir={localeDirection(unitPresentation.locale)} value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
                 <TabsTrigger value="all" className="whitespace-nowrap">
-                  {t("allCount", { count: totalCount })}
+                  <BidiText>{t("allCount", { count: totalCount })}</BidiText>
                 </TabsTrigger>
                 <TabsTrigger value="draft" className="whitespace-nowrap">
                   {t("draft")}
@@ -602,19 +605,18 @@ function RequisitionsContent() {
             </Tabs>
           </div>
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder={t("search")}
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input dir="auto" aria-label={t("search")} placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
         </div>
 
         {/* Date filters + sort */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("from")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">
               {t("from")}
             </span>
@@ -625,7 +627,7 @@ function RequisitionsContent() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("to")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -634,7 +636,7 @@ function RequisitionsContent() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <Select
+          <Select dir={localeDirection(unitPresentation.locale)}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -642,7 +644,7 @@ function RequisitionsContent() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-44 text-xs">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -658,13 +660,13 @@ function RequisitionsContent() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto max-w-full whitespace-normal h-8 text-xs text-muted-foreground"
               onClick={() => {
                 setDateFrom("");
                 setDateTo("");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearDates")}
             </Button>
           )}

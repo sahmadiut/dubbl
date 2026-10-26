@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -121,7 +123,7 @@ export default function LandedCostDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <p className="text-sm text-muted-foreground">{readError ? t("readFailed") : t("notFound")}</p>
-        <Button variant="ghost" size="sm" asChild className="mt-2">
+        <Button variant="ghost" size="sm" asChild className="h-auto max-w-full whitespace-normal mt-2">
           <Link href="/purchases/landed-costs">{t("back")}</Link>
         </Button>
       </div>
@@ -136,13 +138,13 @@ export default function LandedCostDetailPage() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild className="size-8 p-0">
             <Link href="/purchases/landed-costs" aria-label={t("back")}>
-              <ArrowLeft className="size-4" />
+              <ArrowLeft className="size-4 rtl:rotate-180" />
             </Link>
           </Button>
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-lg font-semibold tracking-tight">
-                {item.name}
+            <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+              <h1 className="min-w-0 text-lg font-semibold tracking-tight">
+                <BidiText>{item.name}</BidiText>
               </h1>
               <Badge
                 variant={item.status === "draft" ? "secondary" : "default"}
@@ -152,11 +154,11 @@ export default function LandedCostDetailPage() {
                     : ""
                 }
               >
-                {landedCostStatusLabel(t, item.status)}
+                <BidiText>{landedCostStatusLabel(t, item.status)}</BidiText>
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {t("summary", { method: landedCostMethodLabel(t, item.allocationMethod), amount: formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation) })}
+              <BidiText>{t("summary", { method: landedCostMethodLabel(t, item.allocationMethod), amount: formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation) })}</BidiText>
             </p>
           </div>
         </div>
@@ -164,7 +166,7 @@ export default function LandedCostDetailPage() {
           <Button
             size="sm"
             onClick={handleAllocate}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
             {t("allocate")}
           </Button>
@@ -176,30 +178,30 @@ export default function LandedCostDetailPage() {
       {/* PO / Bill reference */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
         {item.purchaseOrder && (
-          <span>{t("poReference", { number: item.purchaseOrder.poNumber })}</span>
+          <span><BidiText>{t("poReference", { number: item.purchaseOrder.poNumber })}</BidiText></span>
         )}
-        {item.bill && <span>{t("billReference", { number: item.bill.billNumber })}</span>}
+        {item.bill && <span><BidiText>{t("billReference", { number: item.bill.billNumber })}</BidiText></span>}
         {!item.purchaseOrder && !item.bill && <span>{t("noSource")}</span>}
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("totalCost")}</p>
           <p className="mt-1 text-xl font-bold font-mono tabular-nums">
-            {formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation)}
+            <BidiText>{formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation)}</BidiText>
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("components")}</p>
           <p className="mt-1 text-xl font-bold font-mono tabular-nums">
-            {item.components.length}
+            <BidiText>{item.components.length}</BidiText>
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">{t("method")}</p>
           <p className="mt-1 text-xl font-bold truncate">
-            {landedCostMethodLabel(t, item.allocationMethod)}
+            <BidiText>{landedCostMethodLabel(t, item.allocationMethod)}</BidiText>
           </p>
         </div>
       </div>
@@ -212,7 +214,7 @@ export default function LandedCostDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("componentDescription")}</TableHead>
-                <TableHead className="text-right">{t("amount")}</TableHead>
+                <TableHead className="text-end">{t("amount")}</TableHead>
                 <TableHead>{t("account")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -220,13 +222,13 @@ export default function LandedCostDetailPage() {
               {item.components.map((comp) => (
                 <TableRow key={comp.id}>
                   <TableCell className="font-medium">
-                    {comp.description}
+                    <BidiText>{comp.description}</BidiText>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm tabular-nums">
-                    {formatMoney(comp.amount, item.currencyCode, unitPresentation)}
+                  <TableCell className="text-end font-mono text-sm tabular-nums">
+                    <BidiText>{formatMoney(comp.amount, item.currencyCode, unitPresentation)}</BidiText>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {comp.accountId || "-"}
+                    <IdentifierText>{comp.accountId || "-"}</IdentifierText>
                   </TableCell>
                 </TableRow>
               ))}
@@ -245,8 +247,8 @@ export default function LandedCostDetailPage() {
                 <TableRow>
                   <TableHead>{t("poLineId")}</TableHead>
                   <TableHead>{t("componentId")}</TableHead>
-                  <TableHead className="text-right">{t("basis")}</TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-end">{t("basis")}</TableHead>
+                  <TableHead className="text-end">
                     {t("allocatedAmount")}
                   </TableHead>
                 </TableRow>
@@ -255,16 +257,16 @@ export default function LandedCostDetailPage() {
                 {item.lineAllocations.map((la) => (
                   <TableRow key={la.id}>
                     <TableCell className="font-mono text-sm">
-                      {la.purchaseOrderLineId.slice(0, 8)}...
+                      <IdentifierText>{la.purchaseOrderLineId.slice(0, 8)}...</IdentifierText>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {la.componentId.slice(0, 8)}...
+                      <IdentifierText>{la.componentId.slice(0, 8)}...</IdentifierText>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {la.allocationBasis}
+                    <TableCell className="text-end font-mono text-sm tabular-nums">
+                      <BidiText>{la.allocationBasis}</BidiText>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-sm tabular-nums">
-                      {formatMoney(la.allocatedAmount, item.currencyCode, unitPresentation)}
+                    <TableCell className="text-end font-mono text-sm tabular-nums">
+                      <BidiText>{formatMoney(la.allocatedAmount, item.currencyCode, unitPresentation)}</BidiText>
                     </TableCell>
                   </TableRow>
                 ))}

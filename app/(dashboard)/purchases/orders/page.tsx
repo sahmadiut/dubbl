@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -71,13 +74,13 @@ function buildColumns(t: PurchaseOrderTranslate, unitPresentation: NumberPresent
       header: t("number"),
       sortKey: "number",
       className: "w-32",
-      render: (r) => <span className="font-mono text-sm">{r.poNumber}</span>,
+      render: (r) => <span className="font-mono text-sm"><IdentifierText>{r.poNumber}</IdentifierText></span>,
     },
     {
       key: "contact",
       header: t("supplier"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -85,13 +88,13 @@ function buildColumns(t: PurchaseOrderTranslate, unitPresentation: NumberPresent
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.issueDate}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.issueDate}</IdentifierText></span>,
     },
     {
       key: "delivery",
       header: t("delivery"),
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.deliveryDate || "-"}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.deliveryDate || "-"}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -99,7 +102,7 @@ function buildColumns(t: PurchaseOrderTranslate, unitPresentation: NumberPresent
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={Object.hasOwn(statusColors, r.status) ? statusColors[r.status] : ""}>
-          {purchaseOrderStatusLabel(t, r.status)}
+          <BidiText>{purchaseOrderStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -107,10 +110,10 @@ function buildColumns(t: PurchaseOrderTranslate, unitPresentation: NumberPresent
       key: "total",
       header: t("total"),
       sortKey: "total",
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {procurementMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{procurementMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -328,8 +331,8 @@ function PurchaseOrdersContent() {
                 top: "bg-emerald-500",
               },
             ].map(({ icon: Icon, step, label, desc, color, bg, top }) => (
-              <div key={step} className="relative flex flex-col items-center py-6 px-3 sm:py-8 sm:px-5 text-center border-b sm:border-b-0 border-r-0 sm:border-r last:border-b-0 sm:last:border-r-0">
-                <div className={`absolute top-0 left-0 right-0 h-1 ${top} opacity-30`} />
+              <div key={step} className="relative flex flex-col items-center py-6 px-3 sm:py-8 sm:px-5 text-center border-b sm:border-b-0 border-e-0 sm:border-e last:border-b-0 sm:last:border-e-0">
+                <div className={`absolute top-0 start-0 end-0 h-1 ${top} opacity-30`} />
                 <div className={`flex size-11 items-center justify-center rounded-xl ${bg}`}>
                   <Icon className={`size-5 ${color}`} />
                 </div>
@@ -370,9 +373,9 @@ function PurchaseOrdersContent() {
               <Button
                 onClick={() => openDrawer("purchaseOrder")}
                 size="lg"
-                className="mt-6 bg-emerald-600 hover:bg-emerald-700"
+                className="h-auto max-w-full whitespace-normal mt-6 bg-emerald-600 hover:bg-emerald-700"
               >
-                <Plus className="mr-2 size-4" />
+                <Plus className="me-2 size-4" />
                 {t("newPurchaseOrder")}
 
               </Button>
@@ -394,9 +397,9 @@ function PurchaseOrdersContent() {
           <Button
             size="sm"
             onClick={() => openDrawer("purchaseOrder")}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Plus className="mr-2 size-4" />
+            <Plus className="me-2 size-4" />
             {t("newOrder")}
 
           </Button>
@@ -409,7 +412,7 @@ function PurchaseOrdersContent() {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">{t("loadedValue")}</p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all">
-              {totalValue}
+              <BidiText>{totalValue}</BidiText>
             </p>
           </div>
           <div className="space-y-1">
@@ -419,7 +422,7 @@ function PurchaseOrdersContent() {
 
             </p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all text-blue-600 dark:text-blue-400">
-              {activeValue}
+              <BidiText>{activeValue}</BidiText>
             </p>
           </div>
           <div className="space-y-1">
@@ -429,13 +432,13 @@ function PurchaseOrdersContent() {
 
             </p>
             <p className="text-lg sm:text-2xl font-bold font-mono tabular-nums tracking-tight break-all text-emerald-600 dark:text-emerald-400">
-              {receivedValue}
+              <BidiText>{receivedValue}</BidiText>
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">{t("orders")}</p>
             <p className="text-lg sm:text-2xl font-bold tabular-nums tracking-tight">
-              {countsData?.total ?? totalCount}
+              <BidiText>{countsData?.total ?? totalCount}</BidiText>
             </p>
           </div>
         </div>
@@ -446,31 +449,30 @@ function PurchaseOrdersContent() {
         {/* Status tabs + search */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+            <Tabs dir={localeDirection(unitPresentation.locale)} value={statusFilter} onValueChange={setStatusFilter}>
               <TabsList>
-                <TabsTrigger value="all" className="whitespace-nowrap">{t("allCount", { count: countsData?.total ?? totalCount })}</TabsTrigger>
-                <TabsTrigger value="draft" className="whitespace-nowrap">{t("draftCount", { count: statusCounts.draft || 0 })}</TabsTrigger>
-                <TabsTrigger value="sent" className="whitespace-nowrap">{t("sentCount", { count: statusCounts.sent || 0 })}</TabsTrigger>
-                <TabsTrigger value="partial" className="whitespace-nowrap">{t("partialCount", { count: statusCounts.partial || 0 })}</TabsTrigger>
-                <TabsTrigger value="received" className="whitespace-nowrap">{t("receivedCount", { count: statusCounts.received || 0 })}</TabsTrigger>
-                <TabsTrigger value="closed" className="whitespace-nowrap" title={t("fullyBilledHint")}>{t("closedCount", { count: statusCounts.closed || 0 })}</TabsTrigger>
+                <TabsTrigger value="all" className="whitespace-nowrap"><BidiText>{t("allCount", { count: countsData?.total ?? totalCount })}</BidiText></TabsTrigger>
+                <TabsTrigger value="draft" className="whitespace-nowrap"><BidiText>{t("draftCount", { count: statusCounts.draft || 0 })}</BidiText></TabsTrigger>
+                <TabsTrigger value="sent" className="whitespace-nowrap"><BidiText>{t("sentCount", { count: statusCounts.sent || 0 })}</BidiText></TabsTrigger>
+                <TabsTrigger value="partial" className="whitespace-nowrap"><BidiText>{t("partialCount", { count: statusCounts.partial || 0 })}</BidiText></TabsTrigger>
+                <TabsTrigger value="received" className="whitespace-nowrap"><BidiText>{t("receivedCount", { count: statusCounts.received || 0 })}</BidiText></TabsTrigger>
+                <TabsTrigger value="closed" className="whitespace-nowrap" title={t("fullyBilledHint")}><BidiText>{t("closedCount", { count: statusCounts.closed || 0 })}</BidiText></TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder={t("search")}
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input dir="auto" aria-label={t("search")} placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
         </div>
 
         {/* Date filters + sort */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("from")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
@@ -479,7 +481,7 @@ function PurchaseOrdersContent() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("to")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -488,7 +490,7 @@ function PurchaseOrdersContent() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <Select
+          <Select dir={localeDirection(unitPresentation.locale)}
             value={`${sortBy}:${sortOrder}`}
             onValueChange={(v) => {
               const [key, order] = v.split(":");
@@ -496,7 +498,7 @@ function PurchaseOrdersContent() {
               setSortOrder(order as "asc" | "desc");
             }}
           >
-            <SelectTrigger className="h-8 w-44 text-xs">
+            <SelectTrigger aria-label={t("sortBy")} className="h-8 w-44 text-xs">
               <SelectValue placeholder={t("sortBy")} />
             </SelectTrigger>
             <SelectContent>
@@ -512,13 +514,13 @@ function PurchaseOrdersContent() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto max-w-full whitespace-normal h-8 text-xs text-muted-foreground"
               onClick={() => {
                 setDateFrom("");
                 setDateTo("");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearDates")}
 
             </Button>

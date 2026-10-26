@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { currencyLabel } from "@/i18n/currency-labels";
@@ -229,9 +232,9 @@ export default function LandedCostsPage() {
   return (
     <div className="space-y-6">
       {readError && <p role="alert" className="text-sm text-destructive">{t("readFailed")}</p>}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">
+          <h1 className="min-w-0 text-lg font-semibold tracking-tight">
             {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -241,9 +244,9 @@ export default function LandedCostsPage() {
         <Button
           size="sm"
           onClick={() => setSheetOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700"
+          className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("newAllocation")}
         </Button>
       </div>
@@ -255,10 +258,10 @@ export default function LandedCostsPage() {
               <TableHead>{t("name")}</TableHead>
               <TableHead>{t("source")}</TableHead>
               <TableHead>{t("method")}</TableHead>
-              <TableHead className="text-right">{t("totalCost")}</TableHead>
+              <TableHead className="text-end">{t("totalCost")}</TableHead>
               <TableHead>{t("status")}</TableHead>
               <TableHead>{t("date")}</TableHead>
-              <TableHead className="text-right">{t("actions")}</TableHead>
+              <TableHead className="text-end">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -280,17 +283,17 @@ export default function LandedCostsPage() {
                     router.push(`/purchases/landed-costs/${item.id}`)
                   }
                 >
-                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell className="font-medium"><BidiText>{item.name}</BidiText></TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {item.purchaseOrder?.poNumber ||
+                    <BidiText>{item.purchaseOrder?.poNumber ||
                       item.bill?.billNumber ||
-                      "-"}
+                      "-"}</BidiText>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {landedCostMethodLabel(t, item.allocationMethod)}
+                    <BidiText>{landedCostMethodLabel(t, item.allocationMethod)}</BidiText>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm tabular-nums">
-                    {formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation)}
+                  <TableCell className="text-end font-mono text-sm tabular-nums">
+                    <BidiText>{formatMoney(item.totalCostAmount, item.currencyCode, unitPresentation)}</BidiText>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -303,20 +306,20 @@ export default function LandedCostsPage() {
                           : ""
                       }
                     >
-                      {landedCostStatusLabel(t, item.status)}
+                      <BidiText>{landedCostStatusLabel(t, item.status)}</BidiText>
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {new Date(item.createdAt).toLocaleDateString()}
+                    <BidiText>{new Date(item.createdAt).toLocaleDateString()}</BidiText>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <div
                       className="flex items-center justify-end gap-1"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {item.status === "draft" && (
                         <>
-                          <Button
+                          <Button className="h-auto max-w-full whitespace-normal"
                             variant="outline"
                             size="sm"
                             onClick={() => handleAllocate(item.id)}
@@ -328,7 +331,7 @@ export default function LandedCostsPage() {
                             size="sm"
                             aria-label={t("delete")}
                             onClick={() => handleDelete(item.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="h-auto max-w-full whitespace-normal text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="size-3.5" />
                           </Button>
@@ -351,7 +354,7 @@ export default function LandedCostsPage() {
           setSheetOpen(v);
         }}
       >
-        <SheetContent className="sm:max-w-xl w-full p-0 flex flex-col">
+        <SheetContent dir={localeDirection(unitPresentation.locale)} className="sm:max-w-xl w-full p-0 flex flex-col">
           <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b">
             <SheetTitle>{t("newAllocation")}</SheetTitle>
           </SheetHeader>
@@ -362,8 +365,8 @@ export default function LandedCostsPage() {
             <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t("requiredName")}</label>
-                  <Input
+                  <label htmlFor="rtl042-landed-costs-list-12418" className="text-sm font-medium">{t("requiredName")}</label>
+                  <Input id="rtl042-landed-costs-list-12418" aria-label={t("requiredName")} dir="auto"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t("namePlaceholder")}
@@ -372,18 +375,18 @@ export default function LandedCostsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">
+                    <label htmlFor="rtl042-landed-costs-list-12934" className="text-sm font-medium">
                       {t("purchaseOrderId")}
                     </label>
-                    <Input
+                    <Input id="rtl042-landed-costs-list-12934" aria-label={t("purchaseOrderId")} dir="auto"
                       value={purchaseOrderId}
                       onChange={(e) => setPurchaseOrderId(e.target.value)}
                       placeholder={t("poIdPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{t("billId")}</label>
-                    <Input
+                    <label htmlFor="rtl042-landed-costs-list-13367" className="text-sm font-medium">{t("billId")}</label>
+                    <Input id="rtl042-landed-costs-list-13367" aria-label={t("billId")} dir="auto"
                       value={billId}
                       onChange={(e) => setBillId(e.target.value)}
                       placeholder={t("billId")}
@@ -395,11 +398,11 @@ export default function LandedCostsPage() {
                   <label className="text-sm font-medium">
                     {t("allocationMethod")}
                   </label>
-                  <Select
+                  <Select dir={localeDirection(unitPresentation.locale)}
                     value={allocationMethod}
                     onValueChange={setAllocationMethod}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger aria-label={t("allocationMethod")} className="h-auto max-w-full whitespace-normal *:data-[slot=select-value]:line-clamp-none">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -413,25 +416,25 @@ export default function LandedCostsPage() {
               <div className="h-px bg-border" />
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <label className="text-sm font-medium">
                     {t("requiredComponents")}
                   </label>
-                  <Button
+                  <Button className="h-auto max-w-full whitespace-normal"
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addComponent}
                   >
-                    <Plus className="mr-2 size-3.5" />
+                    <Plus className="me-2 size-3.5" />
                     {t("add")}
                   </Button>
                 </div>
                 {components.map((comp, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <span className="text-sm font-medium text-muted-foreground">
-                        {t("component", { number: index + 1 })}
+                        <BidiText>{t("component", { number: index + 1 })}</BidiText>
                       </span>
                       {components.length > 1 && (
                         <Button
@@ -440,17 +443,17 @@ export default function LandedCostsPage() {
                           size="sm"
                           aria-label={t("removeComponent", { number: index + 1 })}
                           onClick={() => removeComponent(index)}
-                          className="text-red-600 hover:text-red-700"
+                          className="h-auto max-w-full whitespace-normal text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="size-4" />
                         </Button>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-medium">
+                      <label htmlFor={`rtl042-landed-costs-list-16375-${index}`} className="text-xs font-medium">
                         {t("requiredDescription")}
                       </label>
-                      <Input
+                      <Input id={`rtl042-landed-costs-list-16375-${index}`} aria-label={t("requiredDescription")} dir="auto"
                         value={comp.description}
                         onChange={(e) =>
                           updateComponent(index, {
@@ -462,8 +465,8 @@ export default function LandedCostsPage() {
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <label className="text-xs font-medium">{t("requiredAmount")}</label>
-                        <Input
+                        <label htmlFor={`rtl042-landed-costs-list-17046-${index}`} className="text-xs font-medium">{t("requiredAmount")}</label>
+                        <Input id={`rtl042-landed-costs-list-17046-${index}`} aria-label={t("requiredAmount")} dir="auto"
                           type="number"
                           step="0.01"
                           min="0"
@@ -475,10 +478,10 @@ export default function LandedCostsPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-medium">
+                        <label htmlFor={`rtl042-landed-costs-list-17735-${index}`} className="text-xs font-medium">
                           {t("accountId")}
                         </label>
-                        <Input
+                        <Input id={`rtl042-landed-costs-list-17735-${index}`} aria-label={t("accountId")} dir="auto"
                           value={comp.accountId}
                           onChange={(e) =>
                             updateComponent(index, {
@@ -495,7 +498,7 @@ export default function LandedCostsPage() {
             </div>
 
             <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-              <Button
+              <Button className="h-auto max-w-full whitespace-normal"
                 type="button"
                 variant="outline"
                 onClick={() => setSheetOpen(false)}
@@ -505,7 +508,7 @@ export default function LandedCostsPage() {
               <Button
                 type="submit"
                 disabled={saving}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
               >
                 {saving ? t("creating") : t("create")}
               </Button>

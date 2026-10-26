@@ -1,6 +1,9 @@
 "use client";
 
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { useTranslations } from "next-intl";
@@ -46,14 +49,14 @@ function buildColumns(t: ReturnType<typeof useTranslations<"GoodsReceipts">>, un
       sortKey: "number",
       className: "w-32",
       render: (r) => (
-        <span className="font-mono text-sm">{r.receiptNumber}</span>
+        <span className="font-mono text-sm"><IdentifierText>{r.receiptNumber}</IdentifierText></span>
       ),
     },
     {
       key: "contact",
       header: t("supplier"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.contact?.name || "-"}</span>
+        <span className="text-sm font-medium"><BidiText>{r.contact?.name || "-"}</BidiText></span>
       ),
     },
     {
@@ -61,7 +64,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"GoodsReceipts">>, un
       header: t("date"),
       sortKey: "date",
       className: "w-28",
-      render: (r) => <span className="text-sm">{r.date}</span>,
+      render: (r) => <span className="text-sm"><IdentifierText>{r.date}</IdentifierText></span>,
     },
     {
       key: "status",
@@ -69,17 +72,17 @@ function buildColumns(t: ReturnType<typeof useTranslations<"GoodsReceipts">>, un
       className: "w-24",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {goodsReceiptStatusLabel(t, r.status)}
+          <BidiText>{goodsReceiptStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
     {
       key: "value",
       header: t("valueReceived"),
-      className: "w-32 text-right",
+      className: "w-32 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums break-all">
-          {procurementMoney(r.total, r.currencyCode, unitPresentation)}
+          <BidiText>{procurementMoney(r.total, r.currencyCode, unitPresentation)}</BidiText>
         </span>
       ),
     },
@@ -231,15 +234,15 @@ function GoodsReceiptsContent() {
           {/* Top: title + hint (no "new" — goods are received from a purchase order) */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
+              <h2 className="min-w-0 text-lg font-semibold tracking-tight">{t("title")}</h2>
               <p className="mt-1 text-sm text-muted-foreground max-w-md">
                 {t("description")}
               </p>
             </div>
-            <Button variant="outline" asChild className="shrink-0">
+            <Button variant="outline" asChild className="h-auto max-w-full whitespace-normal shrink-0">
               <Link href="/purchases/orders">
                 {t("goOrders")}
-                <ArrowRight className="ml-2 size-4" />
+                <ArrowRight className="ms-2 size-4 rtl:rotate-180" />
               </Link>
             </Button>
           </div>
@@ -261,7 +264,7 @@ function GoodsReceiptsContent() {
                       <p className="text-[11px] text-muted-foreground">PO-0042</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium">{exampleMoney(120000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium"><BidiText>{exampleMoney(120000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5 bg-emerald-50/30 dark:bg-emerald-950/10">
                   <div className="flex items-center gap-3">
@@ -273,7 +276,7 @@ function GoodsReceiptsContent() {
                       <p className="text-[11px] text-muted-foreground">GRN-0001</p>
                     </div>
                   </div>
-                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">{"+" + exampleMoney(120000n, "USD", unitPresentation)}</span>
+                  <span className="font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400"><BidiText>{"+" + exampleMoney(120000n, "USD", unitPresentation)}</BidiText></span>
                 </div>
                 <div className="flex items-center justify-between px-3 sm:px-5 py-3.5">
                   <div className="flex items-center gap-3">
@@ -292,25 +295,25 @@ function GoodsReceiptsContent() {
                 {
                   title: t("openOrder"),
                   desc: t("openOrderHint"),
-                  color: "border-l-blue-400",
+                  color: "border-s-blue-400",
                 },
                 {
                   title: t("markArrived"),
                   desc: t("markArrivedHint"),
-                  color: "border-l-emerald-400",
+                  color: "border-s-emerald-400",
                 },
                 {
                   title: t("stockUpdates"),
                   desc: t("stockUpdatesHint"),
-                  color: "border-l-amber-400",
+                  color: "border-s-amber-400",
                 },
                 {
                   title: t("billLater"),
                   desc: t("billLaterHint"),
-                  color: "border-l-purple-400",
+                  color: "border-s-purple-400",
                 },
               ].map(({ title, desc, color }) => (
-                <div key={title} className={`rounded-lg border border-l-[3px] ${color} bg-card px-4 py-3`}>
+                <div key={title} className={`rounded-lg border border-s-[3px] ${color} bg-card px-4 py-3`}>
                   <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
                 </div>
@@ -336,7 +339,7 @@ function GoodsReceiptsContent() {
       {/* Goods receipt table */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+          <Tabs dir={localeDirection(unitPresentation.locale)} value={statusFilter} onValueChange={setStatusFilter}>
             <TabsList className="overflow-x-auto">
               <TabsTrigger value="all" className="whitespace-nowrap">{t("all")}</TabsTrigger>
               <TabsTrigger value="received" className="whitespace-nowrap">{t("receivedTab")}</TabsTrigger>
@@ -357,15 +360,14 @@ function GoodsReceiptsContent() {
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <Input
-              placeholder={t("search")}
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input dir="auto" aria-label={t("search")} placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-56 pl-8 text-xs"
+              className="h-8 w-56 ps-8 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("from")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("from")}</span>
             <DatePicker
               value={dateFrom}
@@ -374,7 +376,7 @@ function GoodsReceiptsContent() {
               className="h-8 w-40 text-xs"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div role="group" aria-label={t("to")} className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground shrink-0">{t("to")}</span>
             <DatePicker
               value={dateTo}
@@ -387,10 +389,10 @@ function GoodsReceiptsContent() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto max-w-full whitespace-normal h-8 text-xs text-muted-foreground"
               onClick={() => { setSearch(""); setDateFrom(""); setDateTo(""); }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clearFilters")}
             </Button>
           )}
@@ -418,7 +420,7 @@ function GoodsReceiptsContent() {
           <>
             <div className="flex items-center justify-between pt-1">
               <p className="text-xs text-muted-foreground">
-                {t("showing", { loaded: receipts.length, total: totalCount })}
+                <BidiText>{t("showing", { loaded: receipts.length, total: totalCount })}</BidiText>
               </p>
             </div>
             {hasMore && (

@@ -1,0 +1,37 @@
+# RTL-042 procurement and landed costs technical acceptance
+
+Codex (`codex-batch-task09`), client date 2026-10-27. Live next task claimed from clean `c4c134e0`. First task of the owner-authorized sequential pair: one scoped local commit, no push. Read AGENTS, START_HERE, project/map, frontend role, task and exhaustive ownership registry. DEC-005 removes screenshot prerequisites; DEC-008 freezes Stripe.
+
+## Exhaustive eight-source audit
+
+| Assigned source under `app/(dashboard)/purchases/` | Repairs and preserved behavior |
+|---|---|
+| `orders/page.tsx` | Isolated raw order/date IDs, supplier and unknown status text, complete exact-money overview/row/count tokens. Logical alignment, icon/search offsets and process borders; locale-directed status/sort controls, named auto-direction search and date groups, wrapping actions. Preserved org/filter/generation/pagination/count guards, currency grouping, local exact sorting, drawer/row callbacks and machine values. |
+| `orders/[id]/page.tsx` | Isolated order ID, supplier/date/status/notes and complete money/count/preview tokens; logical spacing, mirrored arrow, wrapping controls and one-column narrow summary. Existing inline editor sheet directed; native line labels associated, free text auto-directed, date/supplier/account groups named. Preserved price/quantity parsing and preview policy, editor hydration/PATCH, remaining quantity receipt creation, confirm/delete/convert/send routes and outputs. |
+| `requisitions/page.tsx` | Isolated identifiers/caller/date/status/exact amount/count text; logical list/search/borders, directed filters and creation sheet, named search/date groups, associated native creation fields and named shared-picker groups. Retained optional supplier/currency and shared editor boundaries, raw create payload, recurrence-free purchase lifecycle, exact sorting and cancellation/generation/pagination checks. |
+| `requisitions/[id]/page.tsx` | Shared qualified PageHeader keeps its original string title/description API. Isolated status/date/reference/notes/rejection and complete amount tokens; mirrored/logical back/actions, directed rejection sheet with associated auto-direction reason field. Preserved submit/approve/reject/convert machine status values, raw rejection text and canonical redirects. |
+| `goods-receipts/page.tsx` | Isolated receipt/order/date/supplier/status values, complete money and signed example tokens, overview/count text. Logical offsets/alignment, mirrored navigation arrow, locale-directed tabs, named search/date groups and wrapping links/actions. Preserved exact grouped receipt totals, raw filters, loaded/empty/error/pagination and org/generation guards. |
+| `goods-receipts/[id]/page.tsx` | Retained shared PageHeader API/isolation. Isolated order-link/date/status/item-count/total/notes text; logical/mirrored back and wrapping actions. Preserved GRNI journal/order links and raw create-bill POST, headers, redirect and failure handling. |
+| `landed-costs/page.tsx` | Isolated caller/source/method/status/date/full money text; logical table alignment and wrapping header/actions. Directed creation sheet and allocation selector; native fields named and associated, repeated component IDs distinguish rows; full selector value can wrap. Preserved existing exact `amountMinor` conversion, nullable source/account IDs, allocation method and raw create/delete/bodyless allocate requests. |
+| `landed-costs/[id]/page.tsx` | Isolated caller, unknown method/status, full summary/reference/money/basis/count tokens and account/truncated allocation IDs including ellipses. Logical numeric alignment, mirrored arrow and wrapping actions; one-column narrow summary. Preserved saved component/line-allocation values and existing money/date presentation, allocation request/response guards and refresh behavior. |
+
+All eight assigned sources independently reviewed. Shared `ProcurementMoneyDetails` remains RTL-048, shared create drawers/editors/pickers remain their own boundaries. No financial calculation, stock/allocation/approval eligibility, API/MCP operation, schema/migration, provider/Stripe or issued/output builder change. Existing MCP parity is unchanged because no operation changes. RTL-015/010/008/002 retain independent integration acceptance.
+
+## Verification
+
+`tests/rtl-purchases-procurement.test.ts` executes all eight production pages with real presentation providers, next-intl, bidi primitives, fields, tables, money adapters and installed Tailwind. Own state/effect scheduling, navigation, portals and out-of-scope shared editor/picker/send/history/confirmation boundaries are controlled. Cases cover en-US/fa-IR x latn/arabext, long escaped mixed caller strings, identifiers/dates, exact amounts, raw filter/navigation callbacks, saved allocation IDs, actual raw rejection, remaining-quantity receipt POST, conversion redirect, canonical landed creation `amountMinor: "1"` and bodyless allocation POST. CSS compilation checks logical offsets/margins/borders/alignment, wrapping, local scrolling, one-column layout, isolation and mirrored arrows. This is component/CSS evidence, not browser geometry.
+
+Executed from repository root:
+
+- Retained eight-suite procurement/catalog/wire/money run: 45/45 passed.
+- Final combined command: `node --import tsx --test --test-concurrency=1 tests/purchase-order-catalogs.test.ts tests/requisition-catalogs.test.ts tests/goods-receipt-catalogs.test.ts tests/landed-cost-catalogs.test.ts tests/procurement-ui-money.test.ts tests/purchase-order-wire.test.ts tests/purchase-requisition-wire.test.ts tests/goods-receipt-wire.test.ts tests/rtl-purchases-procurement.test.ts`: 50/50 passed, zero failures/skips/cancellations. Retained cases include exact aliases/ranges/quantities/rounding, org/read/HTTP/JSON/shape/abort/generation boundaries, form failure preservation, canonical send/receive/approve/reject/convert and saved-detail output behavior.
+- Final `npx tsc --noEmit`: passed. `npm run lint`: passed with zero errors/21 existing warnings.
+- `pnpm i18n:check`: 10,723 paired keys. `node --import tsx .agentic/scripts/verify_legacy_money.mjs`: nine checks passed.
+- `python .agentic/scripts/money_inventory.py --write`; `node --import tsx .agentic/scripts/verify_money_inventory.mjs`: 417 schema columns/1,902 consumer hashes verified. UTF-8 structured comparison confirms schema unchanged; changed consumer entries are eight owned pages plus the new guard, no removals.
+- Controller validation and `git diff --check` at closeout; scoped commit/status inspection before handoff.
+
+An initial generated selector label used nonexistent `LandedCosts.sortBy`; typecheck and rendered catalog diagnostics caught it and it was corrected to existing `allocationMethod`. New guard fixtures were corrected for actual sheet Description, search-vs-editor identity, multiline org lookup and canonical `quantityExact` receipt payload. No runtime guard or financial assertion weakened. Temporary editing helpers were removed before closeout.
+
+## Limits and handoff
+
+Browser geometry, keyboard/caret/focus/AT/zoom, native Persian linguistic/accounting/legal review, real DB/REST/MCP/output/provider execution, production IRR/deployment and hosted CI remain unverified. No full build, dev server or application DB writes performed. Technical self-review is Codex, not independent/human review. Commit RTL-042 locally only; the following task's fresh agent performs the authorized paired push.

@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import { currencyLabel } from "@/i18n/currency-labels";
 import { useTranslations } from "next-intl";
@@ -115,14 +118,14 @@ function DrawerFooter({
   const t = useTranslations("PurchaseOrders");
   return (
     <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t bg-background/80 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur-sm">
-      <Button type="button" variant="outline" onClick={onClose}>
+      <Button className="h-auto max-w-full whitespace-normal" type="button" variant="outline" onClick={onClose}>
         {t("cancel")}
 
       </Button>
       <Button
         type="submit"
         disabled={saving || disabled}
-        className="bg-emerald-600 hover:bg-emerald-700"
+        className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
       >
         {saving ? t("saving") : label}
       </Button>
@@ -230,7 +233,7 @@ function EditPODrawer({
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-2xl w-full p-0 flex flex-col">
+      <SheetContent dir={localeDirection(unitPresentation.locale)} className="sm:max-w-2xl w-full p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 border-b space-y-3">
           <div className="flex items-center gap-3">
             <DrawerIcon><Package className="size-5" /></DrawerIcon>
@@ -247,55 +250,55 @@ function EditPODrawer({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>{t("requiredSupplier")}</Label>
-                  <ContactPicker value={contactId} onChange={setContactId} type="supplier" />
+                  <div role="group" aria-label={t("requiredSupplier")}><ContactPicker value={contactId} onChange={setContactId} type="supplier" /></div>
                 </div>
                 <div className="space-y-2">
                   <Label>{t("issueDate")}</Label>
-                  <DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDatePlaceholder")} />
+                  <div role="group" aria-label={t("issueDate")}><DatePicker value={issueDate} onChange={setIssueDate} placeholder={t("issueDatePlaceholder")} /></div>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>{t("deliveryDate")}</Label>
-                <DatePicker value={deliveryDate} onChange={setDeliveryDate} placeholder={t("expectedDelivery")} />
+                <div role="group" aria-label={t("deliveryDate")}><DatePicker value={deliveryDate} onChange={setDeliveryDate} placeholder={t("expectedDelivery")} /></div>
               </div>
             </div>
 
             <div className="h-px bg-border" />
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <SectionLabel>{t("lineItems")}</SectionLabel>
-                <Button type="button" variant="outline" size="sm" onClick={addLine}>
-                  <Plus className="mr-2 size-3.5" />{t("addLine")}
+                <Button className="h-auto max-w-full whitespace-normal" type="button" variant="outline" size="sm" onClick={addLine}>
+                  <Plus className="me-2 size-3.5" />{t("addLine")}
                 </Button>
               </div>
               <div className="space-y-4">
                 {lines.map((line, index) => (
                   <div key={index} className="rounded-lg border p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">{t("line", { line: index + 1 })}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-muted-foreground"><BidiText>{t("line", { line: index + 1 })}</BidiText></span>
                       {lines.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)} aria-label={t("removeLine", { line: index + 1 })} className="text-red-600 hover:text-red-700">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)} aria-label={t("removeLine", { line: index + 1 })} className="h-auto max-w-full whitespace-normal text-red-600 hover:text-red-700">
                           <Trash2 className="size-4" />
                         </Button>
                       )}
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                       <div className="space-y-2 sm:col-span-3">
-                        <Label className="text-xs">{t("requiredDescription")}</Label>
-                        <Input aria-label={t("lineDescription", { line: index + 1 })} value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
+                        <Label htmlFor={`rtl042-orders-detail-11191-${index}`} className="text-xs">{t("requiredDescription")}</Label>
+                        <Input id={`rtl042-orders-detail-11191-${index}`} dir="auto" aria-label={t("lineDescription", { line: index + 1 })} value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">{t("quantity")}</Label>
-                        <Input type="number" step="any" aria-label={t("lineQuantity", { line: index + 1 })} value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
+                        <Label htmlFor={`rtl042-orders-detail-11543-${index}`} className="text-xs">{t("quantity")}</Label>
+                        <Input id={`rtl042-orders-detail-11543-${index}`} dir="auto" type="number" step="any" aria-label={t("lineQuantity", { line: index + 1 })} value={line.quantity} onChange={(e) => updateLine(index, { quantity: e.target.value })} />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs">{t("unitPrice", { currency: currencyLabel(po.currencyCode, unitPresentation.locale) })}</Label>
-                        <Input inputMode="decimal" aria-label={t("linePrice", { line: index + 1 })} value={line.unitPrice} onChange={(e) => updateLine(index, { unitPrice: e.target.value })} />
+                        <Label htmlFor={`rtl042-orders-detail-12004-${index}`} className="text-xs"><BidiText>{t("unitPrice", { currency: currencyLabel(po.currencyCode, unitPresentation.locale) })}</BidiText></Label>
+                        <Input id={`rtl042-orders-detail-12004-${index}`} dir="auto" inputMode="decimal" aria-label={t("linePrice", { line: index + 1 })} value={line.unitPrice} onChange={(e) => updateLine(index, { unitPrice: e.target.value })} />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">{t("account")}</Label>
-                        <AccountPicker value={line.accountId} onChange={(val) => updateLine(index, { accountId: val })} typeFilter={["expense"]} />
+                        <div role="group" aria-label={t("account")}><AccountPicker value={line.accountId} onChange={(val) => updateLine(index, { accountId: val })} typeFilter={["expense"]} /></div>
                       </div>
                     </div>
                   </div>
@@ -306,10 +309,10 @@ function EditPODrawer({
             <div className="h-px bg-border" />
 
             <p className="text-sm">{t("editPolicy")}</p>
-            {preview.error ? <p role="alert" className="text-sm text-red-600">{t("checkLines")}</p> : <p className="text-right font-mono break-all">{t("previewTotal", { amount: procurementMoney(preview.total, po.currencyCode, unitPresentation) })}</p>}
+            {preview.error ? <p role="alert" className="text-sm text-red-600">{t("checkLines")}</p> : <p className="text-end font-mono break-all"><BidiText>{t("previewTotal", { amount: procurementMoney(preview.total, po.currencyCode, unitPresentation) })}</BidiText></p>}
             <div className="space-y-4">
               <SectionLabel>{t("notes")}</SectionLabel>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("internalNotes")} rows={3} />
+              <Textarea aria-label={t("internalNotes")} dir="auto" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("internalNotes")} rows={3} />
             </div>
           </div>
           <DrawerFooter onClose={onClose} saving={saving} disabled={!!preview.error || !contactId || lines.some(line => !line.description.trim())} label={t("saveChanges")} />
@@ -465,7 +468,7 @@ function PODetailContent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
         <p className="text-sm text-muted-foreground">{t("notFound")}</p>
-        <Button variant="ghost" size="sm" asChild className="mt-2">
+        <Button variant="ghost" size="sm" asChild className="h-auto max-w-full whitespace-normal mt-2">
           <Link href="/purchases/orders">{t("back")}</Link>
         </Button>
       </div>
@@ -481,47 +484,47 @@ function PODetailContent() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild className="size-8 p-0" aria-label={t("back")}>
-              <Link href="/purchases/orders"><ArrowLeft className="size-4" /></Link>
+              <Link href="/purchases/orders"><ArrowLeft className="size-4 rtl:rotate-180" /></Link>
             </Button>
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-lg font-semibold tracking-tight">{po.poNumber}</h1>
-                <Badge variant="outline" className={sc.class}>{purchaseOrderStatusLabel(t, po.status)}</Badge>
+              <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+                <h1 className="min-w-0 text-lg font-semibold tracking-tight"><IdentifierText>{po.poNumber}</IdentifierText></h1>
+                <Badge variant="outline" className={sc.class}><BidiText>{purchaseOrderStatusLabel(t, po.status)}</BidiText></Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {po.contact?.name || t("unknownSupplier")}
-                {po.deliveryDate && <span>{t("deliveryInline", { date: po.deliveryDate })}</span>}
+                <BidiText>{po.contact?.name || t("unknownSupplier")}</BidiText>
+                {po.deliveryDate && <span><BidiText>{t("deliveryInline", { date: po.deliveryDate })}</BidiText></span>}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {po.status === "draft" && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                  <Pencil className="mr-2 size-3.5" />{t("edit")}
+                <Button className="h-auto max-w-full whitespace-normal" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                  <Pencil className="me-2 size-3.5" />{t("edit")}
                 </Button>
-                <Button size="sm" onClick={() => setSendDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Send className="mr-2 size-3.5" />{t("send")}
+                <Button size="sm" onClick={() => setSendDialogOpen(true)} className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700">
+                  <Send className="me-2 size-3.5" />{t("send")}
                 </Button>
-                <Button variant="outline" size="sm" disabled={acting} onClick={handleDelete} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="mr-2 size-3.5" />{t("delete")}
+                <Button variant="outline" size="sm" disabled={acting} onClick={handleDelete} className="h-auto max-w-full whitespace-normal text-red-600 hover:text-red-700">
+                  <Trash2 className="me-2 size-3.5" />{t("delete")}
                 </Button>
               </>
             )}
             {["sent", "partial"].includes(po.status) && (
-              <Button
+              <Button className="h-auto max-w-full whitespace-normal"
                 variant="outline"
                 size="sm"
                 onClick={handleReceiveItems}
                 disabled={acting}
                 title={t("receiveHint")}
               >
-                <PackageCheck className="mr-2 size-3.5" />{t("receive")}
+                <PackageCheck className="me-2 size-3.5" />{t("receive")}
               </Button>
             )}
             {["sent", "partial", "received"].includes(po.status) && (
-              <Button size="sm" disabled={acting} onClick={handleConvert} className="bg-emerald-600 hover:bg-emerald-700" title={t("convertHint")}>
-                <ShoppingCart className="mr-2 size-3.5" />{t("convert")}
+              <Button size="sm" disabled={acting} onClick={handleConvert} className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700" title={t("convertHint")}>
+                <ShoppingCart className="me-2 size-3.5" />{t("convert")}
               </Button>
             )}
           </div>
@@ -532,30 +535,30 @@ function PODetailContent() {
 
         {/* Info */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span>{t("issued", { date: po.issueDate })}</span>
-          {po.deliveryDate && <span>{t("deliveryOn", { date: po.deliveryDate })}</span>}
+          <span><BidiText>{t("issued", { date: po.issueDate })}</BidiText></span>
+          {po.deliveryDate && <span><BidiText>{t("deliveryOn", { date: po.deliveryDate })}</BidiText></span>}
         </div>
 
         {po.notes && (
           <div className="rounded-lg border p-4">
             <p className="text-xs text-muted-foreground mb-1">{t("notes")}</p>
-            <p className="text-sm">{po.notes}</p>
+            <p className="text-sm whitespace-pre-wrap"><BidiText>{po.notes}</BidiText></p>
           </div>
         )}
 
         {/* Summary cards */}
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("total")}</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums break-all">{procurementMoney(po.total, po.currencyCode, unitPresentation)}</p>
+            <p className="mt-1 text-xl font-bold font-mono tabular-nums break-all"><BidiText>{procurementMoney(po.total, po.currencyCode, unitPresentation)}</BidiText></p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("items")}</p>
-            <p className="mt-1 text-xl font-bold font-mono tabular-nums">{po.lines.length}</p>
+            <p className="mt-1 text-xl font-bold font-mono tabular-nums"><BidiText>{po.lines.length}</BidiText></p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{t("supplier")}</p>
-            <p className="mt-1 text-xl font-bold truncate">{po.contact?.name || "-"}</p>
+            <p className="mt-1 text-xl font-bold truncate"><BidiText>{po.contact?.name || "-"}</BidiText></p>
           </div>
         </div>
 

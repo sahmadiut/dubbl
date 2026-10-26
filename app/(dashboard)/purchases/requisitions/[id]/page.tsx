@@ -1,5 +1,8 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+import { localeDirection } from "@/i18n/locale";
+
 import { usePresentation } from "@/i18n/provider";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
@@ -246,9 +249,9 @@ function RequisitionDetailContent() {
         title={req.requisitionNumber}
         description={t("supplierName", { name: req.contact?.name || t("notAssigned") })}
       >
-        <Button variant="outline" size="sm" asChild>
+        <Button className="h-auto max-w-full whitespace-normal" variant="outline" size="sm" asChild>
           <Link href="/purchases/requisitions">
-            <ArrowLeft className="mr-2 size-4" />
+            <ArrowLeft className="me-2 size-4 rtl:rotate-180" />
             {t("back")}
           </Link>
         </Button>
@@ -257,9 +260,9 @@ function RequisitionDetailContent() {
             size="sm"
             onClick={handleSubmit}
             disabled={acting}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <Send className="mr-2 size-4" />
+            <Send className="me-2 size-4" />
             {t("submit")}
           </Button>
         )}
@@ -269,9 +272,9 @@ function RequisitionDetailContent() {
               size="sm"
               onClick={handleApprove}
               disabled={acting}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
-              <Check className="mr-2 size-4" />
+              <Check className="me-2 size-4" />
               {t("approve")}
             </Button>
             <Button
@@ -279,9 +282,9 @@ function RequisitionDetailContent() {
               variant="outline"
               onClick={() => setRejectSheetOpen(true)}
               disabled={acting}
-              className="text-red-600"
+              className="h-auto max-w-full whitespace-normal text-red-600"
             >
-              <X className="mr-2 size-4" />
+              <X className="me-2 size-4" />
               {t("reject")}
             </Button>
           </>
@@ -291,9 +294,9 @@ function RequisitionDetailContent() {
             size="sm"
             onClick={handleConvert}
             disabled={acting}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="h-auto whitespace-normal bg-emerald-600 hover:bg-emerald-700"
           >
-            <FileText className="mr-2 size-4" />
+            <FileText className="me-2 size-4" />
             {t("createOrder")}
           </Button>
         )}
@@ -304,11 +307,11 @@ function RequisitionDetailContent() {
           variant="outline"
           className={statusColors[req.status] || ""}
         >
-          {requisitionStatusLabel(t, req.status)}
+          <BidiText>{requisitionStatusLabel(t, req.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("requested", { date: req.requestDate })}
-          {req.requiredDate ? t("requiredDate", { date: req.requiredDate }) : ""}
+          <BidiText>{t("requested", { date: req.requestDate })}</BidiText>
+          <BidiText>{req.requiredDate ? t("requiredDate", { date: req.requiredDate }) : ""}</BidiText>
         </span>
       </div>
 
@@ -321,7 +324,7 @@ function RequisitionDetailContent() {
               {t("rejectionReason")}
             </p>
             <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-              {req.rejectionReason}
+              <BidiText>{req.rejectionReason}</BidiText>
             </p>
           </div>
         </div>
@@ -334,7 +337,7 @@ function RequisitionDetailContent() {
           <p className="text-sm text-purple-800 dark:text-purple-300">
             {t("convertedNotice")}
           </p>
-          <Button variant="link" size="sm" asChild className="text-purple-700 dark:text-purple-300">
+          <Button variant="link" size="sm" asChild className="h-auto max-w-full whitespace-normal text-purple-700 dark:text-purple-300">
             <Link href={`/purchases/orders/${req.convertedPoId}`}>
               {t("viewOrder")}
             </Link>
@@ -348,13 +351,13 @@ function RequisitionDetailContent() {
           {req.reference && (
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">{t("reference")}</p>
-              <p className="text-sm">{req.reference}</p>
+              <p className="text-sm"><BidiText>{req.reference}</BidiText></p>
             </div>
           )}
           {req.notes && (
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">{t("notes")}</p>
-              <p className="text-sm">{req.notes}</p>
+              <p className="text-sm whitespace-pre-wrap"><BidiText>{req.notes}</BidiText></p>
             </div>
           )}
         </div>
@@ -363,7 +366,7 @@ function RequisitionDetailContent() {
       {/* Total */}
       <div className="rounded-lg border p-4">
         <p className="text-xl font-bold font-mono break-all">
-          {procurementMoney(req.total, req.currencyCode, unitPresentation)}
+          <BidiText>{procurementMoney(req.total, req.currencyCode, unitPresentation)}</BidiText>
         </p>
       </div>
 
@@ -371,14 +374,14 @@ function RequisitionDetailContent() {
 
       {/* Reject drawer */}
       <Sheet open={rejectSheetOpen} onOpenChange={setRejectSheetOpen}>
-        <SheetContent>
+        <SheetContent dir={localeDirection(unitPresentation.locale)}>
           <SheetHeader>
             <SheetTitle>{t("rejectRequisition")}</SheetTitle>
           </SheetHeader>
           <div className="px-4 pb-6 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("optionalReason")}</Label>
-              <Textarea
+              <Label htmlFor="rtl042-requisitions-detail-13423" className="text-xs">{t("optionalReason")}</Label>
+              <Textarea id="rtl042-requisitions-detail-13423" aria-label={t("optionalReason")} dir="auto"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder={t("reasonPlaceholder")}
@@ -388,9 +391,9 @@ function RequisitionDetailContent() {
             <Button
               onClick={handleReject}
               disabled={acting}
-              className="w-full bg-red-600 hover:bg-red-700"
+              className="h-auto max-w-full whitespace-normal w-full bg-red-600 hover:bg-red-700"
             >
-              <X className="mr-2 size-4" />
+              <X className="me-2 size-4" />
               {t("rejectRequisition")}
             </Button>
           </div>

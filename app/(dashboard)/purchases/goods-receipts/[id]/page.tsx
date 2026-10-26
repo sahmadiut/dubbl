@@ -1,5 +1,7 @@
 "use client";
 
+import { BidiText } from "@/components/ui/bidi-text";
+
 import { usePresentation } from "@/i18n/provider";
 import { useTranslations } from "next-intl";
 import { goodsReceiptStatusLabel } from "@/i18n/goods-receipt-presentation";
@@ -111,35 +113,35 @@ function GoodsReceiptDetailContent() {
   return (
     <div className="space-y-6">
       <PageHeader title={gr.receiptNumber} description={t("fromSupplier", { name: gr.contact?.name || t("unknown") })}>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/purchases/goods-receipts"><ArrowLeft className="mr-2 size-4" />{t("back")}</Link>
+        <Button className="h-auto max-w-full whitespace-normal" variant="outline" size="sm" asChild>
+          <Link href="/purchases/goods-receipts"><ArrowLeft className="me-2 size-4 rtl:rotate-180" />{t("back")}</Link>
         </Button>
         {gr.purchaseOrder && (
-          <Button variant="outline" size="sm" asChild title={t("openOrderTooltip")}>
+          <Button className="h-auto max-w-full whitespace-normal" variant="outline" size="sm" asChild title={t("openOrderTooltip")}>
             <Link href={`/purchases/orders/${gr.purchaseOrder.id}`}>
-              <Truck className="mr-2 size-4" />{t("viewOrder", { number: gr.purchaseOrder.poNumber })}
+              <Truck className="me-2 size-4" /><BidiText>{t("viewOrder", { number: gr.purchaseOrder.poNumber })}</BidiText>
             </Link>
           </Button>
         )}
         {gr.status === "received" && (
-          <Button
+          <Button className="h-auto max-w-full whitespace-normal"
             size="sm"
             onClick={handleCreateBill}
             disabled={billing}
             title={t("createBillTooltip")}
           >
             {billing ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
+              <Loader2 className="me-2 size-4 animate-spin" />
             ) : (
-              <ReceiptText className="mr-2 size-4" />
+              <ReceiptText className="me-2 size-4" />
             )}
             {t("createBill")}
           </Button>
         )}
         {journalEntryId && (
-          <Button variant="outline" size="sm" asChild title={t("journalTooltip")}>
+          <Button className="h-auto max-w-full whitespace-normal" variant="outline" size="sm" asChild title={t("journalTooltip")}>
             <Link href={`/accounting/${journalEntryId}`}>
-              <BookOpen className="mr-2 size-4" />{t("viewJournal")}
+              <BookOpen className="me-2 size-4" />{t("viewJournal")}
             </Link>
           </Button>
         )}
@@ -147,17 +149,17 @@ function GoodsReceiptDetailContent() {
 
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Badge variant="outline" className={statusColors[gr.status] || ""}>
-          {goodsReceiptStatusLabel(t, gr.status)}
+          <BidiText>{goodsReceiptStatusLabel(t, gr.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("receivedDate", { date: gr.date })}
+          <BidiText>{t("receivedDate", { date: gr.date })}</BidiText>
         </span>
         {gr.purchaseOrder && (
           <Link
             href={`/purchases/orders/${gr.purchaseOrder.id}`}
             className="text-xs sm:text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
           >
-            {t("orderNumber", { number: gr.purchaseOrder.poNumber })}
+            <BidiText>{t("orderNumber", { number: gr.purchaseOrder.poNumber })}</BidiText>
           </Link>
         )}
       </div>
@@ -165,7 +167,7 @@ function GoodsReceiptDetailContent() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("valueReceived")}</p>
-          <p className="text-xl font-bold font-mono break-all">{procurementMoney(totalValue, gr.currencyCode, unitPresentation)}</p>
+          <p className="text-xl font-bold font-mono break-all"><BidiText>{procurementMoney(totalValue, gr.currencyCode, unitPresentation)}</BidiText></p>
         </div>
         <div className="rounded-lg border p-4">
           <div className="flex items-center gap-2">
@@ -173,7 +175,7 @@ function GoodsReceiptDetailContent() {
             <p className="text-xs text-muted-foreground">{t("itemsReceived")}</p>
           </div>
           <p className="text-sm font-medium mt-1">
-            {t("itemCount", { count: gr.lines.length })}
+            <BidiText>{t("itemCount", { count: gr.lines.length })}</BidiText>
           </p>
         </div>
       </div>
@@ -183,7 +185,7 @@ function GoodsReceiptDetailContent() {
       {gr.notes && (
         <div className="rounded-lg border p-4">
           <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
-          <p className="text-sm">{gr.notes}</p>
+          <p className="text-sm whitespace-pre-wrap"><BidiText>{gr.notes}</BidiText></p>
         </div>
       )}
     </div>

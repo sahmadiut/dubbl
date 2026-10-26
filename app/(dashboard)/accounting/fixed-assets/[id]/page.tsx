@@ -1,6 +1,7 @@
 "use client";
 
 import { currencyLabel } from "@/i18n/currency-labels";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
 import { fixedAssetJson, fixedAssetFailureMessage, FixedAssetRequestError, fixedAssetStatusLabel, fixedAssetMethodLabel } from "@/i18n/fixed-asset-presentation";
 import { useTranslations } from "next-intl";
@@ -426,13 +427,13 @@ export default function FixedAssetDetailPage() {
 
   if (loading)
     return (
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <PageHeader title={t("loading")} />
       </div>
     );
   if (!asset)
     return (
-      <div className="space-y-6">
+      <div className="min-w-0 space-y-6">
         <PageHeader title={t("notFound")} />
       </div>
     );
@@ -445,71 +446,71 @@ export default function FixedAssetDetailPage() {
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <PageHeader
         title={`${asset.assetNumber} - ${asset.name}`}
         description={asset.description || undefined}
       >
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/accounting/fixed-assets">
-            <ArrowLeft className="mr-2 size-4" />
+        <Button className="h-auto min-h-8 whitespace-normal"  variant="outline" size="sm" asChild>
+          <Link aria-label={t("back")} href="/accounting/fixed-assets">
+            <ArrowLeft aria-hidden="true" className="me-2 size-4 shrink-0 rtl:rotate-180" />
             {t("back")}
           </Link>
         </Button>
         {(asset.isCwip || asset.status === "in_progress") &&
           asset.status !== "disposed" && (
             <>
-              <Button
+              <Button className="h-auto min-h-8 whitespace-normal" type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setCostOpen(true)}
                 title={t("costHint")}
               >
-                <Hammer className="mr-2 size-4" />
+                <Hammer className="me-2 size-4" />
                 {t("addConstructionCost")}
               </Button>
-              <Button
+              <Button type="button"
                 size="sm"
                 onClick={() => setCapitalizeOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
                 title={t("capitalizeHint")}
               >
-                <PackageCheck className="mr-2 size-4" />
+                <PackageCheck className="me-2 size-4" />
                 {t("capitalize")}
               </Button>
             </>
           )}
         {asset.status === "active" && (
           <>
-            <Button
+            <Button type="button"
               size="sm"
               onClick={handleDepreciate}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
               title={t("depreciateHint")}
             >
-              <TrendingDown className="mr-2 size-4" />
+              <TrendingDown className="me-2 size-4" />
               {t("depreciate")}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button className="h-auto min-h-8 whitespace-normal" type="button" variant="outline" size="sm">
                   {t("moreActions")}
-                  <ChevronDown className="ml-1.5 size-4" />
+                  <ChevronDown className="ms-1.5 size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuContent align="end" className="w-64 max-w-[calc(100vw-2rem)]">
                 <DropdownMenuItem
                   onClick={() => setRevalueOpen(true)}
                   title={t("revalueHint")}
                 >
-                  <TrendingUp className="mr-2 size-4" />
+                  <TrendingUp className="me-2 size-4" />
                   {t("revalue")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setImpairOpen(true)}
                   title={t("impairHint")}
                 >
-                  <CircleSlash className="mr-2 size-4" />
+                  <CircleSlash className="me-2 size-4" />
                   {t("impair")}
                 </DropdownMenuItem>
                 {asset.depreciationEntries.length > 0 && (
@@ -517,7 +518,7 @@ export default function FixedAssetDetailPage() {
                     onClick={handleUndoDepreciation}
                     title={t("undoHint")}
                   >
-                    <Undo2 className="mr-2 size-4" />
+                    <Undo2 className="me-2 size-4" />
                     {t("undo")}
                   </DropdownMenuItem>
                 )}
@@ -527,7 +528,7 @@ export default function FixedAssetDetailPage() {
                   className="text-red-600"
                   title={t("disposeHint")}
                 >
-                  <Trash2 className="mr-2 size-4" />
+                  <Trash2 className="me-2 size-4" />
                   {t("dispose")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -535,11 +536,11 @@ export default function FixedAssetDetailPage() {
           </>
         )}
         {asset.status !== "disposed" && (
-          <Button
+          <Button type="button"
             variant="outline"
             size="sm"
             onClick={handleDelete}
-            className="text-red-600"
+            className="h-auto min-h-8 whitespace-normal text-red-600"
             title={t("deleteHint")}
           >
             {t("delete")}
@@ -549,7 +550,7 @@ export default function FixedAssetDetailPage() {
 
       {/* Record as sold or written off */}
       <Dialog open={disposeOpen} onOpenChange={setDisposeOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("dispose")}</DialogTitle>
             <DialogDescription>
@@ -558,8 +559,9 @@ export default function FixedAssetDetailPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("disposalAmount")}</Label>
+              <Label htmlFor="fa-disposeAmount">{t("disposalAmount")}</Label>
               <CurrencyInput
+                id="fa-disposeAmount"
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={disposeAmount}
                 onChange={setDisposeAmount}
@@ -569,16 +571,18 @@ export default function FixedAssetDetailPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("disposalDate")}</Label>
+              <Label htmlFor="fa-disposeDate">{t("disposalDate")}</Label>
               <Input
+                id="fa-disposeDate"
+                dir="ltr"
                 type="date"
                 value={disposeDate}
                 onChange={(e) => setDisposeDate(e.target.value)}
               />
             </div>
-            <Button
+            <Button type="button"
               onClick={handleDispose}
-              className="w-full bg-red-600 hover:bg-red-700"
+              className="h-auto min-h-8 whitespace-normal w-full bg-red-600 hover:bg-red-700"
             >
               {t("dispose")}
             </Button>
@@ -588,7 +592,7 @@ export default function FixedAssetDetailPage() {
 
       {/* Record a higher value */}
       <Dialog open={revalueOpen} onOpenChange={setRevalueOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("revalue")}</DialogTitle>
             <DialogDescription>
@@ -597,36 +601,41 @@ export default function FixedAssetDetailPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("higherValue")}</Label>
+              <Label htmlFor="fa-revalueAmount">{t("higherValue")}</Label>
               <CurrencyInput
+                id="fa-revalueAmount"
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={revalueAmount}
                 onChange={setRevalueAmount}
               />
               <p className="text-xs text-muted-foreground">
-                {t("currentAmount", { amount: formatMoney(asset.netBookValue, unitPresentation) })}
+                {t.rich("currentAmount", { amount: formatMoney(asset.netBookValue, unitPresentation), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("date")}</Label>
+              <Label htmlFor="fa-revalueDate">{t("date")}</Label>
               <Input
+                id="fa-revalueDate"
+                dir="ltr"
                 type="date"
                 value={revalueDate}
                 onChange={(e) => setRevalueDate(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("notesOptional")}</Label>
+              <Label htmlFor="fa-revalueNotes">{t("notesOptional")}</Label>
               <Textarea
+                id="fa-revalueNotes"
+                dir="auto"
                 value={revalueNotes}
                 onChange={(e) => setRevalueNotes(e.target.value)}
                 placeholder={t("revalueNotes")}
               />
             </div>
-            <Button
+            <Button type="button"
               onClick={handleRevalue}
               disabled={busy}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal w-full bg-emerald-600 hover:bg-emerald-700"
             >
               {t("saveHigher")}
             </Button>
@@ -636,7 +645,7 @@ export default function FixedAssetDetailPage() {
 
       {/* Write down to a lower value */}
       <Dialog open={impairOpen} onOpenChange={setImpairOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("impair")}</DialogTitle>
             <DialogDescription>
@@ -645,36 +654,41 @@ export default function FixedAssetDetailPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("lowerValue")}</Label>
+              <Label htmlFor="fa-impairAmount">{t("lowerValue")}</Label>
               <CurrencyInput
+                id="fa-impairAmount"
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={impairAmount}
                 onChange={setImpairAmount}
               />
               <p className="text-xs text-muted-foreground">
-                {t("currentAmount", { amount: formatMoney(asset.netBookValue, unitPresentation) })}
+                {t.rich("currentAmount", { amount: formatMoney(asset.netBookValue, unitPresentation), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("date")}</Label>
+              <Label htmlFor="fa-impairDate">{t("date")}</Label>
               <Input
+                id="fa-impairDate"
+                dir="ltr"
                 type="date"
                 value={impairDate}
                 onChange={(e) => setImpairDate(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("notesOptional")}</Label>
+              <Label htmlFor="fa-impairNotes">{t("notesOptional")}</Label>
               <Textarea
+                id="fa-impairNotes"
+                dir="auto"
                 value={impairNotes}
                 onChange={(e) => setImpairNotes(e.target.value)}
                 placeholder={t("impairNotes")}
               />
             </div>
-            <Button
+            <Button type="button"
               onClick={handleImpair}
               disabled={busy}
-              className="w-full"
+              className="h-auto min-h-8 whitespace-normal w-full"
             >
               {t("saveLower")}
             </Button>
@@ -684,7 +698,7 @@ export default function FixedAssetDetailPage() {
 
       {/* Bring into use (capitalize) */}
       <Dialog open={capitalizeOpen} onOpenChange={setCapitalizeOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("capitalize")}</DialogTitle>
             <DialogDescription>
@@ -693,17 +707,19 @@ export default function FixedAssetDetailPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("inServiceDate")}</Label>
+              <Label htmlFor="fa-capitalizeDate">{t("inServiceDate")}</Label>
               <Input
+                id="fa-capitalizeDate"
+                dir="ltr"
                 type="date"
                 value={capitalizeDate}
                 onChange={(e) => setCapitalizeDate(e.target.value)}
               />
             </div>
-            <Button
+            <Button type="button"
               onClick={handleCapitalize}
               disabled={busy}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal w-full bg-emerald-600 hover:bg-emerald-700"
             >
               {t("capitalize")}
             </Button>
@@ -713,7 +729,7 @@ export default function FixedAssetDetailPage() {
 
       {/* Add construction cost (CWIP) */}
       <Dialog open={costOpen} onOpenChange={setCostOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("addConstructionCost")}</DialogTitle>
             <DialogDescription>
@@ -722,23 +738,26 @@ export default function FixedAssetDetailPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("amount")}</Label>
+              <Label htmlFor="fa-costAmount">{t("amount")}</Label>
               <CurrencyInput
+                id="fa-costAmount"
                 prefix={currencyLabel("USD", unitPresentation.locale, "$")}
                 value={costAmount}
                 onChange={setCostAmount}
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("date")}</Label>
+              <Label htmlFor="fa-costDate">{t("date")}</Label>
               <Input
+                id="fa-costDate"
+                dir="ltr"
                 type="date"
                 value={costDate}
                 onChange={(e) => setCostDate(e.target.value)}
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("sourceAccount")}</Label>
+            <div role="group" aria-labelledby="fa-cost-source" className="space-y-2">
+              <Label id="fa-cost-source">{t("sourceAccount")}</Label>
               <AccountPicker
                 value={costSourceAccountId}
                 onChange={setCostSourceAccountId}
@@ -749,17 +768,19 @@ export default function FixedAssetDetailPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("purposeOptional")}</Label>
+              <Label htmlFor="fa-costDescription">{t("purposeOptional")}</Label>
               <Textarea
+                id="fa-costDescription"
+                dir="auto"
                 value={costDescription}
                 onChange={(e) => setCostDescription(e.target.value)}
                 placeholder={t("purposeExample")}
               />
             </div>
-            <Button
+            <Button type="button"
               onClick={handleAddCost}
               disabled={busy}
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal w-full bg-emerald-600 hover:bg-emerald-700"
             >
               {t("addCost")}
             </Button>
@@ -772,41 +793,41 @@ export default function FixedAssetDetailPage() {
           variant="outline"
           className={statusColors[asset.status] || ""}
         >
-          {fixedAssetStatusLabel(t, asset.status)}
+          <BidiText>{fixedAssetStatusLabel(t, asset.status)}</BidiText>
         </Badge>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {t("lifeSummary", { method: fixedAssetMethodLabel(t, asset.depreciationMethod), count: asset.usefulLifeMonths })}
+          {t.rich("lifeSummary", { method: fixedAssetMethodLabel(t, asset.depreciationMethod), count: asset.usefulLifeMonths, em: (chunks) => <BidiText>{chunks}</BidiText> })}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 min-[360px]:grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("purchasePrice")}</p>
-          <p className="text-xl font-bold font-mono">
-            {formatMoney(asset.purchasePrice, unitPresentation)}
+          <p className="break-words text-xl font-bold font-mono">
+            <IdentifierText>{formatMoney(asset.purchasePrice, unitPresentation)}</IdentifierText>
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">
             {t("usedSoFar")}
           </p>
-          <p className="text-xl font-bold font-mono text-amber-600">
-            {formatMoney(asset.accumulatedDepreciation, unitPresentation)}
+          <p className="break-words text-xl font-bold font-mono text-amber-600">
+            <IdentifierText>{formatMoney(asset.accumulatedDepreciation, unitPresentation)}</IdentifierText>
           </p>
-          <p className="text-xs text-muted-foreground mt-1">{depPercent}%</p>
+          <p className="text-xs text-muted-foreground mt-1"><IdentifierText>{depPercent}%</IdentifierText></p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">{t("currentValue")}</p>
-          <p className="text-xl font-bold font-mono text-emerald-600">
-            {formatMoney(asset.netBookValue, unitPresentation)}
+          <p className="break-words text-xl font-bold font-mono text-emerald-600">
+            <IdentifierText>{formatMoney(asset.netBookValue, unitPresentation)}</IdentifierText>
           </p>
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-xs text-muted-foreground">
             {t("residualValue")}
           </p>
-          <p className="text-xl font-bold font-mono">
-            {formatMoney(asset.residualValue, unitPresentation)}
+          <p className="break-words text-xl font-bold font-mono">
+            <IdentifierText>{formatMoney(asset.residualValue, unitPresentation)}</IdentifierText>
           </p>
         </div>
       </div>
@@ -822,7 +843,7 @@ export default function FixedAssetDetailPage() {
             <p className="text-xs text-muted-foreground">{t("assetAccountHint")}</p>
             <p>
               {asset.assetAccount
-                ? `${asset.assetAccount.code} - ${asset.assetAccount.name}`
+                ? <><IdentifierText>{asset.assetAccount.code}</IdentifierText>{" - "}<BidiText>{asset.assetAccount.name}</BidiText></>
                 : t("notSet")}
             </p>
           </div>
@@ -832,7 +853,7 @@ export default function FixedAssetDetailPage() {
             </p>
             <p>
               {asset.depreciationAccount
-                ? `${asset.depreciationAccount.code} - ${asset.depreciationAccount.name}`
+                ? <><IdentifierText>{asset.depreciationAccount.code}</IdentifierText>{" - "}<BidiText>{asset.depreciationAccount.name}</BidiText></>
                 : t("notSet")}
             </p>
           </div>
@@ -842,7 +863,7 @@ export default function FixedAssetDetailPage() {
             </p>
             <p>
               {asset.accumulatedDepAccount
-                ? `${asset.accumulatedDepAccount.code} - ${asset.accumulatedDepAccount.name}`
+                ? <><IdentifierText>{asset.accumulatedDepAccount.code}</IdentifierText>{" - "}<BidiText>{asset.accumulatedDepAccount.name}</BidiText></>
                 : t("notSet")}
             </p>
           </div>
@@ -860,14 +881,14 @@ export default function FixedAssetDetailPage() {
               <p className="text-xs text-muted-foreground">
                 {t("disposedDate")}
               </p>
-              <p>{asset.disposalDate || t("unavailable")}</p>
+              <p><IdentifierText>{asset.disposalDate || t("unavailable")}</IdentifierText></p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t("disposalAmount")}</p>
               <p className="font-mono">
-                {asset.disposalAmount !== null
+                <IdentifierText>{asset.disposalAmount !== null
                   ? formatMoney(asset.disposalAmount, unitPresentation)
-                  : t("unavailable")}
+                  : t("unavailable")}</IdentifierText>
               </p>
             </div>
           </div>
@@ -884,26 +905,26 @@ export default function FixedAssetDetailPage() {
             {t("noDepreciation")}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto">
             <div className="grid min-w-[360px] grid-cols-[1fr_120px_120px] gap-2 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
               <span>{t("date")}</span>
-              <span className="text-right">{t("amount")}</span>
-              <span className="text-right">{t("journalEntry")}</span>
+              <span className="text-end">{t("amount")}</span>
+              <span className="text-end">{t("journalEntry")}</span>
             </div>
             {asset.depreciationEntries.map((entry) => (
               <div
                 key={entry.id}
                 className="grid min-w-[360px] grid-cols-[1fr_120px_120px] gap-2 border-b px-4 py-2 last:border-b-0"
               >
-                <span className="text-sm">{entry.date}</span>
-                <span className="text-right text-sm font-mono">
-                  {formatMoney(entry.amount, unitPresentation)}
+                <span className="text-sm"><IdentifierText>{entry.date}</IdentifierText></span>
+                <span className="text-end text-sm font-mono">
+                  <IdentifierText>{formatMoney(entry.amount, unitPresentation)}</IdentifierText>
                 </span>
-                <span className="text-right text-sm text-muted-foreground">
+                <IdentifierText className="text-end text-sm text-muted-foreground">
                   {entry.journalEntry
                     ? `#${entry.journalEntry.entryNumber}`
                     : "-"}
-                </span>
+                </IdentifierText>
               </div>
             ))}
           </div>
@@ -915,11 +936,11 @@ export default function FixedAssetDetailPage() {
         asset.status === "in_progress" ||
         cwipCosts.length > 0) && (
         <div className="rounded-lg border">
-          <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/50 px-4 py-3">
             <h3 className="text-sm font-semibold">{t("constructionCosts")}</h3>
             {cwipCosts.length > 0 && (
               <span className="text-sm font-mono text-muted-foreground">
-                {t("totalAmount", { amount: formatMoney(cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n), unitPresentation) })}
+                {t.rich("totalAmount", { amount: formatMoney(cwipCosts.reduce((s, c) => s + BigInt(c.amount), 0n), unitPresentation), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
               </span>
             )}
           </div>
@@ -928,30 +949,30 @@ export default function FixedAssetDetailPage() {
               {t("noCosts")}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="min-w-0 max-w-full overflow-x-auto">
               <div className="grid min-w-[480px] grid-cols-[120px_1fr_120px_120px] gap-2 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
                 <span>{t("date")}</span>
                 <span>{t("purpose")}</span>
-                <span className="text-right">{t("amount")}</span>
-                <span className="text-right">{t("journalEntry")}</span>
+                <span className="text-end">{t("amount")}</span>
+                <span className="text-end">{t("journalEntry")}</span>
               </div>
               {cwipCosts.map((cost) => (
                 <div
                   key={cost.id}
                   className="grid min-w-[480px] grid-cols-[120px_1fr_120px_120px] gap-2 border-b px-4 py-2 last:border-b-0"
                 >
-                  <span className="text-sm">{cost.date}</span>
+                  <span className="text-sm"><IdentifierText>{cost.date}</IdentifierText></span>
                   <span className="text-sm text-muted-foreground">
-                    {cost.description || "-"}
+                    <BidiText>{cost.description || "-"}</BidiText>
                   </span>
-                  <span className="text-right text-sm font-mono">
-                    {formatMoney(cost.amount, unitPresentation)}
+                  <span className="text-end text-sm font-mono">
+                    <IdentifierText>{formatMoney(cost.amount, unitPresentation)}</IdentifierText>
                   </span>
-                  <span className="text-right text-sm text-muted-foreground">
+                  <IdentifierText className="text-end text-sm text-muted-foreground">
                     {cost.journalEntry
                       ? `#${cost.journalEntry.entryNumber}`
                       : "-"}
-                  </span>
+                  </IdentifierText>
                 </div>
               ))}
             </div>
@@ -968,56 +989,55 @@ export default function FixedAssetDetailPage() {
               {t("valueHistoryHint")}
             </p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="min-w-0 max-w-full overflow-x-auto">
             <div className="grid min-w-[560px] grid-cols-[110px_1fr_130px_130px_110px] gap-2 border-b bg-muted/30 px-4 py-2 text-xs font-medium text-muted-foreground">
               <span>{t("date")}</span>
               <span>{t("type")}</span>
-              <span className="text-right">{t("newValue")}</span>
-              <span className="text-right">{t("change")}</span>
-              <span className="text-right">{t("entry")}</span>
+              <span className="text-end">{t("newValue")}</span>
+              <span className="text-end">{t("change")}</span>
+              <span className="text-end">{t("entry")}</span>
             </div>
             {asset.revaluations.map((rev) => (
               <div
                 key={rev.id}
                 className="grid min-w-[560px] grid-cols-[110px_1fr_130px_130px_110px] gap-2 border-b px-4 py-2 last:border-b-0"
               >
-                <span className="text-sm">{rev.date}</span>
+                <span className="text-sm"><IdentifierText>{rev.date}</IdentifierText></span>
                 <span className="text-sm">
                   {rev.isImpairment ? (
                     <span className="inline-flex items-center text-amber-700">
-                      <CircleSlash className="mr-1.5 size-3.5" />
+                      <CircleSlash className="me-1.5 size-3.5" />
                       {t("writtenDown")}
                     </span>
                   ) : (
                     <span className="inline-flex items-center text-emerald-700">
-                      <TrendingUp className="mr-1.5 size-3.5" />
+                      <TrendingUp className="me-1.5 size-3.5" />
                       {t("higher")}
                     </span>
                   )}
                   {rev.notes && (
                     <span className="block text-xs text-muted-foreground">
-                      {rev.notes}
+                      <BidiText>{rev.notes}</BidiText>
                     </span>
                   )}
                 </span>
-                <span className="text-right text-sm font-mono">
-                  {formatMoney(rev.revaluedAmount, unitPresentation)}
+                <span className="text-end text-sm font-mono">
+                  <IdentifierText>{formatMoney(rev.revaluedAmount, unitPresentation)}</IdentifierText>
                 </span>
                 <span
-                  className={`text-right text-sm font-mono ${
+                  className={`text-end text-sm font-mono ${
                     rev.changeAmount < 0
                       ? "text-amber-600"
                       : "text-emerald-600"
                   }`}
                 >
-                  {rev.changeAmount < 0 ? "-" : "+"}
-                  {formatMoney(BigInt(rev.changeAmount) < 0n ? -BigInt(rev.changeAmount) : BigInt(rev.changeAmount), unitPresentation)}
+                  <IdentifierText>{rev.changeAmount < 0 ? "-" : "+"}{formatMoney(BigInt(rev.changeAmount) < 0n ? -BigInt(rev.changeAmount) : BigInt(rev.changeAmount), unitPresentation)}</IdentifierText>
                 </span>
-                <span className="text-right text-sm text-muted-foreground">
+                <IdentifierText className="text-end text-sm text-muted-foreground">
                   {rev.journalEntry
                     ? `#${rev.journalEntry.entryNumber}`
                     : "-"}
-                </span>
+                </IdentifierText>
               </div>
             ))}
           </div>

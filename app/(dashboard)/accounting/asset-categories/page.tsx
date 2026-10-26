@@ -1,6 +1,8 @@
 "use client";
 
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import { useTranslations } from "next-intl";
 import { ASSET_CATEGORY_METHODS, ASSET_CATEGORY_CONVENTIONS, assetCategoryMethodLabel, assetCategoryJson, assetCategoryFailureMessage } from "@/i18n/asset-category-presentation";
 
@@ -207,14 +209,14 @@ export default function AssetCategoriesPage() {
       key: "name",
       header: t("name"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.name}</span>
+        <span className="text-sm font-medium"><BidiText>{r.name}</BidiText></span>
       ),
     },
     {
       key: "method",
       header: t("method"),
       render: (r) => (
-        <span className="text-sm">{assetCategoryMethodLabel(t, r.defaultDepreciationMethod)}</span>
+        <span className="text-sm"><BidiText>{assetCategoryMethodLabel(t, r.defaultDepreciationMethod)}</BidiText></span>
       ),
     },
     {
@@ -232,10 +234,10 @@ export default function AssetCategoriesPage() {
     {
       key: "residual",
       header: t("residual"),
-      className: "w-32 text-right",
+      className: "w-32 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {r.defaultResidualValue ? formatMoney(r.defaultResidualValue, unitPresentation) : "—"}
+          <IdentifierText>{r.defaultResidualValue ? formatMoney(r.defaultResidualValue, unitPresentation) : "—"}</IdentifierText>
         </span>
       ),
     },
@@ -260,12 +262,12 @@ export default function AssetCategoriesPage() {
     {
       key: "actions",
       header: "",
-      className: "w-16 text-right",
+      className: "w-16 text-end",
       render: (r) => (
-        <Button
+        <Button type="button"
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-xs"
+          className="h-auto min-h-8 whitespace-normal px-2 text-xs"
           aria-label={t("editAction", { name: r.name })}
           onClick={(e) => {
             e.stopPropagation();
@@ -283,7 +285,7 @@ export default function AssetCategoriesPage() {
   if (initialLoad) return <BrandLoader />;
 
   return (
-    <ContentReveal className="space-y-6">
+    <ContentReveal className="min-w-0 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
@@ -291,11 +293,11 @@ export default function AssetCategoriesPage() {
             {t("description")}
           </p>
         </div>
-        <Button
+        <Button type="button"
           onClick={openCreate}
-          className="bg-emerald-600 hover:bg-emerald-700 shrink-0"
+          className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700 shrink-0"
         >
-          <Plus className="mr-2 size-4" />
+          <Plus className="me-2 size-4" />
           {t("newAction")}
         </Button>
       </div>
@@ -315,8 +317,8 @@ export default function AssetCategoriesPage() {
               {t("emptyDescription")}
             </p>
           </div>
-          <Button onClick={openCreate} variant="outline" size="sm">
-            <Plus className="mr-2 size-4" />
+          <Button className="h-auto min-h-8 whitespace-normal" type="button" onClick={openCreate} variant="outline" size="sm">
+            <Plus className="me-2 size-4" />
             {t("newAction")}
           </Button>
         </div>
@@ -348,6 +350,7 @@ export default function AssetCategoriesPage() {
               <Label htmlFor="ac-name">{t("name")}</Label>
               <Input
                 id="ac-name"
+                dir="auto"
                 placeholder={t("nameExample")}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -357,14 +360,14 @@ export default function AssetCategoriesPage() {
             {/* Method + convention */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>{t("method")}</Label>
-                <Select
+                <Label htmlFor="ac-method">{t("method")}</Label>
+                <Select dir={localeDirection(unitPresentation.locale)}
                   value={form.defaultDepreciationMethod}
                   onValueChange={(v) =>
                     setForm((f) => ({ ...f, defaultDepreciationMethod: v }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="ac-method" className="w-full data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -377,14 +380,14 @@ export default function AssetCategoriesPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("convention")}</Label>
-                <Select
+                <Label htmlFor="ac-convention">{t("convention")}</Label>
+                <Select dir={localeDirection(unitPresentation.locale)}
                   value={form.defaultConvention}
                   onValueChange={(v) =>
                     setForm((f) => ({ ...f, defaultConvention: v }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="ac-convention" className="w-full data-[size=default]:h-auto min-h-9 *:data-[slot=select-value]:line-clamp-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -404,6 +407,7 @@ export default function AssetCategoriesPage() {
                 <Label htmlFor="ac-life">{t("lifeMonths")}</Label>
                 <Input
                   id="ac-life"
+                  dir="ltr"
                   type="number"
                   min={1}
                   placeholder={t("lifeExample")}
@@ -420,6 +424,7 @@ export default function AssetCategoriesPage() {
                 <Label htmlFor="ac-residual">{t("residual")}</Label>
                 <Input
                   id="ac-residual"
+                  dir="ltr"
                   inputMode="decimal"
                   placeholder="0.00"
                   value={form.residualValue}
@@ -438,6 +443,7 @@ export default function AssetCategoriesPage() {
                 <Label htmlFor="ac-rate">{t("rate")}</Label>
                 <Input
                   id="ac-rate"
+                  dir="ltr"
                   type="number"
                   min={0}
                   max={1000}
@@ -460,8 +466,8 @@ export default function AssetCategoriesPage() {
                 {t("books")}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label>{t("assetAccount")}</Label>
+                <div role="group" aria-labelledby="ac-assetAccount" className="min-w-0 space-y-1.5">
+                  <Label id="ac-assetAccount">{t("assetAccount")}</Label>
                   <AccountPicker
                     value={form.assetAccountId}
                     onChange={(id) =>
@@ -472,8 +478,8 @@ export default function AssetCategoriesPage() {
                     allowCreate
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>{t("expenseAccount")}</Label>
+                <div role="group" aria-labelledby="ac-expenseAccount" className="min-w-0 space-y-1.5">
+                  <Label id="ac-expenseAccount">{t("expenseAccount")}</Label>
                   <AccountPicker
                     value={form.depreciationAccountId}
                     onChange={(id) =>
@@ -484,8 +490,8 @@ export default function AssetCategoriesPage() {
                     allowCreate
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>{t("accumulatedAccount")}</Label>
+                <div role="group" aria-labelledby="ac-accumulatedAccount" className="min-w-0 space-y-1.5">
+                  <Label id="ac-accumulatedAccount">{t("accumulatedAccount")}</Label>
                   <AccountPicker
                     value={form.accumulatedDepAccountId}
                     onChange={(id) =>
@@ -496,8 +502,8 @@ export default function AssetCategoriesPage() {
                     allowCreate
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>{t("cwipAccount")}</Label>
+                <div role="group" aria-labelledby="ac-cwipAccount" className="min-w-0 space-y-1.5">
+                  <Label id="ac-cwipAccount">{t("cwipAccount")}</Label>
                   <AccountPicker
                     value={form.cwipAccountId}
                     onChange={(id) =>
@@ -515,7 +521,7 @@ export default function AssetCategoriesPage() {
             </div>
 
             {/* Active toggle */}
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
               <div>
                 <Label htmlFor="ac-active">{t("available")}</Label>
                 <p className="text-[11px] text-muted-foreground">
@@ -532,24 +538,24 @@ export default function AssetCategoriesPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>
             )}
           </div>
 
           <DialogFooter>
-            <Button
+            <Button className="h-auto min-h-8 whitespace-normal" type="button"
               variant="outline"
               onClick={() => setDialogOpen(false)}
               disabled={saving}
             >
               {t("cancel")}
             </Button>
-            <Button
+            <Button type="button"
               onClick={handleSave}
               disabled={saving}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {saving && <Loader2 className="me-2 size-4 animate-spin" />}
               {editingId ? t("save") : t("create")}
             </Button>
           </DialogFooter>

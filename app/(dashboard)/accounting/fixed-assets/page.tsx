@@ -1,7 +1,9 @@
 "use client";
 
 import { bankMoneyDisplay as exampleMoney } from "@/lib/money/bank-display";
+import { BidiText, IdentifierText } from "@/components/ui/bidi-text";
 import { usePresentation } from "@/i18n/provider";
+import { localeDirection } from "@/i18n/locale";
 import type { NumberPresentation } from "@/i18n/numbers";
 import { fixedAssetJson, fixedAssetFailureMessage, fixedAssetStatusLabel, fixedAssetMethodLabel } from "@/i18n/fixed-asset-presentation";
 import { useTranslations } from "next-intl";
@@ -93,14 +95,14 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unit
       header: t("assetNumber"),
       className: "w-28",
       render: (r) => (
-        <span className="font-mono text-sm">{r.assetNumber}</span>
+        <span className="font-mono text-sm"><IdentifierText>{r.assetNumber}</IdentifierText></span>
       ),
     },
     {
       key: "name",
       header: t("name"),
       render: (r) => (
-        <span className="text-sm font-medium">{r.name}</span>
+        <span className="text-sm font-medium"><BidiText>{r.name}</BidiText></span>
       ),
     },
     {
@@ -109,7 +111,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unit
       className: "w-32",
       render: (r) => (
         <span className="text-sm text-muted-foreground">
-          {formatDate(r.purchaseDate)}
+          <IdentifierText>{formatDate(r.purchaseDate)}</IdentifierText>
         </span>
       ),
     },
@@ -119,17 +121,17 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unit
       className: "w-32",
       render: (r) => (
         <span className="text-xs text-muted-foreground">
-          {fixedAssetMethodLabel(t, r.depreciationMethod)}
+          <BidiText>{fixedAssetMethodLabel(t, r.depreciationMethod)}</BidiText>
         </span>
       ),
     },
     {
       key: "purchasePrice",
       header: t("purchasePrice"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.purchasePrice, unitPresentation)}
+          <IdentifierText>{formatMoney(r.purchasePrice, unitPresentation)}</IdentifierText>
         </span>
       ),
     },
@@ -146,12 +148,12 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unit
             : 0;
         return (
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-[11px]">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
               <span className="font-mono tabular-nums text-muted-foreground">
-                {pct}%
+                <IdentifierText>{pct}%</IdentifierText>
               </span>
               <span className="font-mono tabular-nums text-red-500">
-                -{formatMoney(r.accumulatedDepreciation, unitPresentation)}
+                <IdentifierText>-{formatMoney(r.accumulatedDepreciation, unitPresentation)}</IdentifierText>
               </span>
             </div>
             <DepreciationBar cost={r.purchasePrice} nbv={r.netBookValue} />
@@ -162,10 +164,10 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unit
     {
       key: "netBookValue",
       header: t("currentValue"),
-      className: "w-28 text-right",
+      className: "w-28 text-end",
       render: (r) => (
         <span className="font-mono text-sm tabular-nums">
-          {formatMoney(r.netBookValue, unitPresentation)}
+          <IdentifierText>{formatMoney(r.netBookValue, unitPresentation)}</IdentifierText>
         </span>
       ),
     },
@@ -175,7 +177,7 @@ function buildColumns(t: ReturnType<typeof useTranslations<"FixedAssets">>, unit
       className: "w-36",
       render: (r) => (
         <Badge variant="outline" className={statusColors[r.status] || ""}>
-          {fixedAssetStatusLabel(t, r.status)}
+          <BidiText>{fixedAssetStatusLabel(t, r.status)}</BidiText>
         </Badge>
       ),
     },
@@ -389,12 +391,12 @@ export default function FixedAssetsPage() {
             <p className="mt-1.5 text-sm text-muted-foreground">
               {t("emptyDescription")}
             </p>
-            <Button
+            <Button type="button"
               onClick={() => openDrawer("fixedAsset")}
               size="lg"
-              className="mt-5 bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal mt-5 bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("addItem")}
             </Button>
           </div>
@@ -414,7 +416,7 @@ export default function FixedAssetsPage() {
                   {label}
                 </p>
                 <p className="mt-1 text-sm font-mono font-medium text-muted-foreground">
-                  {value}
+                  <IdentifierText>{value}</IdentifierText>
                 </p>
               </div>
             ))}
@@ -425,17 +427,17 @@ export default function FixedAssetsPage() {
   }
 
   return (
-    <ContentReveal className="space-y-6">
+    <ContentReveal className="min-w-0 space-y-6">
       {/* Inline stats + depreciation bar */}
       <div className="space-y-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-3">
+          <div className="grid min-w-0 grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
                 {t("totalCost")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-                {formatMoney(totalCost, unitPresentation)}
+                <IdentifierText>{formatMoney(totalCost, unitPresentation)}</IdentifierText>
               </p>
             </div>
             <div>
@@ -443,9 +445,9 @@ export default function FixedAssetsPage() {
                 {t("currentValue")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums">
-                {formatMoney(totalNBV, unitPresentation)}
-                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                  {nbvPct}%
+                <IdentifierText>{formatMoney(totalNBV, unitPresentation)}</IdentifierText>
+                <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+                  <IdentifierText>{nbvPct}%</IdentifierText>
                 </span>
               </p>
             </div>
@@ -454,7 +456,7 @@ export default function FixedAssetsPage() {
                 {t("usedValue")}
               </p>
               <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-red-500">
-                -{formatMoney(totalAccDep, unitPresentation)}
+                <IdentifierText>-{formatMoney(totalAccDep, unitPresentation)}</IdentifierText>
               </p>
             </div>
             <div>
@@ -468,22 +470,22 @@ export default function FixedAssetsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 shrink-0">
-            <Button
+            <Button className="h-auto min-h-8 whitespace-normal" type="button"
               size="sm"
               variant="outline"
               onClick={handleRunDepreciation}
               disabled={runningDepreciation}
               title={t("runHint")}
             >
-              <Play className="mr-2 size-4" />
+              <Play className="me-2 size-4" />
               {runningDepreciation ? t("recording") : t("run")}
             </Button>
-            <Button
+            <Button type="button"
               size="sm"
               onClick={() => openDrawer("fixedAsset")}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="h-auto min-h-8 whitespace-normal bg-emerald-600 hover:bg-emerald-700"
             >
-              <Plus className="mr-2 size-4" />
+              <Plus className="me-2 size-4" />
               {t("addItem")}
             </Button>
           </div>
@@ -492,7 +494,7 @@ export default function FixedAssetsPage() {
         {/* Overall depreciation progress bar */}
         {totalCost > 0 && (
           <div className="rounded-lg border p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {t("usedSoFar")}
               </p>
@@ -513,11 +515,11 @@ export default function FixedAssetsPage() {
                 style={{ width: `${depPct}%` }}
               />
             </div>
-            <div className="flex items-center gap-6 text-xs">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="inline-block size-2 rounded-full bg-emerald-500" />
                 <span className="text-muted-foreground">
-                  {t("currentSummary", { amount: formatMoney(totalNBV, unitPresentation) })}
+                  {t.rich("currentSummary", { amount: formatMoney(totalNBV, unitPresentation), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -528,7 +530,7 @@ export default function FixedAssetsPage() {
                   )}
                 />
                 <span className="text-muted-foreground">
-                  {t("usedSummary", { amount: formatMoney(totalAccDep, unitPresentation) })}
+                  {t.rich("usedSummary", { amount: formatMoney(totalAccDep, unitPresentation), em: (chunks) => <IdentifierText>{chunks}</IdentifierText> })}
                 </span>
               </div>
             </div>
@@ -541,17 +543,17 @@ export default function FixedAssetsPage() {
       {/* Table section */}
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-            <TabsList className="overflow-x-auto">
+          <Tabs dir={localeDirection(unitPresentation.locale)} className="min-w-0 max-w-full" value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="h-auto w-full flex-wrap justify-start">
               <TabsTrigger value="all" className="whitespace-nowrap">
                 {t("all")}{" "}
-                <span className="ml-1 text-muted-foreground">
+                <span className="ms-1 text-muted-foreground">
                   {countByStatus.all}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="active" className="whitespace-nowrap">
                 {t("active")}{" "}
-                <span className="ml-1 text-muted-foreground">
+                <span className="ms-1 text-muted-foreground">
                   {countByStatus.active}
                 </span>
               </TabsTrigger>
@@ -560,13 +562,13 @@ export default function FixedAssetsPage() {
                 className="whitespace-nowrap"
               >
                 {t("fullyDepreciated")}{" "}
-                <span className="ml-1 text-muted-foreground">
+                <span className="ms-1 text-muted-foreground">
                   {countByStatus.fully_depreciated}
                 </span>
               </TabsTrigger>
               <TabsTrigger value="disposed" className="whitespace-nowrap">
                 {t("disposed")}{" "}
-                <span className="ml-1 text-muted-foreground">
+                <span className="ms-1 text-muted-foreground">
                   {countByStatus.disposed}
                 </span>
               </TabsTrigger>
@@ -575,25 +577,27 @@ export default function FixedAssetsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <div className="relative w-full min-w-0 sm:w-64">
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
+              aria-label={t("search")}
+              dir="auto"
               placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-64 pl-8 text-xs"
+              className="h-8 w-full ps-8 text-xs"
             />
           </div>
           {search && (
-            <Button
+            <Button type="button"
               variant="ghost"
               size="sm"
-              className="h-8 text-xs text-muted-foreground"
+              className="h-auto min-h-8 whitespace-normal text-xs text-muted-foreground"
               onClick={() => {
                 setSearch("");
               }}
             >
-              <X className="mr-1 size-3" />
+              <X className="me-1 size-3" />
               {t("clear")}
             </Button>
           )}
@@ -618,7 +622,7 @@ export default function FixedAssetsPage() {
         {!refetching && !pendingSearch && filteredAssets.length > 0 && (
           <div className="pt-1">
             <p className="text-xs text-muted-foreground">
-              {debouncedSearch ? t("showingMatching", { count: filteredAssets.length, query: debouncedSearch }) : t("showing", { count: filteredAssets.length })}
+              {debouncedSearch ? t.rich("showingMatching", { count: filteredAssets.length, query: debouncedSearch, em: (chunks) => <BidiText>{chunks}</BidiText> }) : t("showing", { count: filteredAssets.length })}
             </p>
           </div>
         )}

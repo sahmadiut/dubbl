@@ -17,7 +17,7 @@ import * as BrandLoader from "../components/dashboard/brand-loader";
 import * as AccountPicker from "../components/dashboard/account-picker";
 import { fixedAssetJson, fixedAssetFailureMessage, FixedAssetRequestError, fixedAssetMethodLabel, fixedAssetStatusLabel } from "../i18n/fixed-asset-presentation";
 import { assetCentsInput, assetLifeInput, assetMoneyDisplay, assetPercent } from "../lib/money/asset-display";
-import { renderWithPresentation } from "./helpers/presentation";
+import { renderWithPresentation as renderIsolated } from "./helpers/presentation";
 import en from "../messages/en-US.json";
 import fa from "../messages/fa-IR.json";
 
@@ -25,6 +25,9 @@ const list = "app/(dashboard)/accounting/fixed-assets/page.tsx";
 const detail = "app/(dashboard)/accounting/fixed-assets/[id]/page.tsx";
 const drawer = "components/dashboard/create-drawer.tsx";
 const locales = ["en-US", "fa-IR"] as const;
+// Existing copy/money assertions compare text; the dedicated RTL suite below
+// independently checks actual isolation nodes and directions.
+const renderWithPresentation = (...args: Parameters<typeof renderIsolated>) => renderIsolated(...args).replace(/<\/?bdi\b[^>]*>/g, "");
 const noop = () => {};
 const caller = "<script>دارایی & equipment</script>";
 const asset = { id: "asset-a", name: caller, assetNumber: "FA-001", description: caller, purchaseDate: "2026-10-18", purchasePrice: 4000000000000001, purchasePriceMinor: "4000000000000001", residualValue: 29, residualValueMinor: "29", accumulatedDepreciation: 100, accumulatedDepreciationMinor: "100", netBookValue: 3999999999999901, netBookValueMinor: "3999999999999901", status: "active", depreciationMethod: "straight_line", usefulLifeMonths: 60, disposalDate: null, disposalAmount: null, disposalAmountMinor: null, assetAccount: { code: "1000", name: caller }, depreciationAccount: null, accumulatedDepAccount: null, depreciationEntries: [{ id: "dep-a", date: "2026-10-18", amount: 100, amountMinor: "100", journalEntry: { id: "j-a", entryNumber: 12 } }], revaluations: [{ id: "rev-a", date: "2026-10-18", revaluedAmount: 1250, revaluedAmountMinor: "1250", changeAmount: -29, changeAmountMinor: "-29", isImpairment: true, notes: caller }] };
@@ -108,7 +111,7 @@ test("fixed asset production list renders bilingual empty/table/search/error sta
     for (const key of ["assetNumber", "name", "purchased", "methodHint", "purchasePrice", "usedValue", "currentValue", "status", "runHint", "run", "search", "clear", "active", "disposed", "fullyDepreciated", "all"] as const) assert.ok(html.includes(escape(t(key))), key);
     assert.ok(html.includes(assetMoneyDisplay(BigInt(asset.purchasePrice) * 3n, resolvePresentation({ user: { language: locale } }))) && html.includes("future_method") && html.includes("future_status"));
     assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
-    assert.ok(html.includes(escape(t("showingMatching", { count: 3, query: "FA-001" }))));
+    assert.ok(html.includes(escape(t.markup("showingMatching", { count: 3, query: "FA-001", em: chunks => chunks }))));
     const Missing = loaded(list, listStates(rows, "absent"));
     assert.ok(renderWithPresentation(createElement(Missing), locale).includes(escape(t("noMatches"))));
     const ErrorPage = loaded(list, [[], [], t("readFailed"), false]);
@@ -124,9 +127,9 @@ test("fixed asset detail renders all lifecycle dialogs, history, status and call
       const Page = loaded(detail, detailStates(row), titles);
       const html = renderWithPresentation(createElement(Page), locale);
       for (const key of ["back", "dispose", "disposeDescription", "disposalAmount", "disposalZero", "disposalDate", "revalue", "revalueDescription", "higherValue", "revalueNotes", "saveHigher", "impair", "impairDescription", "lowerValue", "impairNotes", "saveLower", "capitalize", "capitalizeDescription", "inServiceDate", "addConstructionCost", "costDescription", "amount", "sourceAccount", "sourceHint", "purposeExample", "addCost", "books", "booksDescription", "assetAccountHint", "expenseAccountHint", "accumulatedAccountHint", "depreciationHistory", "constructionCosts", "valueHistory", "writtenDown", "notSet"] as const) assert.ok(html.includes(escape(t(key))), key);
-      assert.ok(html.includes(escape(t("lifeSummary", { method: t("straightLine"), count: 60 }))));
-      assert.ok(html.includes(escape(t("currentAmount", { amount: assetMoneyDisplay(asset.netBookValue, resolvePresentation({ user: { language: locale } })) }))));
-      assert.ok(html.includes(escape(t("totalAmount", { amount: localizedAmount("$0.29", locale) }))));
+      assert.ok(html.includes(escape(t.markup("lifeSummary", { method: t("straightLine"), count: 60, em: chunks => chunks }))));
+      assert.ok(html.includes(escape(t.markup("currentAmount", { amount: assetMoneyDisplay(asset.netBookValue, resolvePresentation({ user: { language: locale } })), em: chunks => chunks }))));
+      assert.ok(html.includes(escape(t.markup("totalAmount", { amount: localizedAmount("$0.29", locale), em: chunks => chunks }))));
       assert.ok(html.includes(escape(caller)) && !html.includes("<script>"));
       assert.ok(html.includes(localizedNumber("40,000,000,000,000.01", locale)) && html.includes(localizedAmount("$0.29", locale)));
       if (row.status === "disposed") assert.ok(html.includes(escape(t("disposalDetails"))) && html.includes(escape(t("unavailable"))));

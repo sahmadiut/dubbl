@@ -29,6 +29,7 @@ import { registerPaymentBatchTools } from "./payment-batches";
 import { registerScheduledPaymentTools } from "./scheduled-payments";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerAiHistoryTools } from "./ai-history";
+import { registerAiProviderTools } from "./ai-providers";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { registerOrganizationTools } from "./organization";
 import { registerAccountTools } from "./accounts";
@@ -212,4 +213,5 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerProviderSettingsTools(server, ctx);
   registerLocalePreferencesTools(server, ctx);
   registerAiHistoryTools(server, ctx);
+  registerAiProviderTools(server, ctx);
 }

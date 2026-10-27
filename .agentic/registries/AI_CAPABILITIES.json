@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 105,
-    "tools": 790,
-    "apiRoutes": 559,
+    "modules": 106,
+    "tools": 799,
+    "apiRoutes": 565,
     "pages": 208
   },
   "modules": [
@@ -62,6 +62,24 @@
         "delete_ai_conversation",
         "get_ai_conversation",
         "list_ai_conversations"
+      ],
+      "apiImports": [
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-providers",
+      "source": "lib/mcp/tools/ai-providers.ts",
+      "tools": [
+        "configure_ai_provider",
+        "create_ai_provider",
+        "list_ai_platform_providers",
+        "list_ai_provider_catalog",
+        "list_ai_provider_configs",
+        "revoke_ai_provider_credential",
+        "rotate_ai_provider_credential",
+        "test_ai_provider_connection",
+        "update_ai_provider"
       ],
       "apiImports": [
         "@/lib/api/auth-context"
@@ -2850,6 +2868,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "configure_ai_provider",
+      "module": "ai-providers",
+      "line": 16,
+      "description": "\"Create or replace organization settings for one delegated provider; atomic default switching and version conflicts enforced.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#saveProviderConfig"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "connect_stripe",
       "module": "integrations",
       "line": 121,
@@ -2969,6 +2999,18 @@
       "directImportedCalls": [
         "@/lib/api/accrual-schedules#createAccrualSchedule",
         "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "create_ai_provider",
+      "module": "ai-providers",
+      "line": 13,
+      "description": "\"Create a platform provider catalog entry with approved endpoint/models/capabilities/delegation. Does not enable AI rollout or establish live eligibility.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#saveProvider"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -7608,6 +7650,42 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "list_ai_platform_providers",
+      "module": "ai-providers",
+      "line": 11,
+      "description": "List the complete platform provider catalog including delegation scopes. Requires a current site-admin SESSION, never organization ownership or API/OAuth credentials. Administration only; excluded from ordinary chat discovery. Returns no credentials.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#listProviderCatalog"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "list_ai_provider_catalog",
+      "module": "ai-providers",
+      "line": 12,
+      "description": "\"List only providers delegated to the authenticated organization; no credentials or foreign delegation IDs returned.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#listProviderCatalog"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "list_ai_provider_configs",
+      "module": "ai-providers",
+      "line": 15,
+      "description": "\"List this organization's provider settings and masked credential presence; never returns plaintext/ciphertext.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#listProviderConfigs"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "list_approval_requests",
       "module": "approvals",
       "line": 19,
@@ -10480,6 +10558,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "revoke_ai_provider_credential",
+      "module": "ai-providers",
+      "line": 18,
+      "description": "\"Remove encrypted credential and disable organization configuration immediately using expected version.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#revokeProviderCredential"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "rollback_asset_depreciation",
       "module": "asset-depreciation",
       "line": 18,
@@ -10488,6 +10578,18 @@
       "directImportedCalls": [
         "@/lib/api/asset-depreciation#rollbackAssetDepreciation",
         "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "rotate_ai_provider_credential",
+      "module": "ai-providers",
+      "line": 17,
+      "description": "\"Encrypt a replacement secret with the external active key version; invalidate previous credential reference, return masked presence only.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#rotateProviderCredential"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -11020,6 +11122,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "test_ai_provider_connection",
+      "module": "ai-providers",
+      "line": 19,
+      "description": "\"Perform a bounded constant-text test (may incur provider usage) against enabled, delegated, externally opted-in configuration; no business payload. Returns sanitized connectivity, versions, latency and token counts; fixture success is not live qualification.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#testProviderConnection"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "test_webhook",
       "module": "webhooks",
       "line": 246,
@@ -11193,6 +11307,18 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/admin-organization#updateAdminOrganization"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "update_ai_provider",
+      "module": "ai-providers",
+      "line": 14,
+      "description": "\"Replace a platform provider catalog entry using optimistic version; can disable provider or revoke delegation immediately.\" + note",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/providers#saveProvider"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -12796,6 +12922,51 @@
       "source": "app/api/v1/ai/conversations/route.ts",
       "methods": [
         "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/provider-catalog/[id]/route.ts",
+      "methods": [
+        "PATCH"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/provider-catalog/platform/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/provider-catalog/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/provider-configs/[id]/credential/route.ts",
+      "methods": [
+        "DELETE",
+        "PUT"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/provider-configs/[id]/test/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/provider-configs/route.ts",
+      "methods": [
+        "GET",
+        "POST"
       ],
       "domain": "ai"
     },

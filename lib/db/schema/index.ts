@@ -42,3 +42,4 @@ export * from "./integrations";
 export * from "./backups";
 export * from "./site-settings";
 export * from "./ai";
+export * from "./ai-providers";

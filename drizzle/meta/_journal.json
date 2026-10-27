@@ -120,6 +120,13 @@
       "when": 1793107653958,
       "tag": "0016_chubby_crusher_hogan",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793108246201,
+      "tag": "0017_skinny_rockslide",
+      "breakpoints": true
     }
   ]
 }

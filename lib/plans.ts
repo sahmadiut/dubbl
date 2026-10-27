@@ -69,6 +69,9 @@ export type MemberRole = keyof typeof ROLE_HIERARCHY;
 
 const PERMISSION_REQUIREMENTS: Record<string, MemberRole> = {
   "view:data": "member",
+  "use:ai": "member",
+  "view:ai-history": "member",
+  "audit:ai-transcripts": "owner",
   "create:entries": "member",
   "edit:entries": "member",
   "post:entries": "admin",
@@ -200,7 +203,8 @@ export const PRESET_ROLES: PresetRole[] = [
     key: "advisor",
     name: "Advisor",
     description: "Full access to every feature — intended for accountants and advisors.",
-    permissions: [...ALL_PERMISSIONS],
+    // Transcript audit must be granted explicitly, never through a generic preset.
+    permissions: ALL_PERMISSIONS.filter(p => p !== "audit:ai-transcripts"),
   },
   {
     key: "invoice-only",

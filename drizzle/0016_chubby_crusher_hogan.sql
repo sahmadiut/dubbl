@@ -1,0 +1,2 @@
+ALTER TABLE "ai_step" ADD COLUMN "record_ids" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "ai_step" ADD CONSTRAINT "ai_step_record_ids_bound" CHECK (octet_length("ai_step"."record_ids"::text) <= 4096);

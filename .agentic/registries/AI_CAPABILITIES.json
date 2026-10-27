@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 104,
-    "tools": 786,
-    "apiRoutes": 556,
+    "modules": 105,
+    "tools": 790,
+    "apiRoutes": 559,
     "pages": 208
   },
   "modules": [
@@ -51,6 +51,19 @@
       ],
       "apiImports": [
         "@/lib/api/admin-organization",
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-history",
+      "source": "lib/mcp/tools/ai-history.ts",
+      "tools": [
+        "audit_ai_conversation",
+        "delete_ai_conversation",
+        "get_ai_conversation",
+        "list_ai_conversations"
+      ],
+      "apiImports": [
         "@/lib/api/auth-context"
       ]
     },
@@ -2438,6 +2451,19 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "audit_ai_conversation",
+      "module": "ai-history",
+      "line": 17,
+      "description": "Read one organization conversation using dedicated audit:ai-transcripts permission and a recorded reason; each successful access is audited. Domain permissions still limit historical payload disclosure. Not an ordinary chat capability.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/persistence#getConversation",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "auto_reconcile_bank_transactions",
       "module": "bank-rules",
       "line": 38,
@@ -4257,6 +4283,19 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "delete_ai_conversation",
+      "module": "ai-history",
+      "line": 21,
+      "description": "Tombstone and erase own conversation payloads; cancel pending runs and preserve uncertain effects as reconciliation metadata. Returns {deleted:true}; never deletes business/financial records. Requires live view:ai-history. Sensitive destructive operation, not auto-approved for chat.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/persistence#deleteConversation",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "delete_approval_workflow",
       "module": "approvals",
       "line": 17,
@@ -5733,6 +5772,19 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/admin-organization#adminOrganizationForContext"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_conversation",
+      "module": "ai-history",
+      "line": 13,
+      "description": "Get own scoped conversation messages and run/step states. Returns redacted bounded payloads only while current domain permissions and retention allow; no configuration credentials or private reasoning.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/persistence#getConversation",
+        "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -7537,6 +7589,19 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/accrual-schedules#listAccrualSchedules",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "list_ai_conversations",
+      "module": "ai-history",
+      "line": 9,
+      "description": "List up to 100 own conversation metadata records under live view:ai-history permission. Returns {conversations}; no transcripts, credentials or money calculations.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/persistence#listConversations",
         "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
@@ -12711,6 +12776,28 @@
         "GET"
       ],
       "domain": "advisors"
+    },
+    {
+      "source": "app/api/v1/ai/conversations/[id]/audit/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/conversations/[id]/route.ts",
+      "methods": [
+        "DELETE",
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/conversations/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
     },
     {
       "source": "app/api/v1/api-keys/[id]/route.ts",

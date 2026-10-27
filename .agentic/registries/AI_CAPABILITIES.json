@@ -5,7 +5,7 @@
     "modules": 109,
     "tools": 812,
     "apiRoutes": 574,
-    "pages": 208
+    "pages": 210
   },
   "modules": [
     {
@@ -17130,6 +17130,7 @@
     }
   ],
   "pages": [
+    "app/(admin)/admin/ai/page.tsx",
     "app/(admin)/admin/email-preview/page.tsx",
     "app/(admin)/admin/organizations/[id]/page.tsx",
     "app/(admin)/admin/organizations/page.tsx",
@@ -17294,6 +17295,7 @@
     "app/(dashboard)/sales/revenue-schedules/[id]/page.tsx",
     "app/(dashboard)/sales/revenue-schedules/page.tsx",
     "app/(dashboard)/settings/advisors/page.tsx",
+    "app/(dashboard)/settings/ai/page.tsx",
     "app/(dashboard)/settings/api-keys/page.tsx",
     "app/(dashboard)/settings/approval-workflows/page.tsx",
     "app/(dashboard)/settings/audit-log/page.tsx",

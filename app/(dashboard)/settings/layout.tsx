@@ -39,6 +39,7 @@ export default function SettingsLayout({
         { href: "/settings", label: st("general"), icon: Settings, exact: true },
         { href: "/settings/members", label: st("members"), icon: Users },
         { href: "/settings/roles", label: st("roles"), icon: ShieldCheck },
+        { href: "/settings/ai", label: st("ai"), icon: Settings },
         { href: "/settings/billing", label: st("billing"), icon: CreditCard },
         { href: "/settings/advisors", label: st("advisors"), icon: Shield },
         { href: "/settings/document-templates", label: st("templates"), icon: PaintbrushVertical },

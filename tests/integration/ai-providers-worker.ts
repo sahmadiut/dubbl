@@ -8,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { users, organization, member, aiProviderConfig, aiProvider, aiUsageAttempt, apiKey, auditLog } from "../../lib/db/schema";
+import { users, organization, member, customRole, aiProviderConfig, aiProvider, aiUsageAttempt, apiKey, auditLog } from "../../lib/db/schema";
 import { createHash } from "node:crypto";
 
 let session: { user: { id: string }; iat: number; expires: string } | null = null;
@@ -138,6 +138,34 @@ async function main() {
     assert.equal(attempts.filter(r => r.state === "settled").length, 2);
     assert.ok(attempts.filter(r => r.state === "unknown").every(r => r.inputTokens === null && BigInt(r.chargedTokens) > 0n));
     assert.equal((await db.select().from(aiProvider)).length, 2);
+    // AI-010: the UI's independent sections correspond to independent live grants.
+    // Reuse a captured MCP context across role changes to prove buttons are not authority.
+    const policyRoute = await import("../../app/api/v1/ai/tool-policies/route");
+    const { registerAiToolPolicyTools } = await import("../../lib/mcp/tools/ai-tool-policy");
+    const [restricted] = await db.insert(customRole).values({ organizationId: a.id, name: "AI settings manager", permissions: ["manage:ai-providers"] }).returning();
+    await db.update(member).set({ customRoleId: restricted.id }).where(eq(member.userId, owner.id));
+    await data(await configRoute.GET(req())); await data(await catalogRoute.GET(req()));
+    await data(await platformRoute.GET(req()), 403); await data(await policyRoute.GET(req()), 403);
+    assert.ok(Array.isArray(await call("list_ai_provider_configs", {})));
+    const policyServer = new McpServer({ name: "ai010", version: "1" }); registerAiToolPolicyTools(policyServer, ctx);
+    const policyClient = new Client({ name: "AI settings", version: "1" }), [pct, pst] = InMemoryTransport.createLinkedPair();
+    await Promise.all([policyServer.connect(pst), policyClient.connect(pct)]);
+    try {
+      assert.equal((await policyClient.callTool({ name: "list_ai_tool_policies", arguments: {} })).isError, true);
+      await db.update(customRole).set({ permissions: ["manage:ai-policy"] }).where(eq(customRole.id, restricted.id));
+      await data(await policyRoute.GET(req()));
+      const value = { agentId: null, enabled: false, allowedTools: [] };
+      await data(await policyRoute.PUT(req("PUT", value)));
+      assert.ok(!(await policyClient.callTool({ name: "list_ai_tool_policies", arguments: {} })).isError);
+      await data(await configRoute.GET(req()), 403); await data(await catalogRoute.GET(req()), 403);
+      await data(await credentialRoute.DELETE(req("DELETE", { expectedVersion: config.version }), params(config.id)), 403);
+      assert.equal((await call("list_ai_provider_configs", {}, true)).status, 403);
+      await db.update(customRole).set({ permissions: ["use:ai"] }).where(eq(customRole.id, restricted.id));
+      await data(await policyRoute.PUT(req("PUT", value)), 403);
+      assert.equal((await policyClient.callTool({ name: "list_ai_tool_policies", arguments: {} })).isError, true);
+      await data(await configRoute.GET(req()), 403); await data(await platformRoute.GET(req()), 403);
+      assert.equal((await call("list_ai_provider_configs", {}, true)).status, 403);
+    } finally { await policyClient.close(); await policyServer.close(); }
     console.log("AI providers REST/MCP/SQL and transport guards verified");
   } finally { await client.close(); await server.close(); }
 }

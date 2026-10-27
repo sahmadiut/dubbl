@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { REVIEWED_AI_TOOL_NAMES } from "./tool-names";
 import { expenseCreateFields, expenseItemFields, expenseListFields } from "@/lib/api/expense-wire";
 
 const id = z.string().uuid().describe("Organization-owned record UUID; validated again by the existing domain operation.");
@@ -31,5 +32,5 @@ export const AI_TOOL_CATALOG = {
 } as const;
 
 export type AiToolName = keyof typeof AI_TOOL_CATALOG;
-export const AI_TOOL_NAMES = Object.keys(AI_TOOL_CATALOG) as AiToolName[];
+export const AI_TOOL_NAMES: AiToolName[] = [...REVIEWED_AI_TOOL_NAMES];
 export function catalogEntry(name: string) { return Object.hasOwn(AI_TOOL_CATALOG, name) ? AI_TOOL_CATALOG[name as AiToolName] : undefined; }

@@ -52,6 +52,7 @@ export function AdminNavigation({ children, allowed }: { children?: ReactNode; a
       label: t("configuration"),
       items: [
         { href: "/admin/settings", label: t("settings"), icon: Settings },
+        { href: "/admin/ai", label: t("ai"), icon: Settings },
       ],
     },
     {

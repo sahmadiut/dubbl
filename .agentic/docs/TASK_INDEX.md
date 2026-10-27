@@ -625,3 +625,14 @@ DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements
 | [COL-001](../tasks/COL-001.md) | Add record comments mentions and activity notifications | MOD-003 |
 | [COL-002](../tasks/COL-002.md) | Implement optional organization channels and direct messaging | COL-001 |
 | [IRN-001](../tasks/IRN-001.md) | Qualify the integrated Iran business capabilities | MOD-001, MOD-002, MOD-003, SVC-001, SVC-002, SVC-003, TRY-001, TRY-002, TRY-003, TRY-004, IRO-001, IRO-002, IRO-003, POS-001, POS-002, POS-003, POS-004, PAYIR-001, PAYIR-002, COL-001, COL-002 |
+
+## AI-006 domain coverage follow-ups
+
+| [AI-014](../tasks/AI-014.md) | Qualify ledger and banking agent tool coverage | AI-006, AI-008 |
+| [AI-015](../tasks/AI-015.md) | Qualify receivables and sales agent tool coverage | AI-006, AI-008 |
+| [AI-016](../tasks/AI-016.md) | Qualify payables and expense agent tool coverage | AI-006, AI-008 |
+| [AI-017](../tasks/AI-017.md) | Qualify asset loan and existing tax agent tool coverage | AI-006, AI-008 |
+| [AI-018](../tasks/AI-018.md) | Qualify inventory and procurement agent tool coverage | AI-006, AI-008 |
+| [AI-019](../tasks/AI-019.md) | Qualify payroll project and planning agent tool coverage | AI-006, AI-008 |
+| [AI-020](../tasks/AI-020.md) | Qualify report document and outbound agent tool coverage | AI-006, AI-008 |
+| [AI-021](../tasks/AI-021.md) | Qualify workspace and site-only agent tool gaps | AI-006, AI-008 |

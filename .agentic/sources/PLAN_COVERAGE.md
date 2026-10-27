@@ -487,3 +487,7 @@ DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements
 | [COL-001](../tasks/COL-001.md) | Add record comments mentions and activity notifications | MOD-003 |
 | [COL-002](../tasks/COL-002.md) | Implement optional organization channels and direct messaging | COL-001 |
 | [IRN-001](../tasks/IRN-001.md) | Qualify the integrated Iran business capabilities | MOD-001, MOD-002, MOD-003, SVC-001, SVC-002, SVC-003, TRY-001, TRY-002, TRY-003, TRY-004, IRO-001, IRO-002, IRO-003, POS-001, POS-002, POS-003, POS-004, PAYIR-001, PAYIR-002, COL-001, COL-002 |
+
+### AI-006 reviewed registry gaps (2026-10-27)
+
+AI-006 supports only its explicit seven-operation reviewed subset. AI-014 through AI-021 own finite domain candidate slices and exact gap classification from AI_TOOL_COVERAGE.json; they depend on AI-006 and AI-008. New Iranian tax, Stripe and privileged credential/security/provider chat operations remain excluded. Full-site support cannot be claimed until operation-level gaps are reconciled under AI-013.

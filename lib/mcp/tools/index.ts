@@ -1,4 +1,5 @@
 import { registerAiUsageTools } from "./ai-usage";
+import { registerAiToolPolicyTools } from "./ai-tool-policy";
 import { registerDocumentRenderingTools } from "./document-rendering";
 import { registerDocumentTemplateTools } from "./document-templates";
 import { registerProviderSettingsTools } from "./provider-settings";
@@ -216,4 +217,5 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerAiHistoryTools(server, ctx);
   registerAiProviderTools(server, ctx);
   registerAiUsageTools(server, ctx);
+  registerAiToolPolicyTools(server, ctx);
 }

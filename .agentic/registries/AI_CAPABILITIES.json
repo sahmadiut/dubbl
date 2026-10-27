@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 107,
-    "tools": 804,
-    "apiRoutes": 568,
+    "modules": 108,
+    "tools": 807,
+    "apiRoutes": 570,
     "pages": 208
   },
   "modules": [
@@ -80,6 +80,18 @@
         "rotate_ai_provider_credential",
         "test_ai_provider_connection",
         "update_ai_provider"
+      ],
+      "apiImports": [
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-tool-policy",
+      "source": "lib/mcp/tools/ai-tool-policy.ts",
+      "tools": [
+        "configure_ai_tool_policy",
+        "list_ai_tool_policies",
+        "list_authorized_ai_tools"
       ],
       "apiImports": [
         "@/lib/api/auth-context"
@@ -2901,6 +2913,18 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/ai/providers#saveProviderConfig"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "configure_ai_tool_policy",
+      "module": "ai-tool-policy",
+      "line": 8,
+      "description": "Administration only, never available to ordinary chat. Configure organization or agent allowlist with optimistic version. Requires manage:ai-policy; cannot bypass actor/domain grants or enable unreviewed tools. Missing policy denies all operations.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/tool-registry#configureToolPolicy"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -7760,6 +7784,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "list_ai_tool_policies",
+      "module": "ai-tool-policy",
+      "line": 9,
+      "description": "Administration only, never available to ordinary chat. List this organization's current versioned allowlists. Requires manage:ai-policy. No business payloads or credentials returned.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/tool-registry#listToolPolicies"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "list_approval_requests",
       "module": "approvals",
       "line": 19,
@@ -7819,6 +7855,18 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/audit-log#listAuditLog"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "list_authorized_ai_tools",
+      "module": "ai-tool-policy",
+      "line": 10,
+      "description": "Discover reviewed tools in the intersection of live actor grants and current organization/agent policies. Returns strict JSON input schemas, money/effect/retry/approval contracts; no arbitrary execution endpoint or automatic sensitive operations. Discovery alone never authorizes later dispatch.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/tool-registry#discoverAgentTools"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -13057,6 +13105,21 @@
       "methods": [
         "GET",
         "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/tool-policies/route.ts",
+      "methods": [
+        "GET",
+        "PUT"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/tools/route.ts",
+      "methods": [
+        "GET"
       ],
       "domain": "ai"
     },

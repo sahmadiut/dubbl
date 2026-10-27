@@ -3,8 +3,8 @@
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
     "modules": 109,
-    "tools": 813,
-    "apiRoutes": 575,
+    "tools": 815,
+    "apiRoutes": 577,
     "pages": 210
   },
   "modules": [
@@ -90,9 +90,11 @@
       "module": "ai-runs",
       "source": "lib/mcp/tools/ai-runs.ts",
       "tools": [
+        "answer_ai_run_input",
         "cancel_ai_run",
         "get_ai_run",
         "get_ai_run_events",
+        "get_ai_run_input",
         "get_ai_run_progress",
         "submit_ai_run"
       ],
@@ -2254,6 +2256,19 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "answer_ai_run_input",
+      "module": "ai-runs",
+      "line": 14,
+      "description": "Answer one own pending clarification using the exact input/run versions and an idempotency key. Atomically queues continuation under current identity/config/policy; preserves budgets, completed effects and deadlines. Returns a stable ANSWER_ACCEPTED receipt; retry never enqueues again. Text/record selection is not approval and never executes tools. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-input#answerRunInput",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "apply_bank_rules",
       "module": "bank-rules",
       "line": 34,
@@ -2751,7 +2766,7 @@
     {
       "name": "cancel_ai_run",
       "module": "ai-runs",
-      "line": 21,
+      "line": 30,
       "description": "Request stop for an own run. Prevents new dispatch; in-flight effects remain pending or require reconciliation, never rolled back. Works while runtime is disabled. Returns content-free current status.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5938,7 +5953,7 @@
     {
       "name": "get_ai_run",
       "module": "ai-runs",
-      "line": 17,
+      "line": 26,
       "description": "Get own run lifecycle and bounded step summaries under live view:ai-history and current domain permissions. No credentials, hidden reasoning, or worker lease tokens returned.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5951,7 +5966,7 @@
     {
       "name": "get_ai_run_events",
       "module": "ai-runs",
-      "line": 25,
+      "line": 34,
       "description": "Read up to 100 own content-free persisted lifecycle events after a sequence cursor. Reconnect by passing returned next; observing events never repeats business actions. Requires view:ai-history.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5962,9 +5977,22 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "get_ai_run_input",
+      "module": "ai-runs",
+      "line": 10,
+      "description": "Read the own run's bounded pending clarification and live scoped record choices under current history/domain access. Returns inputId/inputVersion and runVersion to answer, or a safe unavailable code. Read works while runtime is disabled; no approval authority or money input. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-input#getRunInput",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "get_ai_run_progress",
       "module": "ai-runs",
-      "line": 9,
+      "line": 18,
       "description": "Observe own persisted run progress and ordered bounded step outcomes under live history/domain permissions. Returns safe state/recovery codes and currently scoped record links, with expense amountMinor strings in explicit currency (USD cents); never raw text, execution authority or provisional output. Use next.afterStepId and next.expectedVersion for pages; on version conflict restart from the first page. Reads/reconnect never dispatch, retry or resume work. Worker availability is unknown. Not model-callable.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -11220,7 +11248,7 @@
     {
       "name": "submit_ai_run",
       "module": "ai-runs",
-      "line": 13,
+      "line": 22,
       "description": "Queue one own scoped request using a conversation UUID and idempotency key. Server chooses current default provider and agent policy; default-off AI_RUNTIME_ENABLED gate applies. Returns content-free run status, not executed actions. No money or identity arguments; not model-callable.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -13212,6 +13240,20 @@
     },
     {
       "source": "app/api/v1/ai/runs/[id]/events/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/input/answer/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/input/route.ts",
       "methods": [
         "GET"
       ],

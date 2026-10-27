@@ -60,3 +60,8 @@ Review: Codex task_001 self-reviewed source discovery and policy on 2026-10-27. 
 ## AI-006 implemented slice supersedes the proposed invoice-first slice
 
 Seven operations are reviewed in lib/ai/tool-catalog.ts: list/get contacts, list/get journals, list/get expense claims, and create an unposted expense draft. All other current registered tools remain unlisted; consult generated AI_TOOL_COVERAGE.json for counts. Provider/usage/policy administration and run-lifecycle operations cannot be model-dispatched. Both org and server-selected agent policies plus live actor grants are required; policy defaults deny. AI_TOOL_COVERAGE.json conservatively classifies every module/tool/route/page. AI-014..021 own bounded follow-up candidate slices, including invoice preparation in AI-015. This is not full-site support or runtime/provider activation; AI-007/008/013 integration and release gates remain.
+
+AI-030 adds get_ai_run_input and answer_ai_run_input within the excluded ai-runs
+module, with shared own/org REST services and generated clarification persistence.
+These controls cannot be model-dispatched or authorize approvals. See
+[durable clarification](../docs/AI_RUN_INPUT.md); AI-031 owns worker integration.

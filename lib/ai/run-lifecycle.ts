@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiRun, aiMessage, aiEvent, aiStep, aiProvider, aiProviderConfig, aiUsageAttempt, auditLog } from "@/lib/db/schema";
+import { aiConversation, aiRun, aiRunInput, aiMessage, aiEvent, aiStep, aiProvider, aiProviderConfig, aiUsageAttempt, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { boundedPayload, getConversation, purgeExpiredContent } from "./persistence";
@@ -12,7 +12,7 @@ const RUN_MS = 600000, QUEUE_MS = 86400000, LEASE_MS = 30000;
 type Run = typeof aiRun.$inferSelect;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const terminal = new Set(["succeeded", "failed", "cancelled", "expired"]);
-const publicEventKinds = new Set(["queued", "running", "awaiting_approval", "awaiting_input", "reconciliation_required", "succeeded", "failed", "cancelled", "expired", "claimed", "stop_requested", "authorization_or_configuration_changed", "recovered", "step_prepared", "step_updated"]);
+const publicEventKinds = new Set(["queued", "running", "awaiting_approval", "awaiting_input", "input_answered", "reconciliation_required", "succeeded", "failed", "cancelled", "expired", "claimed", "stop_requested", "authorization_or_configuration_changed", "recovered", "step_prepared", "step_updated"]);
 const id = z.string().uuid().describe("Opaque run/conversation UUID scoped to the authenticated owner and organization.");
 export const submitRunSchema = z.object({ conversationId: id,
   requestKey: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).describe("Client idempotency key within this conversation; reuse requires identical input."),
@@ -54,7 +54,7 @@ async function currentSnapshot(ctx: AuthContext) {
   return { providerConfigId: config.id, configVersion: config.version, credentialRef: config.credentialRef, providerVersion: provider.version,
     policyVersion: tools.policyVersions.organization, agentPolicyVersion: tools.policyVersions.agent, agentId: "default" as const };
 }
-async function validateRunSnapshot(run: Run) {
+export async function validateRunSnapshot(run: Run) {
   const ctx = await authorizeExecution(run.identity, run.organizationId, "use:ai"), snapshot = await currentSnapshot(ctx);
   if (Object.entries(snapshot).some(([k, value]) => run.config[k as keyof Run["config"]] !== value)) throw new AuthError("Run configuration changed; submit a new request", 409);
   return ctx;
@@ -112,6 +112,7 @@ export async function cancelRun(ctx: AuthContext, input: unknown) {
     await tx.update(aiStep).set({ state: "skipped", version: sql`${aiStep.version} + 1`, updatedAt: new Date() }).where(and(eq(aiStep.runId, runId), eq(aiStep.state, "prepared")));
     const state = executing && run.state === "running" ? "running" : uncertain || executing ? "reconciliation_required" : "cancelled";
     const changed = await event(tx, run, state, "stop_requested", { cancelRequestedAt: new Date() });
+    await tx.update(aiRunInput).set({ state: "cancelled", question: null, candidates: null }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
     await tx.update(aiUsageAttempt).set({ state: "unknown", updatedAt: new Date() }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "in_flight")));
     await tx.update(aiUsageAttempt).set({ state: "cancelled", chargedTokens: "0", chargedCost: "0", updatedAt: new Date() }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "reserved")));
     await audit(tx, current, run.id, "ai.run.stop_requested");
@@ -166,7 +167,7 @@ export async function heartbeatRun(runId: string, leaseToken: string) {
 export async function maintainRuns() {
   const result = await db.transaction(async tx => {
     const now = new Date();
-    const runs = await tx.select().from(aiRun).where(sql`(${aiRun.state} = 'running' and (${aiRun.leaseExpiresAt} <= ${now} or ${aiRun.deadlineAt} <= ${now})) or (${aiRun.state} = 'queued' and ${aiRun.createdAt} <= ${new Date(now.getTime() - QUEUE_MS)})`).limit(100).for("update", { skipLocked: true });
+    const runs = await tx.select().from(aiRun).where(sql`(${aiRun.state} = 'running' and (${aiRun.leaseExpiresAt} <= ${now} or ${aiRun.deadlineAt} <= ${now})) or (${aiRun.state} = 'queued' and ${aiRun.createdAt} <= ${new Date(now.getTime() - QUEUE_MS)}) or (${aiRun.state} = 'awaiting_input' and (${aiRun.deadlineAt} <= ${now} or exists (select 1 from ai_run_input where run_id = ${aiRun.id} and (state = 'expired' or (state = 'pending' and expires_at <= ${now}))) or exists (select 1 from ai_conversation where id = ${aiRun.conversationId} and (deleted_at is not null or content_expires_at <= ${now}))))`).limit(100).for("update", { skipLocked: true });
     for (const run of runs) {
       const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id)).for("update");
       const uncertain = steps.some(s => s.state === "executing" || s.state === "uncertain");
@@ -175,9 +176,10 @@ export async function maintainRuns() {
       // settle usage but cannot restore an executable lease or replay effects.
       await tx.update(aiUsageAttempt).set({ state: "unknown", updatedAt: now }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "in_flight")));
       await tx.update(aiUsageAttempt).set({ state: "cancelled", chargedTokens: "0", chargedCost: "0", updatedAt: now }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "reserved")));
-      const expired = run.createdAt.getTime() + QUEUE_MS <= now.getTime() || run.deadlineAt && run.deadlineAt <= now;
+      const expired = run.state === "awaiting_input" || run.createdAt.getTime() + QUEUE_MS <= now.getTime() || run.deadlineAt && run.deadlineAt <= now;
       const state = uncertain ? "reconciliation_required" : run.cancelRequestedAt ? "cancelled" : expired ? "expired" : "queued";
       await event(tx, run, state, "recovered");
+      await tx.update(aiRunInput).set({ state: "expired", question: null, candidates: null }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
     }
     return { recovered: runs.length };
   });

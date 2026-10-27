@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiRun, aiMessage, aiStep, aiApproval, aiEvent, aiUsageAttempt, auditLog, type AiPayload, type AiRunState } from "@/lib/db/schema";
+import { aiConversation, aiRun, aiRunInput, aiMessage, aiStep, aiApproval, aiEvent, aiUsageAttempt, auditLog, type AiPayload, type AiRunState } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity, type ExecutionIdentity } from "@/lib/api/execution-identity";
 import { ALL_PERMISSIONS, hasPermission } from "@/lib/plans";
@@ -190,6 +190,8 @@ export async function deleteConversation(ctx: AuthContext, id: string) {
     await tx.update(aiConversation).set({ deletedAt: new Date(), version: conversation.version + 1, updatedAt: new Date() }).where(eq(aiConversation.id, id));
     const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, id)).for("update");
     for (const run of runs) {
+      await tx.update(aiRunInput).set({ question: null, candidates: null, answer: null }).where(eq(aiRunInput.runId, run.id));
+      await tx.update(aiRunInput).set({ state: "cancelled" }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
       const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id));
       if (!terminal.has(run.state)) {
         const uncertain = steps.some(s => s.state === "executing" || s.state === "uncertain");
@@ -216,6 +218,8 @@ export async function purgeExpiredContent(now = new Date()) {
       await tx.update(aiMessage).set({ payload: null }).where(eq(aiMessage.conversationId, c.id));
       const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, c.id)).for("update");
       for (const r of runs) {
+        await tx.update(aiRunInput).set({ question: null, candidates: null, answer: null }).where(eq(aiRunInput.runId, r.id));
+        await tx.update(aiRunInput).set({ state: "expired" }).where(and(eq(aiRunInput.runId, r.id), eq(aiRunInput.state, "pending")));
         const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, r.id));
         await tx.update(aiStep).set({ input: null, result: null }).where(eq(aiStep.runId, r.id));
         for (const s of steps) await tx.update(aiApproval).set({ preview: null }).where(eq(aiApproval.stepId, s.id));

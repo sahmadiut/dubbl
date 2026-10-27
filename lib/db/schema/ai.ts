@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, uuid, text, integer, timestamp, jsonb, unique, index, foreignKey, check } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, timestamp, jsonb, unique, uniqueIndex, index, foreignKey, check } from "drizzle-orm/pg-core";
 import { organization, users } from "./auth";
 import type { ExecutionIdentity } from "@/lib/api/execution-identity";
 
@@ -73,3 +73,28 @@ export const aiEvent = pgTable("ai_event", {
   id: uuid("id").primaryKey().defaultRandom(), ...scope(), runId: uuid("run_id").notNull(), sequence: integer("sequence").notNull(),
   kind: text("kind").notNull(), createdAt: time("created_at").notNull().defaultNow(),
 }, t => [unique("ai_event_sequence").on(t.runId, t.sequence), foreignKey({ columns: [t.runId, t.organizationId, t.ownerId], foreignColumns: [aiRun.id, aiRun.organizationId, aiRun.ownerId], name: "ai_event_run_scope" }).onDelete("cascade")]);
+
+export type AiInputCandidate = { type: "contact" | "journal_entry" | "expense_claim"; id: string };
+// Clarification is untrusted input, never an approval or an executable tool payload.
+export const aiRunInput = pgTable("ai_run_input", {
+  id: uuid("id").primaryKey().defaultRandom(), ...scope(), runId: uuid("run_id").notNull(),
+  inputVersion: integer("input_version").notNull(),
+  kind: text("kind").$type<"choice" | "text">().notNull(),
+  state: text("state").$type<"pending" | "answered" | "expired" | "cancelled">().notNull().default("pending"),
+  question: jsonb("question").$type<AiPayload>(), candidates: jsonb("candidates").$type<AiInputCandidate[]>(),
+  requiredPermissions: jsonb("required_permissions").$type<string[]>().notNull(),
+  answer: jsonb("answer").$type<AiPayload>(), answerKey: text("answer_key"), answerDigest: text("answer_digest"),
+  acceptedRunVersion: integer("accepted_run_version"), answeredAt: time("answered_at"),
+  expiresAt: time("expires_at").notNull(), createdAt: time("created_at").notNull().defaultNow(),
+}, t => [unique("ai_run_input_version").on(t.runId, t.inputVersion),
+  foreignKey({ columns: [t.runId, t.organizationId, t.ownerId], foreignColumns: [aiRun.id, aiRun.organizationId, aiRun.ownerId], name: "ai_run_input_scope" }).onDelete("cascade"),
+  index("ai_run_input_pending").on(t.state, t.expiresAt),
+  uniqueIndex("ai_run_input_one_pending").on(t.runId).where(sql`${t.state} = 'pending'`),
+  check("ai_run_input_version_positive", sql`${t.inputVersion} between 1 and 20`),
+  check("ai_run_input_kind", sql`${t.kind} in ('choice','text')`),
+  check("ai_run_input_state", sql`${t.state} in ('pending','answered','expired','cancelled')`),
+  check("ai_run_input_answered", sql`(${t.state} = 'answered') = (${t.answeredAt} is not null and ${t.answerKey} is not null and ${t.answerDigest} is not null and ${t.acceptedRunVersion} is not null)`),
+  check("ai_run_input_question_bound", sql`octet_length(${t.question}::text) <= 16384`),
+  check("ai_run_input_answer_bound", sql`octet_length(${t.answer}::text) <= 32768`),
+  check("ai_run_input_candidates_bound", sql`${t.candidates} is null or (jsonb_typeof(${t.candidates}) = 'array' and jsonb_array_length(${t.candidates}) <= 10 and octet_length(${t.candidates}::text) <= 4096)`),
+]);

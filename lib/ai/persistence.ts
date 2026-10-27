@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiRun, aiMessage, aiStep, aiApproval, aiEvent, auditLog, type AiPayload, type AiRunState } from "@/lib/db/schema";
+import { aiConversation, aiRun, aiMessage, aiStep, aiApproval, aiEvent, aiUsageAttempt, auditLog, type AiPayload, type AiRunState } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity, type ExecutionIdentity } from "@/lib/api/execution-identity";
 import { ALL_PERMISSIONS, hasPermission } from "@/lib/plans";
@@ -218,7 +218,8 @@ export async function purgeExpiredContent(now = new Date()) {
         await tx.update(aiStep).set({ input: null, result: null }).where(eq(aiStep.runId, r.id));
         for (const s of steps) await tx.update(aiApproval).set({ preview: null }).where(eq(aiApproval.stepId, s.id));
       }
-      if (c.metadataExpiresAt <= now && runs.every(r => terminal.has(r.state))) await tx.delete(aiConversation).where(eq(aiConversation.id, c.id));
+      const unsettled = await tx.select({ id: aiUsageAttempt.id }).from(aiUsageAttempt).where(sql`${aiUsageAttempt.runId} in (select id from ai_run where conversation_id = ${c.id}) and ${aiUsageAttempt.state} in ('reserved','in_flight','unknown')`).limit(1);
+      if (c.metadataExpiresAt <= now && runs.every(r => terminal.has(r.state)) && !unsettled.length) await tx.delete(aiConversation).where(eq(aiConversation.id, c.id));
     }
     await tx.update(aiApproval).set({ state: "expired", preview: null }).where(and(eq(aiApproval.state, "pending"), lte(aiApproval.expiresAt, now)));
     return { processed: conversations.length };

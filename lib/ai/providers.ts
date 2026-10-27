@@ -7,6 +7,7 @@ import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { executionIdentity, resolveExecutionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
 import { approvedEndpoint, endpointAddress, openCredential, providerPost, sealCredential } from "./provider-security";
+import { reserveAttempt, markAttemptDispatched, settleAttempt, cancelReservation } from "./usage";
 
 export const providerIdSchema = z.string().uuid().describe("Opaque provider or organization configuration UUID; always scoped by authenticated server identity.");
 export const versionSchema = z.number().int().positive().describe("Expected current configuration version; stale writes are rejected.");
@@ -135,11 +136,27 @@ export async function testProviderConnection(ctx: AuthContext, id: string) {
   if (!model || !model.usage || config.timeoutMs > provider.timeoutMs) throw new AuthError("Current model configuration is not approved", 409);
   const secret = openCredential(config.credential, config.keyVersion, `${current.organizationId}:${config.id}`);
   const started = Date.now();
-  const response = await providerPost(provider.endpoint, secret, { model: model.id, input: "Reply OK.", max_output_tokens: 16, store: false, stream: false, parallel_tool_calls: false, tools: [] }, config.timeoutMs);
-  const parsed = z.object({ status: z.literal("completed"), model: z.string(), usage: z.object({ input_tokens: z.number().int().nonnegative(), output_tokens: z.number().int().nonnegative() }) }).safeParse(response);
-  if (!parsed.success || parsed.data.model !== model.id) throw new AuthError("Invalid provider response or missing usage", 502);
-  // No provider text, IDs, raw headers or model-returned diagnostics are disclosed.
-  return { connected: true, configId: config.id, configVersion: config.version, providerVersion: provider.version, model: model.id, latencyMs: Date.now() - started, usage: parsed.data.usage };
+  // No tokenizer/account has been qualified. Conservatively reserve the entire
+  // approved context ceiling rather than assume a vendor's encoding is free.
+  const attempt = await reserveAttempt(ctx, { configId: config.id, runId: null, attemptKey: `connection_${randomUUID()}`, inputCeiling: String(model.contextTokens - 16), outputCeiling: "16" });
+  let dispatched = false;
+  try {
+    await markAttemptDispatched(ctx, attempt.id); dispatched = true;
+    const response = await providerPost(provider.endpoint, secret, { model: model.id, input: "Reply OK.", max_output_tokens: 16, store: false, stream: false, parallel_tool_calls: false, tools: [] }, config.timeoutMs);
+    const count = z.number().int().nonnegative();
+    const parsed = z.object({ status: z.literal("completed"), model: z.string(), usage: z.object({ input_tokens: count, output_tokens: count,
+      input_tokens_details: z.object({ cached_tokens: count.optional() }).optional(), output_tokens_details: z.object({ reasoning_tokens: count.optional() }).optional(),
+    }) }).safeParse(response);
+    if (!parsed.success || parsed.data.model !== model.id) throw new AuthError("Invalid provider response or missing usage", 502);
+    const usage = parsed.data.usage;
+    await settleAttempt(current.organizationId, current.userId, attempt.id, { inputTokens: String(usage.input_tokens), outputTokens: String(usage.output_tokens), cachedTokens: usage.input_tokens_details?.cached_tokens === undefined ? null : String(usage.input_tokens_details.cached_tokens), reasoningTokens: usage.output_tokens_details?.reasoning_tokens === undefined ? null : String(usage.output_tokens_details.reasoning_tokens) });
+    // No provider text, IDs, raw headers or model-returned diagnostics disclosed.
+    return { connected: true, configId: config.id, configVersion: config.version, providerVersion: provider.version, model: model.id, latencyMs: Date.now() - started, usage, usageAttemptId: attempt.id };
+  } catch (err) {
+    if (dispatched) await settleAttempt(current.organizationId, current.userId, attempt.id, { inputTokens: null, outputTokens: null, cachedTokens: null, reasoningTokens: null });
+    else await cancelReservation(ctx, attempt.id).catch(() => {});
+    throw err;
+  }
 }
 
 /** Explicit deny marker consumed by the ordinary-chat registry in AI-006. */

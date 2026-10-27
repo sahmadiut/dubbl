@@ -8,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { users, organization, member, aiProviderConfig, aiProvider, apiKey, auditLog } from "../../lib/db/schema";
+import { users, organization, member, aiProviderConfig, aiProvider, aiUsageAttempt, apiKey, auditLog } from "../../lib/db/schema";
 import { createHash } from "node:crypto";
 
 let session: { user: { id: string }; iat: number; expires: string } | null = null;
@@ -89,6 +89,11 @@ async function main() {
   config = await data(await credentialRoute.PUT(req("PUT", { expectedVersion: config.version, secret: "fixture-secret-one" }), params(config.id)));
   const priorRef = stored.credentialRef;
   [stored] = await db.select().from(aiProviderConfig).where(eq(aiProviderConfig.id, config.id)); assert.equal(stored.keyVersion, "v2"); assert.notEqual(stored.credentialRef, priorRef);
+  // Synthetic fixture prices and explicit quotas; no live pricing qualification.
+  const meter = await import("../../lib/ai/usage");
+  await meter.createPrice(ctx, { providerId: provider.id, model: model.id, currency: "USD", inputPerMillion: "1", outputPerMillion: "2", cachedPerMillion: "1", reasoningPerMillion: "2", evidenceDate: "2026-10-27", source: "synthetic-test-fixture" });
+  const budget = { currency: "USD", monthlyTokens: "1000000", monthlyCost: "100", runTokens: "100000", runCost: "10", requestsPerMinute: 1000, concurrency: 100 };
+  await meter.configureBudget(ctx, { ...budget, userId: null }); await meter.configureBudget(ctx, { ...budget, userId: owner.id });
   const server = new McpServer({ name: "AI provider", version: "1" }); registerAiProviderTools(server, ctx);
   const client = new Client({ name: "Fixture", version: "1" }), [ct, st] = InMemoryTransport.createLinkedPair(); await server.connect(st); await client.connect(ct);
   const call = async (name: string, args: Record<string, unknown>, error = false) => { const r = await client.callTool({ name, arguments: args }); assert.equal(!!r.isError, error, JSON.stringify(r)); return JSON.parse((r.content as { text: string }[])[0].text); };
@@ -128,6 +133,10 @@ async function main() {
     await db.update(member).set({ role: "member" }).where(eq(member.userId, owner.id)); assert.equal((await call("list_ai_provider_configs", {}, true)).status, 403);
     const audits = await db.select().from(auditLog); assert.ok(audits.length > 5); assert.ok(!JSON.stringify(audits).includes("fixture-secret-one"));
     const rows = await db.select().from(aiProviderConfig); assert.ok(rows.every(r => !r.credential));
+    const attempts = await db.select().from(aiUsageAttempt);
+    assert.equal(attempts.length, requests + 2); // Two DNS failures conservatively retained too.
+    assert.equal(attempts.filter(r => r.state === "settled").length, 2);
+    assert.ok(attempts.filter(r => r.state === "unknown").every(r => r.inputTokens === null && BigInt(r.chargedTokens) > 0n));
     assert.equal((await db.select().from(aiProvider)).length, 2);
     console.log("AI providers REST/MCP/SQL and transport guards verified");
   } finally { await client.close(); await server.close(); }

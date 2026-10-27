@@ -73,6 +73,8 @@ const PERMISSION_REQUIREMENTS: Record<string, MemberRole> = {
   "view:ai-history": "member",
   "audit:ai-transcripts": "owner",
   "manage:ai-providers": "owner",
+  "manage:ai-policy": "owner",
+  "view:ai-usage": "admin",
   "create:entries": "member",
   "edit:entries": "member",
   "post:entries": "admin",

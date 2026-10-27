@@ -41,6 +41,12 @@ The read/write permissions below are the required domain boundaries to verify, n
 
 ## Explicit unsupported operations and gap owners
 
+AI-005 adds the `ai-usage` administration/report module: price and budget
+mutations/listings are excluded from ordinary chat through `AI_USAGE_ADMIN_TOOLS`.
+Own usage and organization aggregate reporting have separate live permissions;
+no transcript or internal settlement operation is exposed. AI-006 must enforce
+these markers before any chat discovery/dispatch. Metering does not activate AI.
+
 REST-only/site-only surfaces remain unsupported until individually mapped: authentication/sign-up/session revocation, invitation and invite-link flows, organization member/advisor/team administration, API-key lifecycle, email configuration, global search, own-user security/profile, platform-wide administration, binary upload transport and any nested action missing from the MCP inventory. Some related domains have MCP tools; a domain match never proves operation parity. AI-006 compares every route/method and page action, records supported/unsupported/deferred scope and adds bounded missing shared services/MCP operations. Site-only and security-sensitive routes are excluded from ordinary chat by default.
 
 There are no arbitrary SQL/shell/browser tools, new external connectors, general web browsing, automatic scheduled agent runs, hosted-provider MCP delegation, newly deferred parity, new Iranian tax capabilities or Stripe work. DEC-010 Iran capabilities not yet implemented cannot be advertised as tools. Adding business coverage requires implementation plus its MCP operation and a reviewed entry; retaining existing runtime behavior requires no AI exposure.

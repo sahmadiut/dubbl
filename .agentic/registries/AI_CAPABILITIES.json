@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 106,
-    "tools": 799,
-    "apiRoutes": 565,
+    "modules": 107,
+    "tools": 804,
+    "apiRoutes": 568,
     "pages": 208
   },
   "modules": [
@@ -80,6 +80,20 @@
         "rotate_ai_provider_credential",
         "test_ai_provider_connection",
         "update_ai_provider"
+      ],
+      "apiImports": [
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-usage",
+      "source": "lib/mcp/tools/ai-usage.ts",
+      "tools": [
+        "configure_ai_budget",
+        "create_ai_price",
+        "get_ai_usage",
+        "list_ai_budgets",
+        "list_ai_prices"
       ],
       "apiImports": [
         "@/lib/api/auth-context"
@@ -2868,6 +2882,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "configure_ai_budget",
+      "module": "ai-usage",
+      "line": 12,
+      "description": "Administration only; excluded from ordinary chat. Set an additional org or member budget in explicit billing currency using optimistic version. Costs are exact major-currency decimal strings, tokens integer strings. UTC-month token quota and global rate/concurrency cover all currencies; cost quota is currency-specific. Both org and user policies are required; zero disables. Requires manage:ai-policy.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage#configureBudget"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "configure_ai_provider",
       "module": "ai-providers",
       "line": 16,
@@ -2999,6 +3025,18 @@
       "directImportedCalls": [
         "@/lib/api/accrual-schedules#createAccrualSchedule",
         "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "create_ai_price",
+      "module": "ai-usage",
+      "line": 10,
+      "description": "Administration only; excluded from ordinary chat. Create an immutable organization-scoped price version for a delegated provider/model. Rates are exact decimal strings per MILLION tokens in explicit major billing currency, not cents. No live-price or invoice claim. Requires manage:ai-providers.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage#createPrice"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -5832,6 +5870,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "get_ai_usage",
+      "module": "ai-usage",
+      "line": 14,
+      "description": "Get own usage or explicitly authorized organization aggregates within a maximum 93-day UTC creation-time window. Groups remain separated by user/provider/model/billing currency. Token category nulls remain unknown; reported sums are partial observed totals. Charged cost includes conservative unknown reservations, is an estimate and is never a provider invoice. No prompts, outputs, credentials or transcript access. Own requires view:ai-history; org requires view:ai-usage.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage#usageReport"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "get_approval_request",
       "module": "approvals",
       "line": 21,
@@ -7637,6 +7687,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "list_ai_budgets",
+      "module": "ai-usage",
+      "line": 13,
+      "description": "Administration only; excluded from ordinary chat. List scoped organization/member budgets and current versions; costs are exact major billing-currency strings, never provider invoices or accounting entries. Requires manage:ai-policy.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage#listBudgets"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "list_ai_conversations",
       "module": "ai-history",
       "line": 9,
@@ -7657,6 +7719,18 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/ai/providers#listProviderCatalog"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "list_ai_prices",
+      "module": "ai-usage",
+      "line": 11,
+      "description": "Administration only; excluded from ordinary chat. List up to 200 organization-scoped immutable price versions; integer rates are MICRO-major billing units per million tokens. Requires manage:ai-providers; returns no credentials.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage#listPrices"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -12904,6 +12978,14 @@
       "domain": "advisors"
     },
     {
+      "source": "app/api/v1/ai/budgets/route.ts",
+      "methods": [
+        "GET",
+        "PUT"
+      ],
+      "domain": "ai"
+    },
+    {
       "source": "app/api/v1/ai/conversations/[id]/audit/route.ts",
       "methods": [
         "POST"
@@ -12922,6 +13004,14 @@
       "source": "app/api/v1/ai/conversations/route.ts",
       "methods": [
         "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/prices/route.ts",
+      "methods": [
+        "GET",
+        "POST"
       ],
       "domain": "ai"
     },
@@ -12967,6 +13057,13 @@
       "methods": [
         "GET",
         "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/usage/route.ts",
+      "methods": [
+        "GET"
       ],
       "domain": "ai"
     },

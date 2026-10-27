@@ -20,7 +20,7 @@ The target is coverage of existing site capabilities within user permissions. Su
 
 Administrators manage provider connections, API credentials, models, policies, quotas and monitoring. Users receive only the chat, history, usage and management capabilities they are allowed to access.
 
-## Findings from current source inspection
+## Historical source findings (2026-10-17 baseline)
 
 - `lib/mcp/tools/index.ts` and `lib/mcp/server.ts` provide an established registry and organization-bound `AuthContext`. Existing shared services under `lib/api/` should supply business behavior rather than duplicating accounting logic.
 - `lib/api/auth-context.ts`, `lib/api/require-role.ts` and `lib/plans.ts` establish session/API-key identity and role/custom-permission checks. `lib/mcp/errors.ts` supplies error and exact-money serialization behavior.
@@ -28,6 +28,16 @@ Administrators manage provider connections, API credentials, models, policies, q
 - `lib/api/require-site-admin.ts`, `app/api/v1/admin/` and `app/(admin)/admin/` provide existing site-administration boundaries and navigation. Global administration must remain separate from organization roles and organization-scoped API/MCP credentials.
 - `package.json` declares Next.js, Drizzle/PostgreSQL, MCP and next-intl. No dedicated agent runtime/provider SDK is declared, and the targeted source search found no established AI chat implementation to extend. Verify again during AI-001.
 - These findings describe the 2026-10-17 planning baseline; verify current source during AI-001. The 2026-10-27 scheduling change starts no implementation task and changes no application files.
+
+## Current planning review (2026-10-28)
+
+The owner requested a complete AI task review and direct improvements for UI/UX, ease of use and professional workflows. The normative [product experience contract](AI_PRODUCT_EXPERIENCE.md) now defines first use, business requests, approvals, recovery, reports and administration. See the [review findings](../evidence/AI-product-experience-review-2026-10-28.md) for the inspected baseline and task mapping.
+
+The inspected tree contains provider/policy management UI, shared persistence/provider/usage/tool services and lifecycle primitives. The ordinary conversation UI and actual worker/model loop still require the open tasks. Existing admin forms expose configuration fields but do not yet supply a complete readiness journey across price and member/org budget prerequisites. These are source-level findings, not an observed browser evaluation. Historical completed tasks/evidence remain intact; AI-024/025 own their additional product requirements.
+
+AI-009 is now an integration parent for AI-026 workspace/history and AI-027 action/approval/recovery UI. AI-011 includes the existing price/budget services' administration forms so setup has no hidden API-only prerequisite. AI-024 depends on AI-011 for those prerequisites; AI-025 improves policy comprehension and settings safety. AI-028 independently qualifies assembled journeys and depends on all eight finite domain follow-ups AI-014..021. AI-012 depends on AI-028, so AI-013 transitively gates every current AI task. The previously missing domain dependencies are now explicit.
+
+This review changes planning only: no provider choice, production enablement, live test, native-language approval or implementation completion is claimed. Technical work can use deterministic fixtures while deployment-specific live-provider qualification remains an explicit enablement requirement. Phase order, deferred phase 5, frozen Stripe scope and no-new-tax scope are unchanged.
 
 ## Architecture boundaries
 
@@ -67,6 +77,12 @@ Current owner decision, 2026-10-27 (DEC-009): implement AI now and postpone phas
 | AI-011 | Scoped usage and operations dashboard |
 | AI-012 | Security, accounting workflow and reliability qualification |
 | AI-013 | Independent integration acceptance and controlled rollout |
+| AI-014..021 | Finite domain candidates, operation-level gaps and concrete user scenarios |
+| AI-022 / AI-023 | Lifecycle primitives / actual metered runtime, clarification and presentation contracts |
+| AI-024 | Guided provider setup and scoped readiness |
+| AI-025 | Understandable tool policies and safe settings edits |
+| AI-026 / AI-027 | Chat workspace/history / action, approval and recovery interactions |
+| AI-028 | Integrated bilingual usability and accessibility qualification |
 
 Each implementation task needs meaningful tests, actual evidence and controller review. AI-012 uses deterministic provider fixtures for failure/concurrency coverage and a separately recorded configured-provider smoke test before enablement. Source/provider behavior, pricing and deployment availability must be checked against current official documentation at implementation time. Mocked success does not qualify live provider operation.
 

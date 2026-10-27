@@ -644,3 +644,17 @@ DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements
 - [AI-023](../tasks/AI-023.md): metered provider/tool loop, worker scheduling and deterministic end-to-end execution.
 
 AI-007 remains the independent integration parent; neither child alone accepts its original criteria.
+
+## AI product experience revision (2026-10-28)
+
+Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.
+
+| Task | Deliverable | Dependencies |
+|---|---|---|
+| [AI-024](../tasks/AI-024.md) | Guided provider setup and scoped readiness | AI-010, AI-011 |
+| [AI-025](../tasks/AI-025.md) | Understandable policies and safe settings edits | AI-010 |
+| [AI-026](../tasks/AI-026.md) | Bilingual workspace, composer and history | AI-008, LOC-011, RTL-001 |
+| [AI-027](../tasks/AI-027.md) | Progress, clarification, approvals and recovery UI | AI-026, AI-008, AI-023 |
+| [AI-028](../tasks/AI-028.md) | Integrated usability/accessibility qualification | AI-009, AI-011, AI-024, AI-025, AI-014..021 |
+
+AI-009 retains its original criteria and independently integrates AI-026/027. AI-023/007 own consumable runtime state and clarification contracts; AI-008 owns concrete previews/approval services; AI-011 supplies price/budget management and meaningful usage views. AI-014..021 retain finite operation scope with domain-specific journeys and structured results. AI-012 now depends on AI-028; AI-013 therefore transitively waits for every AI task, including domain coverage previously absent from its dependency closure. Phase order and all existing scope/qualification gates are preserved.

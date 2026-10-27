@@ -4,10 +4,10 @@ import {
   mcpOAuthCode,
   mcpAccessToken,
   mcpRefreshToken,
-  member,
 } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import type { MemberRole } from "@/lib/plans";
+import { eq } from "drizzle-orm";
+import { resolveMembership } from "@/lib/api/execution-identity";
+import { AuthError } from "@/lib/api/auth-context";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -53,9 +53,9 @@ export async function POST(request: Request) {
     const grantType = params.grant_type;
 
     if (grantType === "authorization_code") {
-      return handleAuthorizationCode(params);
+      return await handleAuthorizationCode(params);
     } else if (grantType === "refresh_token") {
-      return handleRefreshToken(params);
+      return await handleRefreshToken(params);
     } else {
       return corsJson(
         { error: "unsupported_grant_type" },
@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       );
     }
   } catch (err) {
+    if (err instanceof AuthError) return corsJson({ error: "invalid_grant", error_description: "Organization access revoked" }, { status: 400 });
     console.error("Token endpoint error:", err);
     return corsJson({ error: "server_error" }, { status: 500 });
   }
@@ -96,7 +97,7 @@ async function handleAuthorizationCode(params: Record<string, string>) {
   }
 
   // Validate expiry
-  if (authCode.expiresAt < new Date()) {
+  if (authCode.expiresAt <= new Date()) {
     // Clean up expired code
     await db.delete(mcpOAuthCode).where(eq(mcpOAuthCode.id, authCode.id));
     return corsJson(
@@ -132,15 +133,7 @@ async function handleAuthorizationCode(params: Record<string, string>) {
     );
   }
 
-  // Get user's role in org
-  const mem = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, authCode.organizationId),
-      eq(member.userId, authCode.userId)
-    ),
-  });
-
-  const role: MemberRole = (mem?.role as MemberRole) ?? "member";
+  const { role } = await resolveMembership(authCode.userId, authCode.organizationId);
 
   // Delete the used code
   await db.delete(mcpOAuthCode).where(eq(mcpOAuthCode.id, authCode.id));
@@ -208,7 +201,7 @@ async function handleRefreshToken(params: Record<string, string>) {
     );
   }
 
-  if (storedRefresh.expiresAt < new Date()) {
+  if (storedRefresh.expiresAt <= new Date()) {
     await db
       .delete(mcpRefreshToken)
       .where(eq(mcpRefreshToken.id, storedRefresh.id));
@@ -232,15 +225,7 @@ async function handleRefreshToken(params: Record<string, string>) {
     .delete(mcpRefreshToken)
     .where(eq(mcpRefreshToken.id, storedRefresh.id));
 
-  // Get current role
-  const mem = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, oldAccessToken.organizationId),
-      eq(member.userId, oldAccessToken.userId)
-    ),
-  });
-
-  const role: MemberRole = (mem?.role as MemberRole) ?? "member";
+  const { role } = await resolveMembership(oldAccessToken.userId, oldAccessToken.organizationId);
 
   // Generate new tokens
   const newAccessTokenRaw = generateToken("mcp_at_");

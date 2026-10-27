@@ -5,6 +5,7 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getAuthContext } from "./auth-context";
 import { assertSiteAdminUser } from "./admin-organization";
+import { assertCurrentSession } from "./execution-identity";
 
 /**
  * Verify the current session user is a site admin.
@@ -23,6 +24,8 @@ export async function requireSiteAdmin(request?: Request): Promise<
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+  const issuedAt = (session as unknown as { iat?: number }).iat;
+  await assertCurrentSession(session.user.id, typeof issuedAt === "number" ? issuedAt * 1000 : NaN, Date.parse(session.expires));
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.user.id),

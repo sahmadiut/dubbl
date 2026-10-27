@@ -6,6 +6,7 @@ import { PeriodLockedError } from "@/lib/api/period-lock";
 import { MissingExchangeRateError } from "@/lib/currency/converter";
 import { CurrencyRolloutError } from "@/lib/currency/rollout";
 import { stringifyWire, WireCompatibilityError, type WireRepresentation } from "@/lib/money/wire";
+import { revalidateToolIdentity } from "@/lib/api/execution-identity";
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -17,7 +18,10 @@ export function wrapTool<T>(
   handler: (ctx: AuthContext) => Promise<T>,
   representation: WireRepresentation = "legacy",
 ): Promise<ToolResult> {
-  return Promise.resolve().then(() => handler(ctx))
+  return Promise.resolve().then(async () => {
+    await revalidateToolIdentity(ctx);
+    return handler(ctx);
+  })
     .then((result) => ({
       content: [{ type: "text" as const, text: stringifyWire(result, representation) }],
     }))

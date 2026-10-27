@@ -1,10 +1,10 @@
 import { createHash } from "crypto";
 import { db } from "@/lib/db";
-import { mcpAccessToken, member } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { mcpAccessToken } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { AuthError } from "@/lib/api/auth-context";
-import type { MemberRole } from "@/lib/plans";
+import { resolveExecutionIdentity } from "@/lib/api/execution-identity";
 
 export async function resolveToken(bearerToken: string): Promise<AuthContext> {
   const hash = createHash("sha256").update(bearerToken).digest("hex");
@@ -17,23 +17,10 @@ export async function resolveToken(bearerToken: string): Promise<AuthContext> {
     throw new AuthError("Invalid access token", 401);
   }
 
-  if (token.expiresAt < new Date()) {
+  if (token.expiresAt <= new Date()) {
     throw new AuthError("Access token expired", 401);
   }
 
-  // Verify membership still exists
-  const mem = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, token.organizationId),
-      eq(member.userId, token.userId)
-    ),
-  });
-
-  const role = (mem?.role ?? token.role) as MemberRole;
-
-  return {
-    userId: token.userId,
-    organizationId: token.organizationId,
-    role,
-  };
+  return resolveExecutionIdentity({ kind: "mcp", userId: token.userId,
+    organizationId: token.organizationId, credentialId: token.id });
 }

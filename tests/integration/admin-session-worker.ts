@@ -8,7 +8,7 @@ import { organization, users } from "../../lib/db/schema";
 // site-admin gates run normally. Browser/JWT/login acceptance is not claimed.
 let sessionUserId: string | undefined;
 mock.module(new URL("../../lib/auth.ts", import.meta.url).href, {
-  namedExports: { auth: async () => sessionUserId ? { user: { id: sessionUserId } } : null },
+  namedExports: { auth: async () => sessionUserId ? { user: { id: sessionUserId }, iat: Math.floor(Date.now() / 1000), expires: new Date(Date.now() + 60000).toISOString() } : null },
 });
 
 async function run() {

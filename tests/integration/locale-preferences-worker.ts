@@ -17,7 +17,7 @@ let sessionUserId: string | undefined;
 const requestCookies = new Map<string, string>();
 let acceptLanguage = "fa-IR";
 mock.module(new URL("../../lib/auth.ts", import.meta.url).href, {
-  namedExports: { auth: async () => sessionUserId ? { user: { id: sessionUserId } } : null },
+  namedExports: { auth: async () => sessionUserId ? { user: { id: sessionUserId }, iat: Math.floor(Date.now() / 1000), expires: new Date(Date.now() + 60000).toISOString() } : null },
 });
 mock.module("next/headers", { namedExports: {
   cookies: async () => ({ get: (name: string) => requestCookies.has(name) ? { value: requestCookies.get(name) } : undefined }),

@@ -4,6 +4,14 @@ Current scope update (DEC-010, 2026-10-27): phase 12, Iran business capabilities
 
 Requested by the project owner on 2026-10-17. This is a backlog and architecture proposal, not an implemented feature or deployment approval. Requirements: [owner extension](../sources/SOURCE.md#ai-agent-and-administration-owner-extension). Task status is authoritative in `../tasks/AI-*.md`.
 
+AI-001 source baseline and normative implementation inputs (2026-10-27):
+[capability/gap matrix](../registries/AI_CAPABILITY_MATRIX.md),
+[reproducible operation inventory](../registries/AI_CAPABILITIES.json), and
+[execution contract v1](AI_EXECUTION_CONTRACT.md). No chat tools or live provider
+are enabled. Provider/model selection remains unresolved pending verified
+deployment/account availability and data handling; subsequent engineering can
+use deterministic fixtures while those live-qualification gates remain closed.
+
 ## Product outcome
 
 A user can ask the assistant to find a customer, inspect relevant records, prepare several documents and summarize the results in one conversation. The assistant executes a bounded sequence of authorized tools, observes each result and continues until complete, awaiting clarification/approval or explicitly stopped. It must report partial completion truthfully and link to actual records. It must never claim an action succeeded solely because the model described it.

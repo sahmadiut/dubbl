@@ -1,12 +1,14 @@
 # Controller reference
 
+Current scope update (DEC-010, 2026-10-27): phase 12, Iran business capabilities, runs after phase 7 and before phase 5. New tax work is excluded. Open phase-5 tasks and QA-001 depend on IRN-001. See the Iran business delivery plan in docs/IRAN_BUSINESS_PLAN.md (relative to .agentic). AI remains next; phase-5 scope is retained for later reconsideration.
+
 ## Data and safety model
 
 Python 3.10+ standard library; works offline. Each `tasks/ID.md` contains a strict JSON object between `---` lines, followed by human-readable Markdown. JSON is a deliberate restricted front-matter format: no YAML parser dependency or executable metadata. Task files are the sole status source; all dashboards are computed. `docs/TASK_INDEX.md` is an initial navigation index, not live status.
 
 State path: `todo -> in_progress -> review -> done`. Review rejection returns to `in_progress`. Open work can become `blocked`, then queue or resume after the blocker is resolved. Split parents wait in `todo` for dependencies. Only optional tasks may become `skipped` with documented owner scope approval. A skipped prerequisite is considered resolved for dependency ordering, not implemented. Mandatory work cannot be skipped. A blocked task does not block unrelated ready work; an active or review task occupies the single work slot.
 
-Selection: active/review first; otherwise eligible todo tasks by phase, split-parent first, priority (0 first), ID. A ready task has all dependencies done or explicitly skipped. A task with a nonempty `split_children` list is an integration parent; it outranks unrelated ready work within the same phase once all dependencies resolve. Phase labels are planning groups, not hidden barriers; express every hard gate as a dependency. Status reports the earliest unfinished phase and count-based progress, not effort-weighted progress. Maintenance and the delayed contract phase are included in the initial 60 tasks and can remain open after production acceptance.
+Selection: active/review first; otherwise eligible todo tasks by scheduled phase order, split-parent first, priority (0 first), ID. Under DEC-009 (2026-10-27), the order is `0, 1, 2, 3, 4, 11, 6, 7, 12, 5, 8, 9, 10`: AI follows RTL, then phases 6 and 7, then postponed P1 capability gaps. Phase IDs and names stay stable; status lists phases in execution order. A ready task has all dependencies done or explicitly skipped. A task with a nonempty `split_children` list is an integration parent; it outranks unrelated ready work within the same phase once all dependencies resolve. Phase labels are planning groups, not hidden barriers; express every hard gate as a dependency. Open phase-5 tasks explicitly depend on AI-013 and L10N-012. Phases 6 and 7 no longer depend on phase-5 expansion; release qualification retains its phase-5 prerequisites. Status reports the earliest unfinished scheduled phase and count-based progress, not effort-weighted progress. Maintenance and the delayed contract phase are included in the initial 60 tasks and can remain open after production acceptance.
 
 ## Commands from repository root
 

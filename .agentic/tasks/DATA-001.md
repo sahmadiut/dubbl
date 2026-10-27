@@ -5,7 +5,9 @@
   "phase": 6,
   "role": "backend",
   "depends_on": [
-    "PAR-008"
+    "MON-008",
+    "RTL-002",
+    "AI-013"
   ],
   "source_pages": [],
   "status": "todo",
@@ -49,8 +51,11 @@ Run the repository's discovered commands for the affected behavior. Add meaningf
 
 ## Handoff
 
+Owner scheduling clarification, 2026-10-27 (DEC-009): implement imports over existing capabilities after AI, using completed exact-money and RTL foundations. Report/parity expansion in phase 5 is deferred and no longer gates this task. Existing validation, authorization and idempotency criteria remain required.
+
 Not started. First inspect the actual fork; replace this with changed files, completed steps, remaining work, blockers and the exact next action before ending a session.
 
 ## History
 
 - Initial backlog generated from the supplied plan. Implementation status is unverified; no task is marked complete.
+- 2026-10-27T11:44:56+00:00 | DEC-009 clarification: Replace PAR-008 ordering dependency with MON-008, RTL-002 and AI-013 so phase 6 can precede deferred phase 5; acceptance criteria unchanged.

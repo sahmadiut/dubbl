@@ -2,6 +2,10 @@
 
 Generated initial scope index; current status always comes from task metadata via `agent.py status`.
 
+Owner scheduling update, 2026-10-27 (DEC-009): AI (phase 11) is next, followed
+by phases 6 and 7, postponed phase 5, then phases 8, 9 and 10. Phase numbers remain stable.
+The next task is selected by the controller, not this historical table order.
+
 ## Explicit IRR qualification and activation
 
 Added on 2026-10-21 at the owner's request. Follow the
@@ -399,7 +403,7 @@ retains independent combined acceptance after these bounded children.
 
 ## AI agent and administration extension (2026-10-17)
 
-Owner-requested backlog; see [delivery plan](../docs/AI_AGENT_PLAN.md) and [requirements](../sources/SOURCE.md#ai-agent-and-administration-owner-extension). Phase 11, priority 2; AI-001 depends on all currently unfinished pre-existing tasks, so localization and the rest of the existing backlog finish first. Task files remain the status source.
+Owner-requested backlog; see [delivery plan](../docs/AI_AGENT_PLAN.md) and [requirements](../sources/SOURCE.md#ai-agent-and-administration-owner-extension). Updated by DEC-009 on 2026-10-27: phase 11, priority 2, scheduled now before phase 5. AI-001 retains completed technical prerequisites and no longer waits for the unfinished older backlog. Owner clarification: phase 5 follows phases 6 and 7 and waits for both AI-013 and L10N-012. Its tasks remain queued for reconsideration; deletion has not been requested. Phase-5 ordering gates are removed from phases 6 and 7. Internal AI dependencies and all qualification/release gates remain intact. Task files remain the status source.
 
 - [AI-001](../tasks/AI-001.md): Define agent capability inventory and execution contracts.
 - [AI-002](../tasks/AI-002.md): Enforce live identity and permissions for agent tool calls.
@@ -592,3 +596,32 @@ Actual source audit: shared tables contain click-only sort headers and narrow-to
 - [RTL-011](../tasks/RTL-011.md): Adopt bidi and resilient layout across public admin and outputs.
 
 RTL-008 retains exhaustive combined module/output acceptance; RTL-002 remains its independent integration parent. File ownership is recorded in `registries/RTL_MODULE_OWNERSHIP.json`; frozen provider sources stay unchanged.
+
+## Iran business capabilities (phase 12, before phase 5)
+
+DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements: [owner extension](../sources/SOURCE.md#iran-business-capabilities-owner-extension).
+
+| Task | Outcome | Depends on (in addition to AI-013 and L10N-012) |
+|---|---|---|
+| [MOD-001](../tasks/MOD-001.md) | Define module registry and lifecycle contracts | None |
+| [MOD-002](../tasks/MOD-002.md) | Enforce organization module settings across execution paths | MOD-001 |
+| [MOD-003](../tasks/MOD-003.md) | Add personal workspace preferences and business presets | MOD-002 |
+| [SVC-001](../tasks/SVC-001.md) | Implement goods and services catalog types | MOD-002 |
+| [SVC-002](../tasks/SVC-002.md) | Implement service pricing and sales document integration | SVC-001 |
+| [SVC-003](../tasks/SVC-003.md) | Deliver services catalog and pricing user workflows | SVC-002, MOD-003 |
+| [TRY-001](../tasks/TRY-001.md) | Define check and promissory-note accounting contracts | MOD-002 |
+| [TRY-002](../tasks/TRY-002.md) | Implement received and issued check treasury lifecycle | TRY-001 |
+| [TRY-003](../tasks/TRY-003.md) | Implement promissory notes and guarantees | TRY-001 |
+| [TRY-004](../tasks/TRY-004.md) | Deliver treasury workspace reminders and reconciliation | TRY-002, TRY-003, MOD-003 |
+| [IRO-001](../tasks/IRO-001.md) | Add Iranian party and banking data workflows | MOD-002, DATA-001 |
+| [IRO-002](../tasks/IRO-002.md) | Implement explicit rial and toman input and display preferences | MOD-003 |
+| [IRO-003](../tasks/IRO-003.md) | Complete Persian operational dates and configurable fiscal periods | MOD-003 |
+| [POS-001](../tasks/POS-001.md) | Implement POS sessions and cashier shifts | MOD-002, SVC-002 |
+| [POS-002](../tasks/POS-002.md) | Deliver fast checkout payments returns and receipts | POS-001, SVC-003, IRO-002 |
+| [POS-003](../tasks/POS-003.md) | Add qualified receipt and payment-terminal adapters | POS-002 |
+| [POS-004](../tasks/POS-004.md) | Implement bounded offline checkout and safe synchronization | POS-002 |
+| [PAYIR-001](../tasks/PAYIR-001.md) | Specify Iranian non-tax payroll workflows | MOD-002 |
+| [PAYIR-002](../tasks/PAYIR-002.md) | Implement non-tax payroll policies and Persian payslips | PAYIR-001, IRO-003 |
+| [COL-001](../tasks/COL-001.md) | Add record comments mentions and activity notifications | MOD-003 |
+| [COL-002](../tasks/COL-002.md) | Implement optional organization channels and direct messaging | COL-001 |
+| [IRN-001](../tasks/IRN-001.md) | Qualify the integrated Iran business capabilities | MOD-001, MOD-002, MOD-003, SVC-001, SVC-002, SVC-003, TRY-001, TRY-002, TRY-003, TRY-004, IRO-001, IRO-002, IRO-003, POS-001, POS-002, POS-003, POS-004, PAYIR-001, PAYIR-002, COL-001, COL-002 |

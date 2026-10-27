@@ -22,7 +22,10 @@ ACTIVE = {'in_progress', 'review'}
 PHASES = ['Foundation audit', 'CI and architecture guardrails', 'Money and FX hardening',
           'Locale foundation', 'RTL conversion', 'P1 capability gaps', 'Data and banking parity',
           'Translation completion', 'Release qualification', 'Production release', 'Maintenance',
-          'AI agent and administration']
+          'AI agent and administration', 'Iran business capabilities']
+# Owner scheduling decisions, 2026-10-27 (DEC-009/010). Keep stable phase IDs.
+PHASE_ORDER = [0, 1, 2, 3, 4, 11, 6, 7, 12, 5, 8, 9, 10]
+PHASE_RANK = {phase: rank for rank, phase in enumerate(PHASE_ORDER)}
 
 class Invalid(ValueError):
     pass
@@ -231,11 +234,11 @@ class Project:
                 self.evidence_path(w.get('evidence',''))
 
     def ordered(self):
-        return sorted(self.tasks.values(),key=lambda t:(t.meta['phase'],t.meta['priority'],t.id))
+        return sorted(self.tasks.values(),key=lambda t:(PHASE_RANK[t.meta['phase']],t.meta['priority'],t.id))
 
     def ready(self):
         eligible = [t for t in self.ordered() if t.meta['status']=='todo' and not self.prerequisites(t)]
-        return sorted(eligible, key=lambda t:(t.meta['phase'], not bool(t.meta.get('split_children')), t.meta['priority'], t.id))
+        return sorted(eligible, key=lambda t:(PHASE_RANK[t.meta['phase']], not bool(t.meta.get('split_children')), t.meta['priority'], t.id))
 
     def next(self):
         active=[t for t in self.ordered() if t.meta['status'] in ACTIVE]
@@ -250,7 +253,8 @@ class Project:
     def status(self):
         counts=Counter(t.meta['status'] for t in self.tasks.values())
         phases=[]
-        for i,name in enumerate(PHASES):
+        for i in PHASE_ORDER:
+            name=PHASES[i]
             ts=[t for t in self.tasks.values() if t.meta['phase']==i]
             if ts:phases.append({'phase':i,'name':name,'counts':dict(Counter(t.meta['status'] for t in ts)),'total':len(ts)})
         open_tasks=[t for t in self.ordered() if t.meta['status'] not in CLOSED]

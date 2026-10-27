@@ -87,6 +87,46 @@ audits. Actual instruction and effective boundary are recorded in
 [owner scope evidence](../evidence/STRIPE-scope-decision-2026-10-17.md). Completed
 task evidence is historical and is not rewritten to claim future qualification.
 
+## DEC-009 - AI next, phase 5 postponed
+
+Date: 2026-10-27 (Asia/Tehran). Owner: project owner (actual user in this
+conversation). Status: accepted for the current branch, `fresh-start`.
+
+The owner requested a task-plan change on the current branch: postpone phase 5,
+bring the AI phase forward now, and explain phase 7 in Persian. This supersedes
+the 2026-10-17 instruction to finish all earlier work before AI.
+
+Chosen behavior: preserve phase IDs and use execution order
+`0, 1, 2, 3, 4, 11, 6, 7, 5, 8, 9, 10`. AI-001 retains completed technical
+prerequisites and no longer waits for unfinished parity, translation, IRR,
+QA/release or maintenance tasks. Every open phase-5 task explicitly waits for
+AI-013 and L10N-012. The owner clarified that phase 5 should come later than
+phases 6 and 7 and may be deleted in a future decision. Preserve its queued
+scope now; do not delete or mark it complete. Remove phase-5 ordering gates
+from DATA-001 and L10N-002..009 so those phases can work on existing capabilities.
+Internal AI dependencies, completed/skipped tasks, historical evidence, acceptance
+criteria and QA/release prerequisites remain intact.
+
+This is scheduling authorization only. Financial, permission, native-review,
+IRR activation and production-release gates remain applicable, as do default-off
+AI rollout and the Stripe freeze in DEC-008. No implementation task is started,
+provider selected, credential acquired, commit/push made or deployment approved
+by this planning update. See [AI delivery plan](AI_AGENT_PLAN.md) and
+[initial scheduling evidence](../evidence/AI-priority-scope-2026-10-27.md) and
+[further-deferral verification](../evidence/phase5-further-deferral-2026-10-27.md).
+
+## DEC-010 - Iran business capabilities before phase 5, excluding tax
+
+Owner instruction, 2026-10-27 (DEC-010): add the reviewed Iran business capabilities, excluding all new tax work, in a separate phase before phase 5. Stable phase ID 12 is scheduled after phase 7 and before phase 5; existing phase IDs are retained. Execution order: `0, 1, 2, 3, 4, 11, 6, 7, 12, 5, 8, 9, 10`. AI-001 remains next. Phase 5 is preserved for possible later owner reconsideration; its open tasks wait for IRN-001. The new tasks do not depend on phase-5 tasks.
+
+Scope: configurable organization modules and personal workspaces; reusable service catalog/pricing; checks/Sayad evidence tracking and promissory notes; Iranian party/bank data and CSV imports; explicit rial/toman convenience; operational Jalali dates and configurable fiscal periods; optional POS, hardware adapters and bounded offline synchronization; non-tax payroll; record collaboration and optional organization chat. External integrations need actual interface/access/hardware evidence; local Sayad tracking is not official registration.
+
+Excluded: new tax engines/rates, VAT, payroll tax, tax-specific identifiers/reporting, Modian/e-invoicing/fiscal-device integration, and statutory tax calendars. The owner will define Iranian tax tasks later. Existing tax functionality stays intact. No new statutory insurance submission is included. DEC-006 is superseded only for the explicitly listed toman and operational fiscal-period/non-tax payroll scope; other deferred work remains deferred. Stripe freeze, IRR qualification, native/accounting review and production-release gates remain intact.
+
+All 21 implementation/design tasks and the independent IRN-001 acceptance task are mandatory backlog work; POS/chat are optional to enable in the product. See [delivery plan](../docs/IRAN_BUSINESS_PLAN.md).
+
+Evidence: [owner scope and planning verification](../evidence/iran-business-scope-2026-10-27.md).
+
 ## Remaining open scope decisions
 
 | Decision | Owner | Task | Initial state |
@@ -94,8 +134,8 @@ task evidence is historical and is not rewritten to claim future qualification.
 | Branch dimension required? | Product/accounting owner | PAR-006 | deferred under DEC-006 |
 | Optional bank adapter and connector? | Product/operations owner | DATA-005, DATA-006 | both deferred under DEC-006 |
 | SaaS and miscellaneous endpoint value? | Product owner | DATA-007 | new parity deferred under DEC-006 |
-| Toman convenience | Product/accounting owner | MON-009 / future task | deferred under DEC-006; disabled |
-| Iranian statutory tax/payroll/e-invoicing scope | Product/domain expert | AUD-005 | new implementation deferred under DEC-006; no compliance claim |
+| Toman convenience | Product/accounting owner | MON-009 / future task | Authorized under DEC-010 via IRO-002; production gates retained |
+| Iranian statutory tax/payroll/e-invoicing scope | Product/domain expert | AUD-005 | Tax/e-invoicing remain deferred; non-tax payroll scoped by DEC-010; no compliance claim |
 | Statutory accounting calendar | Product/domain expert | LOC-004 / future task | deferred under DEC-006; Persian presentation remains in scope |
 | Hosting/provider jurisdiction and availability | Deployment owner | QA-002, REL-001/002 | selection deferred under DEC-006; required before relevant deployment/provider use |
 | Exact rounding and FX precision | Accounting/DB owner | MON-002, MON-004 | pending |

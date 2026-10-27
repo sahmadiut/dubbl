@@ -73,6 +73,64 @@ class ControllerTests(unittest.TestCase):
         self.runcli('start','AUD-002','--owner','test',ok=False)
         self.assertEqual(before,(self.root/'tasks/AUD-002.md').read_bytes())
 
+    def test_owner_phase_order_selects_ai_before_deferred_phase_five(self):
+        self.assertEqual(sorted(agent.PHASE_ORDER),list(range(len(agent.PHASES))))
+        self.editmeta('AI-001',depends_on=[],priority=3)
+        self.editmeta('PAR-001',depends_on=[],priority=0)
+        # Foundation work still outranks AI; then AI outranks even urgent P1 work.
+        self.assertEqual(self.runcli('next')['id'],'AUD-001')
+        self.editmeta('AUD-001',depends_on=['PAR-001'])
+        state=self.runcli('status')
+        self.assertEqual(state['next']['id'],'AI-001')
+        self.assertLess(state['ready'].index('AI-001'),state['ready'].index('PAR-001'))
+        self.assertEqual([p['phase'] for p in state['phases']],agent.PHASE_ORDER)
+        self.runcli('start','PAR-001','--owner','synthetic-test')
+        self.assertEqual(self.runcli('next')['id'],'PAR-001')
+
+    def test_iran_phase_precedes_phase_five_without_reverse_dependencies(self):
+        project=agent.Project(self.root)
+        iran=[t for t in project.tasks.values() if t.meta['phase']==12]
+        self.assertEqual(len(iran),22)
+        self.assertLess(agent.PHASE_RANK[7],agent.PHASE_RANK[12])
+        self.assertLess(agent.PHASE_RANK[12],agent.PHASE_RANK[5])
+        for task in iran:
+            self.assertIn('AI-013',task.meta['depends_on'])
+            self.assertIn('L10N-012',task.meta['depends_on'])
+            self.assertFalse(any(project.tasks[d].meta['phase']==5 for d in task.meta['depends_on']))
+        for id in ('PAR-001','PAR-002','PAR-003','PAR-004','PAR-005','PAR-007','PAR-008','QA-001'):
+            self.assertIn('IRN-001',project.tasks[id].meta['depends_on'])
+        self.editmeta('MOD-001',depends_on=[],priority=3)
+        self.editmeta('PAR-001',depends_on=[],priority=0)
+        state=self.runcli('status')
+        self.assertLess(state['ready'].index('MOD-001'),state['ready'].index('PAR-001'))
+
+    def test_deferred_phase_five_keeps_ai_integration_dependency(self):
+        for id in ('PAR-001','PAR-002','PAR-003','PAR-004','PAR-005','PAR-007','PAR-008'):
+            task=agent.Task(self.root/'tasks'/f'{id}.md')
+            self.assertIn('AI-013',task.meta['depends_on'])
+            self.assertIn('L10N-012',task.meta['depends_on'])
+        self.editmeta('PAR-001',depends_on=['AI-013'])
+        self.assertNotIn('PAR-001',self.runcli('status')['ready'])
+        before=(self.root/'tasks/PAR-001.md').read_bytes()
+        self.runcli('start','PAR-001','--owner','synthetic-test',ok=False)
+        self.assertEqual(before,(self.root/'tasks/PAR-001.md').read_bytes())
+
+    def test_phase_five_waits_for_data_and_translation_without_deadlock(self):
+        project=agent.Project(self.root)
+        selected=[]
+        while task:=project.next():
+            self.assertNotIn(task.id,selected)
+            selected.append(task.id)
+            # Scheduling simulation only: no completion/review evidence is written.
+            task.meta['status']='skipped' if task.meta['optional'] else 'done'
+        self.assertEqual(len(selected),len(project.tasks))
+        deferred=[t.id for t in project.tasks.values() if t.meta['phase']==5]
+        self.assertLess(selected.index('AI-013'),selected.index('DATA-001'))
+        for id in deferred:
+            self.assertLess(selected.index('L10N-012'),selected.index(id))
+        self.assertIn('PAR-002',project.tasks['QA-001'].meta['depends_on'])
+        self.assertIn('PAR-003',project.tasks['QA-001'].meta['depends_on'])
+
     def test_active_task_resumed_by_selection(self):
         self.runcli('start','--owner','test')
         self.assertEqual(self.runcli('next')['next_action'],'resume')

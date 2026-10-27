@@ -1,5 +1,7 @@
 # Agent entry point
 
+Current scope update (DEC-010, 2026-10-27): phase 12, Iran business capabilities, runs after phase 7 and before phase 5. New tax work is excluded. Open phase-5 tasks and QA-001 depend on IRN-001. See the Iran business delivery plan in docs/IRAN_BUSINESS_PLAN.md (relative to .agentic). AI remains next; phase-5 scope is retained for later reconsideration.
+
 ## Project in one glance
 
 Build on the user's existing Dubbl fork. Preserve its architecture and existing capabilities. Audit Bigcapital's public behavior/API and independently implement valuable gaps. Deliver complete Persian localization, RTL and production-safe IRR using exact money/FX storage. Do not copy Bigcapital implementation code. The [Markdown implementation plan](sources/SOURCE.md) is the requirements source, not proof about this fork's current state. Read it by section heading; use sources/PLAN_COVERAGE.md for task traceability.
@@ -7,6 +9,17 @@ Build on the user's existing Dubbl fork. Preserve its architecture and existing 
 Current implementation truth is the actual repository plus task evidence. `python3 .agentic/agent.py status` computes current phase, active work, blockers and next task directly from Markdown. Never maintain a competing handwritten progress counter.
 
 ## One-task execution loop
+
+Current owner scheduling decision, 2026-10-27 (DEC-009): bring AI-001..013
+forward now; phase 5 follows phases 6 and 7. Phase IDs remain stable; execution order is
+`0, 1, 2, 3, 4, 11, 6, 7, 12, 5, 8, 9, 10`. AI-001 keeps its completed technical
+prerequisites and no longer waits for unfinished parity, translation, IRR,
+QA/release or maintenance work. Open phase-5 tasks wait for AI-013 and
+L10N-012; they remain queued for later reconsideration, without deletion.
+Phases 6 and 7 work on existing capabilities without waiting for phase-5 expansion.
+AI's internal dependencies, default-off rollout
+and all financial, authorization, native-review and production-release gates
+remain applicable. See [AI delivery plan](docs/AI_AGENT_PLAN.md).
 
 Subsequent owner scope, 2026-10-21: local IRR testing is explicitly authorized.
 `IRR_TESTING_ENABLED=true` requires `NODE_ENV=development` or `test`; the local

@@ -1,5 +1,7 @@
 # AI agent and administration delivery plan
 
+Current scope update (DEC-010, 2026-10-27): phase 12, Iran business capabilities, runs after phase 7 and before phase 5. New tax work is excluded. Open phase-5 tasks and QA-001 depend on IRN-001. See the Iran business delivery plan in docs/IRAN_BUSINESS_PLAN.md (relative to .agentic). AI remains next; phase-5 scope is retained for later reconsideration.
+
 Requested by the project owner on 2026-10-17. This is a backlog and architecture proposal, not an implemented feature or deployment approval. Requirements: [owner extension](../sources/SOURCE.md#ai-agent-and-administration-owner-extension). Task status is authoritative in `../tasks/AI-*.md`.
 
 ## Product outcome
@@ -17,7 +19,7 @@ Administrators manage provider connections, API credentials, models, policies, q
 - `lib/mcp/auth.ts` currently falls back to a token role when membership is missing and does not resolve custom-role permissions. The API-key path in `auth-context.ts` also falls back when its creator's membership is missing. AI-002 must address and test relevant identity paths before exposing them to the agent. These are source findings, not demonstrated exploits or a complete security audit.
 - `lib/api/require-site-admin.ts`, `app/api/v1/admin/` and `app/(admin)/admin/` provide existing site-administration boundaries and navigation. Global administration must remain separate from organization roles and organization-scoped API/MCP credentials.
 - `package.json` declares Next.js, Drizzle/PostgreSQL, MCP and next-intl. No dedicated agent runtime/provider SDK is declared, and the targeted source search found no established AI chat implementation to extend. Verify again during AI-001.
-- Existing locale work is active. This planning change does not modify LOC-016 or its application changes, start an implementation task, or alter existing task priorities.
+- These findings describe the 2026-10-17 planning baseline; verify current source during AI-001. The 2026-10-27 scheduling change starts no implementation task and changes no application files.
 
 ## Architecture boundaries
 
@@ -40,7 +42,7 @@ Show action progress, pending approvals, records created, errors and final outco
 
 ## Delivery order and acceptance
 
-All tasks start as `todo`, in phase 11 (AI agent and administration), priority 2. On 2026-10-17 the owner explicitly clarified that AI is low priority and localization plus all pre-existing work must finish first. AI-001 therefore depends on every currently unfinished pre-existing task, including release and the first maintenance review, as well as its original prerequisites. Previously skipped scope remains deferred; it is not reopened. Dependencies enforce this ordering even if earlier work is blocked; phase labels alone are not barriers. No provider selection, credential purchase, deployment date or cost estimate is invented here.
+Current owner decision, 2026-10-27 (DEC-009): implement AI now and postpone phase 5 until afterward. This supersedes the 2026-10-17 low-priority scheduling instruction. AI-001..013 retain phase ID 11 and priority 2; the controller schedules phase 11 immediately after phase 4 and before phase 5. AI-001 keeps its already-completed technical prerequisites and no longer depends on unfinished parity, translation, IRR, QA/release or maintenance tasks. The owner subsequently clarified that phase 5 should move further back and may be deleted later. Schedule AI, phase 6, phase 7, then phase 5 before release qualification. Every open phase-5 task depends on AI-013 and L10N-012. Remove phase-5 ordering dependencies from phases 6 and 7 so they can work on existing capabilities; keep phase-5 tasks queued without deleting them. Previously skipped scope remains deferred. AI's internal dependencies and all financial, authorization, native-review and production-release requirements remain intact. Implementation and default-off integration acceptance can proceed before the wider release; actual enablement still requires the applicable qualification and release approvals. No provider selection, credential purchase, deployment date or cost estimate is invented here.
 
 | Tasks | Deliverable |
 |---|---|

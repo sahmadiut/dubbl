@@ -2,9 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { wrapTool } from "@/lib/mcp/errors";
-import { listConversations, getConversation, deleteConversation } from "@/lib/ai/persistence";
+import { createConversation, listConversations, getConversation, deleteConversation } from "@/lib/ai/persistence";
+import { assertRuntimeEnabled } from "@/lib/ai/run-lifecycle";
 
 export function registerAiHistoryTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("create_ai_conversation", {
+    description: "Create one own organization conversation under live use:ai permission and default-off runtime gate; returns opaque UUID and version. Does not invoke a provider or perform business actions. No identity or money arguments.",
+    inputSchema: z.object({}).strict(),
+  }, () => wrapTool(ctx, async () => { assertRuntimeEnabled(); const row = await createConversation(ctx); return { id: row.id, version: row.version }; }));
   const id = z.string().uuid().describe("Opaque conversation UUID in the current organization; ordinary history requires ownership.");
   server.registerTool("list_ai_conversations", {
     description: "List up to 100 own conversation metadata records under live view:ai-history permission. Returns {conversations}; no transcripts, credentials or money calculations.",

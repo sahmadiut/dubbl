@@ -15,7 +15,7 @@ const transitions: Record<AiRunState, AiRunState[]> = {
   awaiting_approval: ["queued", "cancelled", "expired", "failed"], awaiting_input: ["queued", "cancelled", "expired"],
   reconciliation_required: ["queued", "failed", "cancelled"], succeeded: [], failed: [], cancelled: [], expired: [],
 };
-const configSchema = z.object({ providerConfigId: z.string().uuid(), configVersion: z.number().int().positive(), credentialRef: z.string().uuid(), policyVersion: z.number().int().positive() }).strict();
+const configSchema = z.object({ providerConfigId: z.string().uuid(), configVersion: z.number().int().positive(), credentialRef: z.string().uuid(), policyVersion: z.number().int().positive(), providerVersion: z.number().int().positive().optional(), agentPolicyVersion: z.number().int().positive().optional(), agentId: z.literal("default").optional() }).strict();
 const identitySchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("session"), userId: z.string().uuid(), organizationId: z.string().uuid(), issuedAt: z.number().finite(), expiresAt: z.number().finite() }).strict(),
   z.object({ kind: z.enum(["api-key", "mcp"]), userId: z.string().uuid(), organizationId: z.string().uuid(), credentialId: z.string().uuid() }).strict(),
@@ -118,7 +118,7 @@ export async function prepareStep(ctx: AuthContext, runId: string, toolName: str
   if (!/^[a-z][a-z0-9_]{0,127}$/.test(toolName) || !required.length || input.truncated) throw new AuthError("Invalid execution payload", 400);
   return db.transaction(async tx => {
     const [run] = await tx.select().from(aiRun).where(and(eq(aiRun.id, runId), eq(aiRun.organizationId, actor.organizationId), eq(aiRun.ownerId, actor.userId))).for("update");
-    if (!run || run.state !== "running") throw new AuthError("Run state conflict", 409);
+    if (!run || run.state !== "running" || run.cancelRequestedAt) throw new AuthError("Run state conflict", 409);
     const [{ count }] = await tx.select({ count: sql<number>`count(*)::integer` }).from(aiStep).where(eq(aiStep.runId, runId));
     if (count >= 20) throw new AuthError("Run step limit exceeded", 413);
     const [conversation] = await tx.select().from(aiConversation).where(eq(aiConversation.id, run.conversationId));
@@ -142,7 +142,7 @@ export async function transitionStep(ctx: AuthContext, stepId: string, version: 
     const [conversation] = await tx.select().from(aiConversation).where(eq(aiConversation.id, run.conversationId));
     if (!conversation || conversation.deletedAt || conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Conversation expired", 409);
     const allowed = step.state === "prepared" ? ["executing", "skipped"] : step.state === "executing" ? ["succeeded", "failed", "uncertain"] : [];
-    if (run.state !== "running" || step.version !== version || !allowed.includes(state)) throw new AuthError("Step state conflict", 409);
+    if (run.state !== "running" || step.version !== version || !allowed.includes(state) || state === "executing" && run.cancelRequestedAt) throw new AuthError("Step state conflict", 409);
     const bytes = payload ? Buffer.byteLength(JSON.stringify(payload)) : 0;
     if (run.payloadBytes + bytes > 1048576) throw new AuthError("Run payload limit exceeded", 413);
     await tx.update(aiRun).set({ payloadBytes: run.payloadBytes + bytes }).where(eq(aiRun.id, run.id));
@@ -209,7 +209,7 @@ export async function deleteConversation(ctx: AuthContext, id: string) {
 /** Trusted maintenance primitive. AI-007 owns scheduling and lease recovery/dispatch. */
 export async function purgeExpiredContent(now = new Date()) {
   return db.transaction(async tx => {
-    const conversations = await tx.select().from(aiConversation).where(lte(aiConversation.contentExpiresAt, now)).for("update");
+    const conversations = await tx.select().from(aiConversation).where(lte(aiConversation.contentExpiresAt, now)).limit(100).for("update", { skipLocked: true });
     for (const c of conversations) {
       await tx.update(aiMessage).set({ payload: null }).where(eq(aiMessage.conversationId, c.id));
       const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, c.id)).for("update");

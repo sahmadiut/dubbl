@@ -491,3 +491,11 @@ DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements
 ### AI-006 reviewed registry gaps (2026-10-27)
 
 AI-006 supports only its explicit seven-operation reviewed subset. AI-014 through AI-021 own finite domain candidate slices and exact gap classification from AI_TOOL_COVERAGE.json; they depend on AI-006 and AI-008. New Iranian tax, Stripe and privileged credential/security/provider chat operations remain excluded. Full-site support cannot be claimed until operation-level gaps are reconciled under AI-013.
+
+
+## AI-007 durable execution slices
+
+- [AI-022](../tasks/AI-022.md): bounded scoped lifecycle, exclusive leases and crash classification.
+- [AI-023](../tasks/AI-023.md): metered provider/tool loop, worker scheduling and deterministic end-to-end execution.
+
+AI-007 remains the independent integration parent; neither child alone accepts its original criteria.

@@ -141,6 +141,13 @@
       "when": 1793121579027,
       "tag": "0019_normal_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793124960806,
+      "tag": "0020_fearless_dorian_gray",
+      "breakpoints": true
     }
   ]
 }

@@ -2,12 +2,12 @@
   "version": 1,
   "interpretation": "Exhaustive source disposition, not a full feature claim. Every unlisted tool, REST method and UI action is unsupported by chat. Shared domain names and source presence do not prove per-operation parity. Frozen/security/provider operations cannot be enabled by follow-up work without applicable owner authorization. Policies default to deny; this registry does not enable runtime/providers.",
   "counts": {
-    "modules": 108,
-    "tools": 807,
-    "apiRoutes": 570,
+    "modules": 109,
+    "tools": 812,
+    "apiRoutes": 574,
     "pages": 208,
     "reviewedTools": 7,
-    "unlistedTools": 800
+    "unlistedTools": 805
   },
   "modules": [
     {
@@ -101,6 +101,10 @@
           "status": "not-allowlisted"
         },
         {
+          "name": "create_ai_conversation",
+          "status": "not-allowlisted"
+        },
+        {
           "name": "delete_ai_conversation",
           "status": "not-allowlisted"
         },
@@ -154,6 +158,30 @@
         },
         {
           "name": "update_ai_provider",
+          "status": "not-allowlisted"
+        }
+      ]
+    },
+    {
+      "module": "ai-runs",
+      "source": "lib/mcp/tools/ai-runs.ts",
+      "followUp": null,
+      "disposition": "excluded-from-chat-security-provider-or-frozen-scope",
+      "tools": [
+        {
+          "name": "cancel_ai_run",
+          "status": "not-allowlisted"
+        },
+        {
+          "name": "get_ai_run",
+          "status": "not-allowlisted"
+        },
+        {
+          "name": "get_ai_run_events",
+          "status": "not-allowlisted"
+        },
+        {
+          "name": "submit_ai_run",
           "status": "not-allowlisted"
         }
       ]
@@ -4484,7 +4512,8 @@
     {
       "source": "app/api/v1/ai/conversations/route.ts",
       "methods": [
-        "GET"
+        "GET",
+        "POST"
       ],
       "domain": "ai",
       "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
@@ -4544,6 +4573,38 @@
       "source": "app/api/v1/ai/provider-configs/route.ts",
       "methods": [
         "GET",
+        "POST"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/cancel/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/events/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/route.ts",
+      "methods": [
         "POST"
       ],
       "domain": "ai",

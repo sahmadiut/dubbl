@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 108,
-    "tools": 807,
-    "apiRoutes": 570,
+    "modules": 109,
+    "tools": 812,
+    "apiRoutes": 574,
     "pages": 208
   },
   "modules": [
@@ -59,6 +59,7 @@
       "source": "lib/mcp/tools/ai-history.ts",
       "tools": [
         "audit_ai_conversation",
+        "create_ai_conversation",
         "delete_ai_conversation",
         "get_ai_conversation",
         "list_ai_conversations"
@@ -80,6 +81,19 @@
         "rotate_ai_provider_credential",
         "test_ai_provider_connection",
         "update_ai_provider"
+      ],
+      "apiImports": [
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-runs",
+      "source": "lib/mcp/tools/ai-runs.ts",
+      "tools": [
+        "cancel_ai_run",
+        "get_ai_run",
+        "get_ai_run_events",
+        "submit_ai_run"
       ],
       "apiImports": [
         "@/lib/api/auth-context"
@@ -2497,7 +2511,7 @@
     {
       "name": "audit_ai_conversation",
       "module": "ai-history",
-      "line": 17,
+      "line": 22,
       "description": "Read one organization conversation using dedicated audit:ai-transcripts permission and a recorded reason; each successful access is audited. Domain permissions still limit historical payload disclosure. Not an ordinary chat capability.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -2728,6 +2742,19 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/accrual-schedules#cancelAccrualSchedule",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "cancel_ai_run",
+      "module": "ai-runs",
+      "line": 16,
+      "description": "Request stop for an own run. Prevents new dispatch; in-flight effects remain pending or require reconciliation, never rolled back. Works while runtime is disabled. Returns content-free current status.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-lifecycle#cancelRun",
         "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
@@ -3048,6 +3075,20 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/accrual-schedules#createAccrualSchedule",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "create_ai_conversation",
+      "module": "ai-history",
+      "line": 9,
+      "description": "Create one own organization conversation under live use:ai permission and default-off runtime gate; returns opaque UUID and version. Does not invoke a provider or perform business actions. No identity or money arguments.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/persistence#createConversation",
+        "@/lib/ai/run-lifecycle#assertRuntimeEnabled",
         "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
@@ -4389,7 +4430,7 @@
     {
       "name": "delete_ai_conversation",
       "module": "ai-history",
-      "line": 21,
+      "line": 26,
       "description": "Tombstone and erase own conversation payloads; cancel pending runs and preserve uncertain effects as reconciliation metadata. Returns {deleted:true}; never deletes business/financial records. Requires live view:ai-history. Sensitive destructive operation, not auto-approved for chat.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5883,11 +5924,37 @@
     {
       "name": "get_ai_conversation",
       "module": "ai-history",
-      "line": 13,
+      "line": 18,
       "description": "Get own scoped conversation messages and run/step states. Returns redacted bounded payloads only while current domain permissions and retention allow; no configuration credentials or private reasoning.",
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/ai/persistence#getConversation",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_run",
+      "module": "ai-runs",
+      "line": 12,
+      "description": "Get own run lifecycle and bounded step summaries under live view:ai-history and current domain permissions. No credentials, hidden reasoning, or worker lease tokens returned.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-lifecycle#getRun",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_run_events",
+      "module": "ai-runs",
+      "line": 20,
+      "description": "Read up to 100 own content-free persisted lifecycle events after a sequence cursor. Reconnect by passing returned next; observing events never repeats business actions. Requires view:ai-history.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-lifecycle#getRunEvents",
         "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
@@ -7725,7 +7792,7 @@
     {
       "name": "list_ai_conversations",
       "module": "ai-history",
-      "line": 9,
+      "line": 14,
       "description": "List up to 100 own conversation metadata records under live view:ai-history permission. Returns {conversations}; no transcripts, credentials or money calculations.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -11137,6 +11204,19 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "submit_ai_run",
+      "module": "ai-runs",
+      "line": 8,
+      "description": "Queue one own scoped request using a conversation UUID and idempotency key. Server chooses current default provider and agent policy; default-off AI_RUNTIME_ENABLED gate applies. Returns content-free run status, not executed actions. No money or identity arguments; not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-lifecycle#submitRun",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "submit_expense_claim",
       "module": "expenses",
       "line": 11,
@@ -13051,7 +13131,8 @@
     {
       "source": "app/api/v1/ai/conversations/route.ts",
       "methods": [
-        "GET"
+        "GET",
+        "POST"
       ],
       "domain": "ai"
     },
@@ -13104,6 +13185,34 @@
       "source": "app/api/v1/ai/provider-configs/route.ts",
       "methods": [
         "GET",
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/cancel/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/events/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/route.ts",
+      "methods": [
         "POST"
       ],
       "domain": "ai"

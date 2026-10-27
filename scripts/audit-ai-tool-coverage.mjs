@@ -11,7 +11,7 @@ const groups = {
   "AI-019": ["payroll-compensation", "payroll-config", "payroll-master", "payroll-outputs", "payroll-payments", "payroll-runs", "payroll-time", "projects", "project-master", "time-tracking", "crm", "budgets", "cost-centers", "tags"],
   "AI-020": ["reports", "custom-reports", "operational-reports", "forecast-fx", "bank-analytics", "consolidation", "dashboard-data", "dashboard-layouts", "documents", "document-rendering", "document-templates", "email", "public-portal", "report-schedule-tools", "import-export", "bulk"],
 };
-const excluded = new Set(["ai-providers", "provider-settings", "ai-tool-policy", "roles", "admin-organization", "integrations"]);
+const excluded = new Set(["ai-providers", "provider-settings", "ai-tool-policy", "ai-runs", "roles", "admin-organization", "integrations"]);
 const modules = inventory.modules.map(m => ({ module: m.module, source: m.source, followUp: excluded.has(m.module) ? null : Object.keys(groups).find(k => groups[k].includes(m.module)) ?? "AI-021",
   disposition: excluded.has(m.module) ? "excluded-from-chat-security-provider-or-frozen-scope" : "review-required-for-each-unlisted-operation",
   tools: m.tools.map(name => ({ name, status: AI_TOOL_NAMES.includes(name) ? "reviewed-default-deny-until-policies-allow" : "not-allowlisted" })) }));

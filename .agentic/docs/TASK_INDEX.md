@@ -636,3 +636,11 @@ DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements
 | [AI-019](../tasks/AI-019.md) | Qualify payroll project and planning agent tool coverage | AI-006, AI-008 |
 | [AI-020](../tasks/AI-020.md) | Qualify report document and outbound agent tool coverage | AI-006, AI-008 |
 | [AI-021](../tasks/AI-021.md) | Qualify workspace and site-only agent tool gaps | AI-006, AI-008 |
+
+
+## AI-007 durable execution slices
+
+- [AI-022](../tasks/AI-022.md): bounded scoped lifecycle, exclusive leases and crash classification.
+- [AI-023](../tasks/AI-023.md): metered provider/tool loop, worker scheduling and deterministic end-to-end execution.
+
+AI-007 remains the independent integration parent; neither child alone accepts its original criteria.

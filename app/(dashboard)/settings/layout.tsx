@@ -9,7 +9,7 @@ import {
   Settings, Users, CreditCard, Key, ScrollText, Target,
   Bell, BellRing, GitBranch, Tags, Shield, ShieldCheck,
   ListFilter, Webhook, CheckCircle2, Zap, PaintbrushVertical, ArrowLeftRight,
-  Trash2, Database, PackageCheck,
+  Trash2, Database, PackageCheck, Sparkles,
 } from "lucide-react";
 import { BlurReveal } from "@/components/ui/blur-reveal";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ export default function SettingsLayout({
         { href: "/settings", label: st("general"), icon: Settings, exact: true },
         { href: "/settings/members", label: st("members"), icon: Users },
         { href: "/settings/roles", label: st("roles"), icon: ShieldCheck },
-        { href: "/settings/ai", label: st("ai"), icon: Settings },
+        { href: "/settings/ai", label: st("ai"), icon: Sparkles },
         { href: "/settings/billing", label: st("billing"), icon: CreditCard },
         { href: "/settings/advisors", label: st("advisors"), icon: Shield },
         { href: "/settings/document-templates", label: st("templates"), icon: PaintbrushVertical },

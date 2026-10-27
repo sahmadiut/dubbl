@@ -2,9 +2,14 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { wrapTool } from "@/lib/mcp/errors";
 import { submitRunSchema, runIdSchema, eventsSchema, submitRun, getRun, cancelRun, getRunEvents } from "@/lib/ai/run-lifecycle";
+import { getRunProgress, progressSchema } from "@/lib/ai/run-progress";
 
-export const AI_RUN_LIFECYCLE_TOOLS = new Set(["submit_ai_run", "get_ai_run", "cancel_ai_run", "get_ai_run_events"]);
+export const AI_RUN_LIFECYCLE_TOOLS = new Set(["submit_ai_run", "get_ai_run", "cancel_ai_run", "get_ai_run_events", "get_ai_run_progress"]);
 export function registerAiRunTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("get_ai_run_progress", {
+    description: "Observe own persisted run progress and ordered bounded step outcomes under live history/domain permissions. Returns safe state/recovery codes and currently scoped record links, with expense amountMinor strings in explicit currency (USD cents); never raw text, execution authority or provisional output. Use next.afterStepId and next.expectedVersion for pages; on version conflict restart from the first page. Reads/reconnect never dispatch, retry or resume work. Worker availability is unknown. Not model-callable.",
+    inputSchema: progressSchema,
+  }, input => wrapTool(ctx, () => getRunProgress(ctx, input)));
   server.registerTool("submit_ai_run", {
     description: "Queue one own scoped request using a conversation UUID and idempotency key. Server chooses current default provider and agent policy; default-off AI_RUNTIME_ENABLED gate applies. Returns content-free run status, not executed actions. No money or identity arguments; not model-callable.",
     inputSchema: submitRunSchema,

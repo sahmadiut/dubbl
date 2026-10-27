@@ -3,8 +3,8 @@
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
     "modules": 109,
-    "tools": 812,
-    "apiRoutes": 574,
+    "tools": 813,
+    "apiRoutes": 575,
     "pages": 210
   },
   "modules": [
@@ -93,6 +93,7 @@
         "cancel_ai_run",
         "get_ai_run",
         "get_ai_run_events",
+        "get_ai_run_progress",
         "submit_ai_run"
       ],
       "apiImports": [
@@ -2750,7 +2751,7 @@
     {
       "name": "cancel_ai_run",
       "module": "ai-runs",
-      "line": 16,
+      "line": 21,
       "description": "Request stop for an own run. Prevents new dispatch; in-flight effects remain pending or require reconciliation, never rolled back. Works while runtime is disabled. Returns content-free current status.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5937,7 +5938,7 @@
     {
       "name": "get_ai_run",
       "module": "ai-runs",
-      "line": 12,
+      "line": 17,
       "description": "Get own run lifecycle and bounded step summaries under live view:ai-history and current domain permissions. No credentials, hidden reasoning, or worker lease tokens returned.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5950,11 +5951,24 @@
     {
       "name": "get_ai_run_events",
       "module": "ai-runs",
-      "line": 20,
+      "line": 25,
       "description": "Read up to 100 own content-free persisted lifecycle events after a sequence cursor. Reconnect by passing returned next; observing events never repeats business actions. Requires view:ai-history.",
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/ai/run-lifecycle#getRunEvents",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_run_progress",
+      "module": "ai-runs",
+      "line": 9,
+      "description": "Observe own persisted run progress and ordered bounded step outcomes under live history/domain permissions. Returns safe state/recovery codes and currently scoped record links, with expense amountMinor strings in explicit currency (USD cents); never raw text, execution authority or provisional output. Use next.afterStepId and next.expectedVersion for pages; on version conflict restart from the first page. Reads/reconnect never dispatch, retry or resume work. Worker availability is unknown. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/run-progress#getRunProgress",
         "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
@@ -11206,7 +11220,7 @@
     {
       "name": "submit_ai_run",
       "module": "ai-runs",
-      "line": 8,
+      "line": 13,
       "description": "Queue one own scoped request using a conversation UUID and idempotency key. Server chooses current default provider and agent policy; default-off AI_RUNTIME_ENABLED gate applies. Returns content-free run status, not executed actions. No money or identity arguments; not model-callable.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -13198,6 +13212,13 @@
     },
     {
       "source": "app/api/v1/ai/runs/[id]/events/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/progress/route.ts",
       "methods": [
         "GET"
       ],

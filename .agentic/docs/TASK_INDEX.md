@@ -645,6 +645,14 @@ DEC-010: scheduled after phase 7, before phase 5; no new tax scope. Requirements
 
 AI-007 remains the independent integration parent; neither child alone accepts its original criteria.
 
+AI-023 was further split on 2026-10-28 after its product obligations expanded:
+
+- [AI-029](../tasks/AI-029.md): bounded permission-safe progress and grounded outcome reads.
+- [AI-030](../tasks/AI-030.md): durable scoped clarification and versioned continuation, after AI-029.
+- [AI-031](../tasks/AI-031.md): metered worker execution, streaming and fault recovery, after both service contracts.
+
+AI-023 retains every original criterion and independent integration acceptance; AI-007 remains open above it.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

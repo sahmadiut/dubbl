@@ -12,6 +12,7 @@ const RUN_MS = 600000, QUEUE_MS = 86400000, LEASE_MS = 30000;
 type Run = typeof aiRun.$inferSelect;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const terminal = new Set(["succeeded", "failed", "cancelled", "expired"]);
+const publicEventKinds = new Set(["queued", "running", "awaiting_approval", "awaiting_input", "reconciliation_required", "succeeded", "failed", "cancelled", "expired", "claimed", "stop_requested", "authorization_or_configuration_changed", "recovered", "step_prepared", "step_updated"]);
 const id = z.string().uuid().describe("Opaque run/conversation UUID scoped to the authenticated owner and organization.");
 export const submitRunSchema = z.object({ conversationId: id,
   requestKey: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).describe("Client idempotency key within this conversation; reuse requires identical input."),
@@ -91,9 +92,11 @@ export async function getRunEvents(ctx: AuthContext, input: unknown) {
   return db.transaction(async tx => {
     const [run] = await tx.select().from(aiRun).where(own(current, value.runId)).for("share");
     if (!run || !await activeConversation(tx, run)) throw new AuthError("Run not found or expired", 404);
-    const events = await tx.select({ sequence: aiEvent.sequence, kind: aiEvent.kind, createdAt: aiEvent.createdAt }).from(aiEvent)
-      .where(and(eq(aiEvent.runId, run.id), gt(aiEvent.sequence, value.after))).orderBy(aiEvent.sequence).limit(100);
-    return { run: publicRun(run), events, next: events.at(-1)?.sequence ?? value.after, hasMore: events.length === 100 };
+    const cursorReset = value.after > run.version, after = cursorReset ? 0 : value.after;
+    const rows = await tx.select({ sequence: aiEvent.sequence, kind: aiEvent.kind, createdAt: aiEvent.createdAt }).from(aiEvent)
+      .where(and(eq(aiEvent.runId, run.id), gt(aiEvent.sequence, after))).orderBy(aiEvent.sequence).limit(101);
+    const events = rows.slice(0, 100).map(e => ({ ...e, kind: publicEventKinds.has(e.kind) ? e.kind : "changed" }));
+    return { run: publicRun(run), events, next: events.at(-1)?.sequence ?? after, hasMore: rows.length > 100, cursorReset };
   });
 }
 

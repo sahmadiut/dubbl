@@ -125,7 +125,8 @@ export async function prepareStep(ctx: AuthContext, runId: string, toolName: str
     if (!conversation || conversation.deletedAt || conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Conversation expired", 409);
     const bytes = Buffer.byteLength(JSON.stringify(input));
     if (run.payloadBytes + bytes > 1048576) throw new AuthError("Run payload limit exceeded", 413);
-    await tx.update(aiRun).set({ payloadBytes: run.payloadBytes + bytes }).where(eq(aiRun.id, runId));
+    await tx.update(aiRun).set({ payloadBytes: run.payloadBytes + bytes, version: run.version + 1, updatedAt: new Date() }).where(eq(aiRun.id, runId));
+    await tx.insert(aiEvent).values({ ...scope(actor), runId, sequence: run.version + 1, kind: "step_prepared" });
     return (await tx.insert(aiStep).values({ ...scope(actor), runId, toolName, input, requiredPermissions: required }).returning())[0];
   });
 }
@@ -145,7 +146,8 @@ export async function transitionStep(ctx: AuthContext, stepId: string, version: 
     if (run.state !== "running" || step.version !== version || !allowed.includes(state) || state === "executing" && run.cancelRequestedAt) throw new AuthError("Step state conflict", 409);
     const bytes = payload ? Buffer.byteLength(JSON.stringify(payload)) : 0;
     if (run.payloadBytes + bytes > 1048576) throw new AuthError("Run payload limit exceeded", 413);
-    await tx.update(aiRun).set({ payloadBytes: run.payloadBytes + bytes }).where(eq(aiRun.id, run.id));
+    await tx.update(aiRun).set({ payloadBytes: run.payloadBytes + bytes, version: run.version + 1, updatedAt: new Date() }).where(eq(aiRun.id, run.id));
+    await tx.insert(aiEvent).values({ ...scope(actor), runId: run.id, sequence: run.version + 1, kind: "step_updated" });
     return (await tx.update(aiStep).set({ state, result: payload, recordIds: [...new Set([...step.recordIds, ...records])].slice(0, 100), version: version + 1, updatedAt: new Date() }).where(eq(aiStep.id, stepId)).returning())[0];
   });
 }

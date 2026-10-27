@@ -500,6 +500,12 @@ AI-006 supports only its explicit seven-operation reviewed subset. AI-014 throug
 
 AI-007 remains the independent integration parent; neither child alone accepts its original criteria.
 
+AI-023 now requires three implementation children: [AI-029](../tasks/AI-029.md)
+for bounded safe progress/outcome reads, [AI-030](../tasks/AI-030.md) for durable
+clarification/resume, and [AI-031](../tasks/AI-031.md) for the metered worker,
+streaming and fault recovery. AI-023 retains all criteria and independently
+integrates these children before AI-007 acceptance. No rollout gate is removed.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

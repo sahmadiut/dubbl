@@ -509,6 +509,12 @@ provider loop, polling process, streaming and fault qualification; its original
 criteria remain unchanged. AI-023 retains all criteria and independently
 integrates these children before AI-007 acceptance. No rollout gate is removed.
 
+AI-033 requires [AI-034](../tasks/AI-034.md) for complete bounded provider
+protocol validation, [AI-035](../tasks/AI-035.md) for persistent metered execution,
+and [AI-036](../tasks/AI-036.md) for the polling process, recovery and provisional
+observation qualification. AI-033 retains all original criteria and independent
+integration acceptance. Protocol-only fixtures do not qualify a provider or worker.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

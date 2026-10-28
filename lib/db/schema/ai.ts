@@ -49,6 +49,7 @@ export const aiMessage = pgTable("ai_message", {
 export const aiStep = pgTable("ai_step", {
   id: uuid("id").primaryKey().defaultRandom(), ...scope(), runId: uuid("run_id").notNull(), operationKey: uuid("operation_key").notNull().defaultRandom(),
   toolName: text("tool_name").notNull(), state: text("state").$type<"prepared" | "executing" | "succeeded" | "failed" | "uncertain" | "skipped">().notNull().default("prepared"),
+  argumentDigest: text("argument_digest"), dispatchLease: uuid("dispatch_lease"),
   version: integer("version").notNull().default(1), input: jsonb("input").$type<AiPayload>(), result: jsonb("result").$type<AiPayload>(),
   recordIds: jsonb("record_ids").$type<string[]>().notNull().default([]),
   requiredPermissions: jsonb("required_permissions").$type<string[]>().notNull(),
@@ -56,6 +57,8 @@ export const aiStep = pgTable("ai_step", {
 }, t => [unique("ai_step_operation").on(t.runId, t.operationKey), unique("ai_step_scope").on(t.id, t.organizationId, t.ownerId),
   foreignKey({ columns: [t.runId, t.organizationId, t.ownerId], foreignColumns: [aiRun.id, aiRun.organizationId, aiRun.ownerId], name: "ai_step_run_scope" }).onDelete("cascade"),
   check("ai_step_state", sql`${t.state} in ('prepared','executing','succeeded','failed','uncertain','skipped')`), check("ai_step_version", sql`${t.version} > 0`),
+  check("ai_step_argument_digest", sql`${t.argumentDigest} is null or ${t.argumentDigest} ~ '^[a-f0-9]{64}$'`),
+  check("ai_step_dispatch_binding", sql`${t.dispatchLease} is null or ${t.argumentDigest} is not null`),
   check("ai_step_input_bound", sql`octet_length(${t.input}::text) <= 65536`), check("ai_step_result_bound", sql`octet_length(${t.result}::text) <= 65536`), check("ai_step_record_ids_bound", sql`octet_length(${t.recordIds}::text) <= 4096`)]);
 
 export const aiApproval = pgTable("ai_approval", {

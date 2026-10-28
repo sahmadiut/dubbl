@@ -503,7 +503,10 @@ AI-007 remains the independent integration parent; neither child alone accepts i
 AI-023 now requires three implementation children: [AI-029](../tasks/AI-029.md)
 for bounded safe progress/outcome reads, [AI-030](../tasks/AI-030.md) for durable
 clarification/resume, and [AI-031](../tasks/AI-031.md) for the metered worker,
-streaming and fault recovery. AI-023 retains all criteria and independently
+streaming and fault recovery. AI-031 further requires [AI-032](../tasks/AI-032.md)
+for fenced durable tool operations and [AI-033](../tasks/AI-033.md) for the metered
+provider loop, polling process, streaming and fault qualification; its original
+criteria remain unchanged. AI-023 retains all criteria and independently
 integrates these children before AI-007 acceptance. No rollout gate is removed.
 
 ## AI product experience revision (2026-10-28)

@@ -140,6 +140,7 @@ export async function transitionStep(ctx: AuthContext, stepId: string, version: 
     if (!found) throw new AuthError("Step not found", 404);
     const [run] = await tx.select().from(aiRun).where(eq(aiRun.id, found.runId)).for("update");
     const [step] = await tx.select().from(aiStep).where(eq(aiStep.id, stepId)).for("update");
+    if (step.argumentDigest) throw new AuthError("Worker operation requires fenced execution", 409);
     const [conversation] = await tx.select().from(aiConversation).where(eq(aiConversation.id, run.conversationId));
     if (!conversation || conversation.deletedAt || conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Conversation expired", 409);
     const allowed = step.state === "prepared" ? ["executing", "skipped"] : step.state === "executing" ? ["succeeded", "failed", "uncertain"] : [];

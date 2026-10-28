@@ -129,6 +129,7 @@ async function main() {
       const delayed = progress.getRunProgress(ctx, { runId: queued.id });
       let waiting = false;
       for (let i = 0; i < 100 && !waiting; i++) {
+        await blocker.query("SELECT pg_stat_clear_snapshot()");
         const result = await blocker.query("SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%ai_run%' AND pid<>pg_backend_pid()");
         waiting = result.rows.length > 0;
         if (!waiting) await new Promise(resolve => setTimeout(resolve, 10));

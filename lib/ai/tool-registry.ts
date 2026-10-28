@@ -63,7 +63,7 @@ const outcome = (tool: string, status: ToolDispatchOutcome["status"], extra: Par
  * never model arguments. No generic REST/MCP dispatch operation is exposed.
  * AI-007 owns durable step keys/reconciliation; AI-008 owns sensitive approvals.
  */
-export async function dispatchAgentTool(scope: ToolExecutionScope, name: string, argumentsInput: unknown): Promise<ToolDispatchOutcome> {
+export async function dispatchAgentTool(scope: ToolExecutionScope, name: string, argumentsInput: unknown, beforeInvoke?: () => Promise<void>): Promise<ToolDispatchOutcome> {
   const entry = catalogEntry(name);
   if (!entry) return outcome(name, "failed", { code: "TOOL_NOT_ALLOWED" });
   const { ctx, names } = await effective(scope);
@@ -82,7 +82,11 @@ export async function dispatchAgentTool(scope: ToolExecutionScope, name: string,
     // Recheck after setup as well; the callback wrapTool independently refreshes live identity.
     const latest = await effective(scope);
     if (!latest.names.includes(name as typeof AI_TOOL_NAMES[number])) return outcome(name, "failed", { code: "TOOL_DENIED" });
-    await db.insert(auditLog).values({ organizationId: latest.ctx.organizationId, userId: latest.ctx.userId, action: "ai.tool.dispatch", entityType: `ai-tool:${name}`, entityId: latest.ctx.organizationId, changes: null });
+    // Durable operations commit their dispatch audit with the fenced transition.
+    if (!beforeInvoke) await db.insert(auditLog).values({ organizationId: latest.ctx.organizationId, userId: latest.ctx.userId, action: "ai.tool.dispatch", entityType: `ai-tool:${name}`, entityId: latest.ctx.organizationId, changes: null });
+    // The durable worker fences its operation here, after asynchronous MCP setup
+    // and immediately before invocation. No partial/model call can authorize it.
+    await beforeInvoke?.();
     invoked = true;
     const result = await client.callTool({ name, arguments: parsed.data });
     const envelope = z.object({ isError: z.boolean().optional(), content: z.array(z.object({ type: z.literal("text"), text: z.string() })).length(1) }).passthrough().safeParse(result);

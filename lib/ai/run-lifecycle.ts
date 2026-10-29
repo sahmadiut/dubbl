@@ -127,7 +127,12 @@ export async function claimNextRun(): Promise<Run | null> {
   return db.transaction(async tx => {
     // Serialize capacity decisions across workers; SKIP LOCKED avoids user actions.
     await tx.execute(sql`select pg_advisory_xact_lock(170022)`);
-    const queued = await tx.select().from(aiRun).where(eq(aiRun.state, "queued")).orderBy(aiRun.createdAt, aiRun.id).limit(100).for("update", { skipLocked: true });
+    // Filter capacity before the bounded scan. A tenant's first 100 waiting
+    // requests must not hide eligible work for another organization or owner.
+    const queued = await tx.select().from(aiRun).where(and(eq(aiRun.state, "queued"),
+      sql`not exists (select 1 from ai_run active where active.state = 'running' and active.organization_id = ${aiRun.organizationId} and active.owner_id = ${aiRun.ownerId})`,
+      sql`(select count(*) from ai_run active where active.state = 'running' and active.organization_id = ${aiRun.organizationId}) < 2`))
+      .orderBy(aiRun.createdAt, aiRun.id).limit(100).for("update", { skipLocked: true });
     for (const run of queued) {
       const now = new Date();
       if (!await activeConversation(tx, run) || run.createdAt.getTime() + QUEUE_MS <= now.getTime() || run.deadlineAt && run.deadlineAt <= now || run.cancelRequestedAt) {
@@ -154,12 +159,22 @@ export async function assertRunLease(runId: string, leaseToken: string) {
   return { run, ctx: await validateRunSnapshot(run) };
 }
 export async function heartbeatRun(runId: string, leaseToken: string) {
-  await assertRunLease(runId, leaseToken);
-  const now = new Date();
-  const [run] = await db.update(aiRun).set({ leaseExpiresAt: new Date(now.getTime() + LEASE_MS), updatedAt: now })
-    .where(and(eq(aiRun.id, runId), eq(aiRun.leaseOwner, leaseToken), eq(aiRun.state, "running"), isNull(aiRun.cancelRequestedAt), gt(aiRun.leaseExpiresAt, now), gt(aiRun.deadlineAt, now))).returning();
-  if (!run) throw new AuthError("Run lease changed", 409);
-  return { runId: run.id, leaseExpiresAt: run.leaseExpiresAt };
+  z.string().uuid().parse(runId); z.string().uuid().parse(leaseToken);
+  return db.transaction(async tx => {
+    const [found] = await tx.select({ conversationId: aiRun.conversationId }).from(aiRun).where(eq(aiRun.id, runId));
+    if (!found) throw new AuthError("Run not found", 404);
+    const [conversation] = await tx.select().from(aiConversation).where(eq(aiConversation.id, found.conversationId)).for("share");
+    const [run] = await tx.select().from(aiRun).where(eq(aiRun.id, runId)).for("update");
+    if (!run) throw new AuthError("Run not found", 404);
+    // Get fresh wall time and live authority AFTER the row lock. A heartbeat
+    // waiting behind a writer cannot resurrect an expired or replaced lease.
+    assertRuntimeEnabled(); await validateRunSnapshot(run);
+    const now = new Date();
+    if (!conversation || conversation.deletedAt || conversation.contentExpiresAt <= now || run.state !== "running" || run.leaseOwner !== leaseToken ||
+      run.cancelRequestedAt || !run.leaseExpiresAt || run.leaseExpiresAt <= now || !run.deadlineAt || run.deadlineAt <= now) throw new AuthError("Run lease no longer executable", 409);
+    const [changed] = await tx.update(aiRun).set({ leaseExpiresAt: new Date(Math.min(now.getTime() + LEASE_MS, run.deadlineAt.getTime())), updatedAt: now }).where(eq(aiRun.id, runId)).returning();
+    return { runId: changed.id, leaseExpiresAt: changed.leaseExpiresAt };
+  });
 }
 
 /** Bounded scheduling primitive for AI-023. An executing tool is always uncertain;

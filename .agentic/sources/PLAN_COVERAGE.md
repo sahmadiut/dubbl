@@ -522,6 +522,10 @@ All original AI-035 criteria remain for independent integration acceptance.
 AI-036 retains polling/heartbeat/shutdown and provisional observation; no child
 activates or qualifies live provider use or hosting.
 
+AI-036 requires [AI-039](../tasks/AI-039.md) for polling, fair claims, heartbeat,
+shutdown and process recovery, then [AI-040](../tasks/AI-040.md) for provisional
+observation. All original AI-036 criteria remain for independent integration.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

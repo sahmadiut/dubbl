@@ -667,6 +667,10 @@ provider/tool loop, disclosure-aware context, clarification, retries and grounde
 final outcomes. AI-035 keeps every original criterion and independently accepts
 their integration; single-turn fixtures do not complete the executor or polling.
 
+AI-036 requires [AI-039](../tasks/AI-039.md) for the explicit bounded polling
+process and [AI-040](../tasks/AI-040.md) for disclosure-safe provisional observation.
+AI-036 retains all original criteria and independent integration acceptance.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

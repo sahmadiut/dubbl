@@ -9,6 +9,7 @@
     "start": "next start",
     "trigger:dev": "trigger dev",
     "trigger:deploy": "trigger deploy",
+    "ai:worker": "node --import tsx scripts/ai-worker.ts",
     "lint": "eslint",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",

@@ -74,6 +74,11 @@ Partial success, cancellation, failures, unavailable records and reconciliation
 never become a claim of a posted transaction/payment. A completed no-tool turn
 explicitly reports `NO_CONFIRMED_ACTION`.
 
+AI-035 integration acceptance additionally rechecks conversation expiry after
+completion event persistence and live authorization waits. If content expires
+during those waits, the transaction rolls back its success/message and closes
+the run as expired. Confirmed business receipts and settled usage are preserved.
+
 ## Raw adapter and remaining qualification
 
 `run-transport.ts` resolves the run's server-chosen provider and encrypted

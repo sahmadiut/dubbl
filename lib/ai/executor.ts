@@ -102,6 +102,10 @@ async function closeRun(runId: string, lease: string, completed: boolean) {
     await tx.insert(aiEvent).values({ runId, organizationId: run.organizationId, ownerId: run.ownerId, sequence: run.version + 1, kind: state });
     if (state === "succeeded") {
       assertRuntimeEnabled(); await validateRunSnapshot(run);
+      // Event persistence and live authorization can wait. Roll back completion
+      // and its message if content expired meanwhile; the caller closes the run
+      // again from current state without publishing expired conversation data.
+      if (conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Conversation expired during completion", 409);
       if (run.leaseExpiresAt.getTime() <= Date.now() || run.deadlineAt!.getTime() <= Date.now()) throw new AuthError("Run expired during completion", 409);
     }
     return { runId, state };

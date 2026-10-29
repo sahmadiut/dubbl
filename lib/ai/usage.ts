@@ -64,12 +64,14 @@ export async function listBudgets(ctx: AuthContext) { const current = await acto
 
 type Attempt = typeof aiUsageAttempt.$inferSelect;
 type Price = typeof aiPrice.$inferSelect;
+export type BudgetCeiling = Pick<typeof aiBudget.$inferSelect, "id" | "version" | "organizationId" | "userId" | "currency" | "monthlyTokens" | "monthlyCost" | "runTokens" | "runCost" | "requestsPerMinute" | "concurrency">;
 const max = (...values: bigint[]) => values.reduce((a, b) => a > b ? a : b);
 const active = sql`${aiUsageAttempt.state} in ('reserved','in_flight','unknown')`;
-async function checkBudgets(tx: Tx, current: AuthContext, billingCurrency: string, runId: string | null, addTokens: bigint, addCost: bigint, admission = true) {
+async function checkBudgets(tx: Tx, current: AuthContext, billingCurrency: string, runId: string | null, addTokens: bigint, addCost: bigint, admission = true, originalCeilings: BudgetCeiling[] = []) {
   const budgets = await tx.select().from(aiBudget).where(and(eq(aiBudget.organizationId, current.organizationId), eq(aiBudget.currency, billingCurrency), sql`${aiBudget.subject} in ('organization', ${`user:${current.userId}`})`));
   if (budgets.length !== 2) throw new AuthError("Explicit organization and user budgets required for billing currency", 409);
-  for (const budget of budgets) {
+  if (originalCeilings.some(b => b.organizationId !== current.organizationId || b.currency !== billingCurrency || b.userId !== null && b.userId !== current.userId)) throw new AuthError("Budget snapshot scope mismatch", 409);
+  for (const budget of [...budgets, ...originalCeilings]) {
     const [totals] = await tx.select({
       monthlyTokens: sql<string>`coalesce(sum(${aiUsageAttempt.chargedTokens}) filter(where ${aiUsageAttempt.createdAt} >= date_trunc('month', now() at time zone 'UTC') at time zone 'UTC'),0)::text`,
       monthlyCost: sql<string>`coalesce(sum(${aiUsageAttempt.chargedCost}) filter(where ${aiUsageAttempt.currency} = ${billingCurrency} and ${aiUsageAttempt.createdAt} >= date_trunc('month', now() at time zone 'UTC') at time zone 'UTC'),0)::text`,
@@ -89,10 +91,12 @@ async function checkBudgets(tx: Tx, current: AuthContext, billingCurrency: strin
 const reservationSchema = z.object({ configId: id, priceId: id.optional(), runId: id.nullable(), attemptKey: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/), inputCeiling: tokens, outputCeiling: tokens }).strict();
 /** TRUSTED executor primitive, not a user/model tool. Ceilings must bound the actual
  * encoded request and provider maximum output including reasoning. Retry = new key.
- * Connection tests use null runId; ordinary runtime must supply its persisted run. */
-export async function reserveAttempt(ctx: AuthContext, input: z.infer<typeof reservationSchema>) {
+ * Connection tests use null runId; ordinary runtime must supply its persisted run.
+ * Optional transaction is internal composition for atomic fenced run reservations;
+ * caller holds the run lock before this function acquires the org budget lock. */
+export async function reserveAttempt(ctx: AuthContext, input: z.infer<typeof reservationSchema>, transaction?: Tx, originalCeilings?: BudgetCeiling[]) {
   const current = await actor(ctx, input.runId ? "use:ai" : "manage:ai-providers"), value = reservationSchema.parse(input);
-  return db.transaction(async tx => {
+  const reserve = async (tx: Tx) => {
     await lock(tx, current.organizationId);
     const [config] = await tx.select().from(aiProviderConfig).where(and(eq(aiProviderConfig.id, value.configId), eq(aiProviderConfig.organizationId, current.organizationId)));
     const [provider] = config ? await tx.select().from(aiProvider).where(eq(aiProvider.id, config.providerId)) : [];
@@ -114,18 +118,19 @@ export async function reserveAttempt(ctx: AuthContext, input: z.infer<typeof res
     const [price] = await tx.select().from(aiPrice).where(and(eq(aiPrice.organizationId, current.organizationId), eq(aiPrice.providerId, provider.id), eq(aiPrice.model, model.id), ...(value.priceId ? [eq(aiPrice.id, value.priceId)] : []))).orderBy(desc(aiPrice.createdAt), desc(aiPrice.id)).limit(1);
     if (!price) throw new AuthError("Explicit verified price snapshot required", 409);
     const reservedCost = BigInt(value.inputCeiling) * max(BigInt(price.inputRate), BigInt(price.cachedRate)) + BigInt(value.outputCeiling) * max(BigInt(price.outputRate), BigInt(price.reasoningRate));
-    const versions = await checkBudgets(tx, current, price.currency, value.runId, reservedTokens, reservedCost);
+    const versions = await checkBudgets(tx, current, price.currency, value.runId, reservedTokens, reservedCost, true, originalCeilings);
     const [attempt] = await tx.insert(aiUsageAttempt).values({ organizationId: current.organizationId, ownerId: current.userId, runId: value.runId, attemptKey: value.attemptKey, priceId: price.id, providerId: provider.id, model: model.id, currency: price.currency,
       reservedTokens: reservedTokens.toString(), reservedCost: reservedCost.toString(), chargedTokens: reservedTokens.toString(), chargedCost: reservedCost.toString(),
       priceSnapshot: JSON.stringify({ ...price, configId: config.id, configVersion: config.version, credentialRef: config.credentialRef, inputCeiling: value.inputCeiling, outputCeiling: value.outputCeiling }), budgetVersions: JSON.stringify(versions) }).returning();
     return publicAttempt(attempt);
-  });
+  };
+  return transaction ? reserve(transaction) : db.transaction(reserve);
 }
 function publicAttempt(row: Attempt) { return { id: row.id, runId: row.runId, providerId: row.providerId, model: row.model, priceId: row.priceId, currency: row.currency, state: row.state, inputTokens: row.inputTokens, outputTokens: row.outputTokens, cachedTokens: row.cachedTokens, reasoningTokens: row.reasoningTokens, reservedTokens: row.reservedTokens, reservedCost: costDecimal(row.reservedCost), chargedTokens: row.chargedTokens, chargedCost: costDecimal(row.chargedCost), costIsEstimate: true, usageUnknown: row.state !== "cancelled" && [row.inputTokens, row.outputTokens, row.cachedTokens, row.reasoningTokens].some(v => v === null) }; }
 
-export async function markAttemptDispatched(ctx: AuthContext, attemptId: string) {
+export async function markAttemptDispatched(ctx: AuthContext, attemptId: string, transaction?: Tx, originalCeilings?: BudgetCeiling[]) {
   id.parse(attemptId); const identity = executionIdentity(ctx), current = await resolveExecutionIdentity(identity);
-  return db.transaction(async tx => {
+  const dispatch = async (tx: Tx) => {
     await lock(tx, current.organizationId);
     const [row] = await tx.select().from(aiUsageAttempt).where(and(eq(aiUsageAttempt.id, attemptId), eq(aiUsageAttempt.organizationId, current.organizationId), eq(aiUsageAttempt.ownerId, current.userId)));
     if (!row) throw new AuthError("Attempt not found", 404);
@@ -136,9 +141,10 @@ export async function markAttemptDispatched(ctx: AuthContext, attemptId: string)
     const [provider] = config ? await tx.select().from(aiProvider).where(eq(aiProvider.id, config.providerId)) : [];
     if (!config?.enabled || config.version !== snapshot.configVersion || config.credentialRef !== snapshot.credentialRef || !provider?.enabled || !provider.delegatedOrganizations.includes(current.organizationId) || !provider.models.some(m => m.id === row.model)) throw new AuthError("Provider configuration changed before dispatch", 409);
     if (row.runId) { const [run] = await tx.select().from(aiRun).where(and(eq(aiRun.id, row.runId), eq(aiRun.organizationId, current.organizationId), eq(aiRun.ownerId, current.userId))); if (!run || !["queued", "running"].includes(run.state)) throw new AuthError("Run is no longer executable", 409); }
-    await checkBudgets(tx, current, row.currency, row.runId, 0n, 0n, false);
+    await checkBudgets(tx, current, row.currency, row.runId, 0n, 0n, false, originalCeilings);
     return publicAttempt((await tx.update(aiUsageAttempt).set({ state: "in_flight", updatedAt: new Date() }).where(eq(aiUsageAttempt.id, row.id)).returning())[0]);
-  });
+  };
+  return transaction ? dispatch(transaction) : db.transaction(dispatch);
 }
 
 export const usageSchema = z.object({ inputTokens: tokens.nullable(), outputTokens: tokens.nullable(), cachedTokens: tokens.nullable(), reasoningTokens: tokens.nullable() }).strict();

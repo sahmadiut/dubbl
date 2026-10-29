@@ -34,6 +34,7 @@ export const aiUsageAttempt = pgTable("ai_usage_attempt", {
   // Copy is immutable under service API even if a provider/model is reconfigured.
   priceSnapshot: text("price_snapshot").notNull(), budgetVersions: text("budget_versions").notNull(), settlement: text("settlement"), createdAt: time("created_at"), updatedAt: time("updated_at"),
 }, t => [unique("ai_usage_attempt_key").on(t.organizationId, t.ownerId, t.attemptKey),
+  unique("ai_usage_attempt_run_scope").on(t.id, t.runId, t.organizationId, t.ownerId),
   foreignKey({ columns: [t.runId, t.organizationId, t.ownerId], foreignColumns: [aiRun.id, aiRun.organizationId, aiRun.ownerId], name: "ai_usage_run_scope" }).onDelete("cascade"),
   foreignKey({ columns: [t.priceId, t.organizationId], foreignColumns: [aiPrice.id, aiPrice.organizationId], name: "ai_usage_price_scope" }),
   index("ai_usage_scope_time").on(t.organizationId, t.createdAt),

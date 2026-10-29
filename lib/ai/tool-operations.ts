@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiEvent, aiRun, aiStep, auditLog, type AiPayload } from "@/lib/db/schema";
+import { aiConversation, aiEvent, aiRun, aiStep, aiProviderAttempt, aiProviderCall, auditLog, type AiPayload } from "@/lib/db/schema";
 import { AuthError } from "@/lib/api/auth-context";
 import { requireRole } from "@/lib/api/require-role";
 import { boundedPayload } from "./persistence";
@@ -33,6 +33,8 @@ function argumentsFor(name: string, input: unknown) {
   const digest = createHash("sha256").update(canonical({ name, version: entry.version, arguments: value })).digest("hex");
   return { entry, value, display, digest };
 }
+/** Shared binding for durable provider-call associations; no dispatch authority. */
+export const toolArgumentDigest = (name: string, input: unknown) => argumentsFor(name, input).digest;
 async function lockRun(tx: Tx, runId: string) {
   const [found] = await tx.select({ conversationId: aiRun.conversationId }).from(aiRun).where(eq(aiRun.id, uuid.parse(runId)));
   if (!found) throw new AuthError("Run not found", 404);
@@ -75,6 +77,10 @@ export async function prepareToolOperation(runId: string, lease: string, operati
     const { run, conversation } = await lockRun(tx, runId);
     if (conversation.deletedAt || conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Conversation expired", 409);
     await authorize(run, lease, name);
+    const [activeProvider] = await tx.select({ id: aiProviderAttempt.id }).from(aiProviderAttempt).where(and(eq(aiProviderAttempt.runId, runId), sql`${aiProviderAttempt.state} in ('reserved','dispatched')`)).limit(1);
+    if (activeProvider) throw new AuthError("Provider attempt is unfinished", 409);
+    const [call] = await tx.select().from(aiProviderCall).where(and(eq(aiProviderCall.runId, runId), eq(aiProviderCall.operationKey, operationKey)));
+    if (call && (call.toolName !== name || call.catalogVersion !== args.entry.version || call.argumentDigest !== args.digest)) throw new AuthError("Provider call binding changed", 409);
     const [prior] = await tx.select().from(aiStep).where(and(eq(aiStep.runId, runId), eq(aiStep.operationKey, operationKey)));
     if (prior) { binding(prior, name, args.digest); return prior; }
     const [unfinished] = await tx.select({ id: aiStep.id }).from(aiStep).where(and(eq(aiStep.runId, runId), sql`${aiStep.state} in ('executing','uncertain')`)).limit(1);

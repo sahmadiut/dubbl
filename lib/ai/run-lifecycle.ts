@@ -2,11 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiRun, aiRunInput, aiMessage, aiEvent, aiStep, aiProvider, aiProviderConfig, aiUsageAttempt, auditLog } from "@/lib/db/schema";
+import { aiConversation, aiRun, aiRunInput, aiMessage, aiEvent, aiStep, aiProvider, aiProviderConfig, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { boundedPayload, getConversation, purgeExpiredContent } from "./persistence";
 import { discoverTools } from "./tool-registry";
+import { closeProviderAttempts } from "./provider-recovery";
 
 const RUN_MS = 600000, QUEUE_MS = 86400000, LEASE_MS = 30000;
 type Run = typeof aiRun.$inferSelect;
@@ -113,8 +114,7 @@ export async function cancelRun(ctx: AuthContext, input: unknown) {
     const state = executing && run.state === "running" ? "running" : uncertain || executing ? "reconciliation_required" : "cancelled";
     const changed = await event(tx, run, state, "stop_requested", { cancelRequestedAt: new Date() });
     await tx.update(aiRunInput).set({ state: "cancelled", question: null, candidates: null }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
-    await tx.update(aiUsageAttempt).set({ state: "unknown", updatedAt: new Date() }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "in_flight")));
-    await tx.update(aiUsageAttempt).set({ state: "cancelled", chargedTokens: "0", chargedCost: "0", updatedAt: new Date() }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "reserved")));
+    await closeProviderAttempts(tx, run);
     await audit(tx, current, run.id, "ai.run.stop_requested");
     return publicRun(changed);
   });
@@ -174,8 +174,7 @@ export async function maintainRuns() {
       await tx.update(aiStep).set({ state: "uncertain", version: sql`${aiStep.version} + 1`, updatedAt: now }).where(and(eq(aiStep.runId, run.id), eq(aiStep.state, "executing")));
       // Runtime always locks a run before its step/attempt. Stale callbacks may
       // settle usage but cannot restore an executable lease or replay effects.
-      await tx.update(aiUsageAttempt).set({ state: "unknown", updatedAt: now }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "in_flight")));
-      await tx.update(aiUsageAttempt).set({ state: "cancelled", chargedTokens: "0", chargedCost: "0", updatedAt: now }).where(and(eq(aiUsageAttempt.runId, run.id), eq(aiUsageAttempt.state, "reserved")));
+      await closeProviderAttempts(tx, run);
       const expired = run.state === "awaiting_input" || run.createdAt.getTime() + QUEUE_MS <= now.getTime() || run.deadlineAt && run.deadlineAt <= now;
       const state = uncertain ? "reconciliation_required" : run.cancelRequestedAt ? "cancelled" : expired ? "expired" : "queued";
       await event(tx, run, state, "recovered");

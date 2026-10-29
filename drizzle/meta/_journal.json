@@ -162,6 +162,13 @@
       "when": 1793146228701,
       "tag": "0022_outstanding_prima",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793231792269,
+      "tag": "0023_pink_captain_cross",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { aiConversation, aiRun, aiRunInput, aiMessage, aiStep, aiApproval, aiEve
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity, type ExecutionIdentity } from "@/lib/api/execution-identity";
 import { ALL_PERMISSIONS, hasPermission } from "@/lib/plans";
+import { closeProviderAttempts } from "./provider-recovery";
 
 const DAY = 86400000;
 const terminal = new Set<AiRunState>(["succeeded", "failed", "cancelled", "expired"]);
@@ -191,6 +192,7 @@ export async function deleteConversation(ctx: AuthContext, id: string) {
     await tx.update(aiConversation).set({ deletedAt: new Date(), version: conversation.version + 1, updatedAt: new Date() }).where(eq(aiConversation.id, id));
     const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, id)).for("update");
     for (const run of runs) {
+      await closeProviderAttempts(tx, run);
       await tx.update(aiRunInput).set({ question: null, candidates: null, answer: null }).where(eq(aiRunInput.runId, run.id));
       await tx.update(aiRunInput).set({ state: "cancelled" }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
       const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id));
@@ -219,6 +221,7 @@ export async function purgeExpiredContent(now = new Date()) {
       await tx.update(aiMessage).set({ payload: null }).where(eq(aiMessage.conversationId, c.id));
       const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, c.id)).for("update");
       for (const r of runs) {
+        await closeProviderAttempts(tx, r);
         await tx.update(aiRunInput).set({ question: null, candidates: null, answer: null }).where(eq(aiRunInput.runId, r.id));
         await tx.update(aiRunInput).set({ state: "expired" }).where(and(eq(aiRunInput.runId, r.id), eq(aiRunInput.state, "pending")));
         const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, r.id));
@@ -238,6 +241,7 @@ export async function recoverExpiredRuns(now = new Date()) {
   return db.transaction(async tx => {
     const runs = await tx.select().from(aiRun).where(and(eq(aiRun.state, "running"), lte(aiRun.leaseExpiresAt, now))).limit(100).for("update", { skipLocked: true });
     for (const run of runs) {
+      await closeProviderAttempts(tx, run);
       const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id)).for("update");
       const uncertain = steps.some(s => s.state === "executing" || s.state === "uncertain");
       for (const step of steps.filter(s => s.state === "executing")) await tx.update(aiStep).set({ state: "uncertain", version: step.version + 1, updatedAt: now }).where(eq(aiStep.id, step.id));

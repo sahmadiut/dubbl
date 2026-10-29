@@ -515,6 +515,13 @@ and [AI-036](../tasks/AI-036.md) for the polling process, recovery and provision
 observation qualification. AI-033 retains all original criteria and independent
 integration acceptance. Protocol-only fixtures do not qualify a provider or worker.
 
+AI-035 additionally requires [AI-037](../tasks/AI-037.md) for durable fenced and
+metered provider attempts and [AI-038](../tasks/AI-038.md) for dependent tools,
+clarification, disclosure-aware context, bounded retries and grounded summaries.
+All original AI-035 criteria remain for independent integration acceptance.
+AI-036 retains polling/heartbeat/shutdown and provisional observation; no child
+activates or qualifies live provider use or hosting.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

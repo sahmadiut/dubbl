@@ -661,6 +661,12 @@ and [AI-036](../tasks/AI-036.md) for polling, recovery and provisional observati
 qualification. Each depends on the preceding implementation boundary; AI-033
 retains every original criterion and independent integration acceptance.
 
+AI-035 requires [AI-037](../tasks/AI-037.md) for atomic lease-fenced provider
+attempts and metering, then [AI-038](../tasks/AI-038.md) for the dependent
+provider/tool loop, disclosure-aware context, clarification, retries and grounded
+final outcomes. AI-035 keeps every original criterion and independently accepts
+their integration; single-turn fixtures do not complete the executor or polling.
+
 ## AI product experience revision (2026-10-28)
 
 Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERIENCE.md), [findings and verification](../evidence/AI-product-experience-review-2026-10-28.md). Completed task records are preserved; these are pending implementation requirements.

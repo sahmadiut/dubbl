@@ -79,7 +79,7 @@ export async function endpointAddress(endpoint: string): Promise<{ url: URL; add
 
 /** Fixed POST, pinned DNS lookup, TLS hostname verification, no proxy/redirects,
  * total wall timeout (including DNS), bounded response; raw errors never escape. */
-export async function providerPost(endpoint: string, secret: string, body: object, timeoutMs: number, signal?: AbortSignal): Promise<unknown> {
+export async function providerPostRaw(endpoint: string, secret: string, body: object, timeoutMs: number, signal?: AbortSignal, beforeSend?: () => Promise<void>): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const abort = () => controller.abort();
@@ -92,6 +92,8 @@ export async function providerPost(endpoint: string, secret: string, body: objec
     })]);
     const payload = JSON.stringify(body);
     if (Buffer.byteLength(payload) > 65536) return fail("Provider request exceeds limit");
+    await beforeSend?.();
+    if (controller.signal.aborted) throw new AuthError("Provider request cancelled or timed out", 504);
     return await new Promise((resolve, reject) => {
       const req = request(target.url, { method: "POST", agent: false, family: target.family, signal: controller.signal,
         headers: { authorization: `Bearer ${secret}`, "content-type": "application/json", "content-length": Buffer.byteLength(payload) },
@@ -99,16 +101,25 @@ export async function providerPost(endpoint: string, secret: string, body: objec
       }, response => {
         const status = response.statusCode ?? 0;
         if (status < 200 || status >= 300) {
-          response.resume();
-          reject(new AuthError(status >= 300 && status < 400 ? "Provider redirects are forbidden" : status === 401 || status === 403 ? "Provider authentication failed" : status === 429 ? "Provider rate limited" : "Provider request failed", 502)); return;
+          response.destroy();
+          reject(new AuthError(status >= 300 && status < 400 ? "Provider redirects are forbidden" : status === 401 || status === 403 ? "Provider authentication failed" : status === 429 ? "Provider rate limited" : status >= 500 ? "Provider temporarily unavailable" : "Provider request failed", 502)); return;
         }
+        if (response.headers?.["content-encoding"] && response.headers["content-encoding"] !== "identity") { response.destroy(); reject(new AuthError("Unsupported provider encoding", 502)); return; }
         const chunks: Buffer[] = []; let bytes = 0;
         response.on("data", (chunk: Buffer) => { bytes += chunk.length; if (bytes > 65536) { response.destroy(); reject(new AuthError("Provider response exceeds limit", 502)); } else chunks.push(chunk); });
         response.on("error", () => reject(new AuthError("Provider response unavailable", 502)));
-        response.on("end", () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); } catch { reject(new AuthError("Invalid provider response", 502)); } });
+        response.on("aborted", () => reject(new AuthError("Provider response unavailable", 502)));
+        response.on("end", () => { try { resolve(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(Buffer.concat(chunks))); } catch { reject(new AuthError("Invalid provider response", 502)); } });
       });
       req.on("error", () => reject(new AuthError(controller.signal.aborted ? "Provider request cancelled or timed out" : "Provider network unavailable", controller.signal.aborted ? 504 : 502)));
       req.end(payload);
     });
   } finally { clearTimeout(timer); signal?.removeEventListener("abort", abort); }
+}
+
+/** Administrative probe compatibility. The dependent loop consumes the raw
+ * string so duplicate JSON keys and malformed UTF-8 cannot be normalized away. */
+export async function providerPost(endpoint: string, secret: string, body: object, timeoutMs: number, signal?: AbortSignal): Promise<unknown> {
+  const raw = await providerPostRaw(endpoint, secret, body, timeoutMs, signal);
+  try { return JSON.parse(raw); } catch { throw new AuthError("Invalid provider response", 502); }
 }

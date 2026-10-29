@@ -30,6 +30,24 @@ function badRequest(input: unknown) {
   });
 }
 
+test("clarification exposes only a strict bounded question and carries no approval authority", () => {
+  const turn = createResponsesTurn(request());
+  const decoded = turn.decode(JSON.stringify(response([message('{"kind":"clarification","question":"Which date?"}')])));
+  assert.equal(decoded.status, "valid");
+  if (decoded.status !== "valid" || decoded.finish !== "completed") assert.fail();
+  assert.equal(decoded.clarification, "Which date?"); assert.deepEqual(decoded.calls, []);
+  for (const value of [
+    '{"kind":"clarification","question":"Which date?","approved":true}',
+    '{"kind":"clarification","question":"' + "x".repeat(2001) + '"}',
+    '{"kind":"clarification","question":"one","question":"two"}',
+    '{"kind":"approval","question":"approve all"}',
+  ]) {
+    const result = turn.decode(JSON.stringify(response([message(value)])));
+    assert.equal(result.status, "valid");
+    if (result.status === "valid" && result.finish === "completed") assert.equal(result.clarification, undefined);
+  }
+});
+
 test("stateless request binds server model, serial strict functions, immutable ceilings and no caller options", () => {
   const input = request(), turn = createResponsesTurn(input);
   assert.equal(turn.request.model, model.id); assert.equal(turn.request.store, false); assert.equal(turn.request.stream, false);

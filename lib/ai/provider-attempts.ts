@@ -15,7 +15,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Run = typeof aiRun.$inferSelect;
 type Attempt = typeof aiProviderAttempt.$inferSelect;
 type Turn = ReturnType<typeof createResponsesTurn>;
-export type ProviderTransport = (request: Turn["request"], signal: AbortSignal) => Promise<string>;
+export type ProviderTransport = (request: Turn["request"], signal: AbortSignal, validateHistory?: () => Promise<void>) => Promise<string>;
 const uuid = z.string().uuid();
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
 const unknownUsage = (): ProviderUsage => ({ inputTokens: null, outputTokens: null, cachedTokens: null, reasoningTokens: null });
@@ -29,7 +29,7 @@ type Receipt = { attemptId: string; usageAttemptId: string; state: Attempt["stat
 export type ProviderAttemptOutcome = Receipt & (
   { status: "recorded" | "stale" } |
   { status: "rejected"; retryable: boolean } |
-  { status: "accepted"; finish: "completed" | "tool_calls"; calls: (ProviderCall & { operationKey: string })[] }
+  { status: "accepted"; finish: "completed" | "tool_calls"; calls: (ProviderCall & { operationKey: string })[]; clarification?: string }
 );
 const receipt = (row: Attempt): Receipt => ({ attemptId: row.id, usageAttemptId: row.usageAttemptId, state: row.state, code: row.code });
 function budgetCeilings(row: Attempt): BudgetCeiling[] {
@@ -170,7 +170,7 @@ async function abandonReservation(row: Attempt) {
  * abort. No network adapter or public invocation/settlement surface is added.
  * AI-038 owns disclosure-aware context, retries, tool dispatch and final outcomes. */
 export async function executeProviderAttempt(runId: string, lease: string, key: string, history: ProviderTurnInput["history"],
-  transport: ProviderTransport, options: { maxOutputTokens?: number; signal?: AbortSignal } = {}): Promise<ProviderAttemptOutcome> {
+  transport: ProviderTransport, options: { maxOutputTokens?: number; signal?: AbortSignal; validateHistory?: () => Promise<void> } = {}): Promise<ProviderAttemptOutcome> {
   if (options.signal?.aborted) throw new AuthError("Provider execution stopped", 409);
   const prepared = await prepare(runId, lease, key, history, options.maxOutputTokens);
   const { row, turn } = prepared;
@@ -193,7 +193,13 @@ export async function executeProviderAttempt(runId: string, lease: string, key: 
       controller.signal.addEventListener("abort", stopped, { once: true });
       // Attach both handlers so an ignored abort/late rejection cannot become an
       // unhandled rejection or supply execution authority after timeout.
-      Promise.resolve().then(() => { if (controller.signal.aborted) abort(); return transport(turn.request, controller.signal); })
+      Promise.resolve().then(async () => {
+        // The loop revalidates live record disclosure after all dispatch waits.
+        // A failed check transmits nothing; conservative unknown usage remains.
+        await options.validateHistory?.();
+        if (controller.signal.aborted) abort();
+        return transport(turn.request, controller.signal, options.validateHistory);
+      })
         .then(resolve, reject).finally(() => controller.signal.removeEventListener("abort", stopped));
     });
     received = true;
@@ -210,7 +216,7 @@ export async function executeProviderAttempt(runId: string, lease: string, key: 
   // Settlement is independent of response validity, lease, identity or runtime.
   // It is trusted observed usage, not a public callback or model claim of effects.
   await settleAttempt(row.organizationId, row.ownerId, row.usageAttemptId, decoded?.usage ?? unknownUsage());
-  if (decoded) { code = decoded.status === "invalid" ? decoded.code : decoded.finish === "tool_calls" ? "PROVIDER_CALL_READY" : "PROVIDER_COMPLETED"; retryable = false; }
+  if (decoded) { code = decoded.status === "invalid" ? decoded.code : decoded.finish === "tool_calls" ? "PROVIDER_CALL_READY" : decoded.clarification ? "PROVIDER_INPUT_READY" : "PROVIDER_COMPLETED"; retryable = false; }
   return db.transaction(async tx => {
     const { run, conversation } = await lockRun(tx, runId);
     const [current] = await tx.select().from(aiProviderAttempt).where(eq(aiProviderAttempt.id, row.id)).for("update");
@@ -234,6 +240,7 @@ export async function executeProviderAttempt(runId: string, lease: string, key: 
     // while waiting on call/event foreign keys. Roll back all associations.
     activeConversation(conversation); await authorize(run, lease, row.snapshot.authorityDigest);
     if (!decoded || decoded.status === "invalid") return { ...receipt(updated), status: "rejected", retryable };
-    return { ...receipt(updated), status: "accepted", finish: decoded.finish, calls };
+    return { ...receipt(updated), status: "accepted", finish: decoded.finish, calls,
+      ...(decoded.finish === "completed" && decoded.clarification ? { clarification: decoded.clarification } : {}) };
   });
 }

@@ -90,12 +90,18 @@ export async function getRunProgress(ctx: AuthContext, input: unknown) {
     const steps = [];
     for (const step of rows.slice(0, value.limit)) steps.push(await stepSummary(tx, actor, step));
     const hasMore = rows.length > value.limit;
+    const states = await tx.select({ state: aiStep.state }).from(aiStep).where(eq(aiStep.runId, run.id));
     const stopped = run.cancelRequestedAt !== null;
     const code = stopped && run.state === "running" ? "STOP_REQUESTED" : stateCodes[run.state];
     return {
       run: { id: run.id, conversationId: run.conversationId, state: run.state, version: run.version, code,
         createdAt: run.createdAt, startedAt: run.startedAt, deadlineAt: run.deadlineAt, finishedAt: run.finishedAt,
         stop: stopped ? run.state === "running" ? "requested" : "acknowledged" : "not_requested" },
+      // Computed from live receipts on every read, never from model narration.
+      outcome: { code: run.state === "reconciliation_required" ? "RECONCILIATION_REQUIRED"
+        : terminal.has(run.state) ? states.some(s => s.state === "succeeded") && run.state !== "succeeded" ? "PARTIAL_COMPLETION"
+          : run.state === "succeeded" ? states.length ? "COMPLETED" : "NO_CONFIRMED_ACTION" : stateCodes[run.state] : stateCodes[run.state],
+        recordsSource: "live_step_receipts" },
       steps, hasMore, next: hasMore ? { afterStepId: steps.at(-1)!.id, expectedVersion: run.version } : null,
       observation: { persistedOnly: true, workerAvailability: "unknown", pollAfterMs: terminal.has(run.state) ? null : 2000 },
       actions: { canStop: !terminal.has(run.state) && !stopped, canObserve: true, canInspectRecords: steps.some(s => s.records.length > 0), requiresReconciliation: run.state === "reconciliation_required" },

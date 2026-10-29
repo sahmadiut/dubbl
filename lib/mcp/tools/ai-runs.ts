@@ -16,7 +16,7 @@ export function registerAiRunTools(server: McpServer, ctx: AuthContext) {
     inputSchema: answerRunInputSchema,
   }, input => wrapTool(ctx, () => answerRunInput(ctx, input)));
   server.registerTool("get_ai_run_progress", {
-    description: "Observe own persisted run progress and ordered bounded step outcomes under live history/domain permissions. Returns safe state/recovery codes and currently scoped record links, with expense amountMinor strings in explicit currency (USD cents); never raw text, execution authority or provisional output. Use next.afterStepId and next.expectedVersion for pages; on version conflict restart from the first page. Reads/reconnect never dispatch, retry or resume work. Worker availability is unknown. Not model-callable.",
+    description: "Observe own persisted run progress and ordered bounded step outcomes under live history/domain permissions. Returns safe state/recovery and final/partial outcome codes derived from receipts, plus currently scoped record links, with expense amountMinor strings in explicit currency (USD cents); never raw text, execution authority or provisional output. Use next.afterStepId and next.expectedVersion for pages; on version conflict restart from the first page. Reads/reconnect never dispatch, retry or resume work. Worker availability is unknown. Not model-callable.",
     inputSchema: progressSchema,
   }, input => wrapTool(ctx, () => getRunProgress(ctx, input)));
   server.registerTool("submit_ai_run", {

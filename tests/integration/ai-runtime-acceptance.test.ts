@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { applyCurrent, withDatabase } from "./fixtures";
 
-test("AI-023/033/031 raw-adapter polling, clarification, metering and recovery", async () => {
+test("AI-007/023/033/031 raw-adapter dependent journey, clarification, metering and recovery", async () => {
   await withDatabase(async (_pool, url) => {
     applyCurrent(url);
     const result = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "tests/integration/ai-runtime-acceptance-worker.ts"], {
@@ -14,5 +14,6 @@ test("AI-023/033/031 raw-adapter polling, clarification, metering and recovery",
     assert.match(result.stdout, /AI-033 raw-adapter polling acceptance verified/);
     assert.match(result.stdout, /AI-031 delayed-response stop and stricter-budget acceptance verified/);
     assert.match(result.stdout, /AI-023 cross-transport clarification acknowledgement and read-only reconnect verified/);
+    assert.match(result.stdout, /AI-007 discovery, clarification, dependent draft and grounded reconnect acceptance verified/);
   });
 });

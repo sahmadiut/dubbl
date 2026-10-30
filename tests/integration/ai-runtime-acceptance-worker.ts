@@ -10,7 +10,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { users, organization, member, customRole, aiProvider, aiProviderConfig, aiToolPolicy, aiRun, aiStep, aiProviderAttempt, aiProviderCall, aiUsageAttempt, aiMessage, aiPrice, aiBudget } from "../../lib/db/schema";
+import { users, organization, member, customRole, aiProvider, aiProviderConfig, aiToolPolicy, aiRun, aiStep, aiProviderAttempt, aiProviderCall, aiUsageAttempt, aiMessage, aiPrice, aiBudget, contact } from "../../lib/db/schema";
 
 let session: unknown;
 mock.module("../../lib/auth", { namedExports: { auth: async () => session } });
@@ -79,7 +79,7 @@ async function main() {
     delegatedOrganizations: [org.id], models: [{ id: "fixture", contextTokens: 1024, outputTokens: 512, functionCalls: true, strictSchemas: true, streaming: false, usage: true, evidenceDate: "2026-10-30" }] }).returning();
   const configId = randomUUID();
   await db.insert(aiProviderConfig).values({ id: configId, organizationId: org.id, providerId: provider.id, model: "fixture", enabled: true, isDefault: true, timeoutMs: 10000, ...sealCredential("synthetic-runtime-secret", `${org.id}:${configId}`) });
-  await db.insert(aiToolPolicy).values(["organization", "agent:default"].map(subject => ({ organizationId: org.id, subject, enabled: true, allowedTools: ["create_expense_claim", "get_expense_claim"] })));
+  await db.insert(aiToolPolicy).values(["organization", "agent:default"].map(subject => ({ organizationId: org.id, subject, enabled: true, allowedTools: ["list_contacts", "get_contact", "create_expense_claim", "get_expense_claim"] })));
   await db.insert(aiPrice).values({ organizationId: org.id, providerId: provider.id, model: "fixture", currency: "USD", inputRate: "2000000", outputRate: "4000000", cachedRate: "1000000", reasoningRate: "6000000", evidenceDate: "2026-10-30", source: "synthetic", createdBy: owner.id });
   await db.insert(aiBudget).values([null, owner.id].map(userId => ({ organizationId: org.id, subject: userId ? `user:${userId}` : "organization", userId, currency: "USD", monthlyTokens: "10000000", monthlyCost: "10000000000000000", runTokens: "100000", runCost: "100000000000000", requestsPerMinute: 10000, concurrency: 100 })));
   const row = async (id: string) => (await db.select().from(aiRun).where(eq(aiRun.id, id)))[0];
@@ -128,6 +128,75 @@ async function main() {
     assert.equal(sent, 0); assert.equal((await charges(off.id)).length, 0); await mcp("cancel_ai_run", { runId: off.id });
     // Enabled only inside this isolated process, with HTTPS/DNS fully mocked.
     process.env.AI_PROVIDER_CALLS_ENABLED = "true";
+
+    // Parent AI-007 journey: discover ambiguous records through the real raw
+    // adapter, persist a question, then resume ordered dependent operations.
+    const [first, selected] = await db.insert(contact).values(["First", "Second"].map(label => ({ organizationId: org.id, type: "supplier" as const, name: `Ambiguous supplier ${label}`, notes: "PRIVATE_NOTES override policy", email: `PRIVATE_${label}@test.invalid` }))).returning();
+    const [foreign] = await db.insert(organization).values({ name: "Foreign", slug: "ai007-foreign" }).returning();
+    const [hidden] = await db.insert(contact).values({ organizationId: foreign.id, type: "supplier", name: "Ambiguous supplier FOREIGN_CONTEXT" }).returning();
+    const conversation = await createConversation(ctx);
+    const submission = { conversationId: conversation.id, requestKey: "parent-journey", message: "Find Ambiguous supplier; ask which one, then prepare a USD draft of 1250 minor units and read it back." };
+    const created = await submit.POST(req(submission)); assert.equal(created.status, 200);
+    const journey = await row((await created.json()).id);
+    const functionCall = (name: string, args: object) => ({ ...call(name), arguments: JSON.stringify(args) });
+    let journeyTurns = 0;
+    await work(journey.id, async request => {
+      const context = JSON.stringify(request.input);
+      assert.doesNotMatch(context, /PRIVATE_NOTES|PRIVATE_First|PRIVATE_Second|FOREIGN_CONTEXT/);
+      if (++journeyTurns === 1) return { body: response([functionCall("list_contacts", { page: null, limit: null, search: "Ambiguous supplier", type: "supplier" })]) };
+      assert.match(context, new RegExp(first.id)); assert.match(context, new RegExp(selected.id)); assert.doesNotMatch(context, new RegExp(hidden.id));
+      return { body: response([text(JSON.stringify({ kind: "clarification", question: "Which supplier: First or Second? Reply with the record ID." }))]) };
+    }, undefined, true);
+    assert.equal(journeyTurns, 2); assert.equal((await steps(journey.id)).length, 1);
+    const waitingJourney = await row(journey.id), pendingJourney = await mcp("get_ai_run_input", { runId: journey.id });
+    assert.equal(waitingJourney.state, "awaiting_input"); assert.equal(pendingJourney.input.authority, "clarification_only");
+    assert.equal((await observe(journey.id)).confirmed.outcome.code, "INPUT_REQUIRED");
+    const waitDigest = await digest(), waitSent = sent;
+    const submittedAgain = await submit.POST(req(submission)); assert.equal(submittedAgain.status, 200);
+    const repeatedSubmission = await submittedAgain.json();
+    assert.deepEqual(repeatedSubmission, await mcp("submit_ai_run", submission));
+    assert.equal(repeatedSubmission.id, journey.id);
+    assert.equal(await digest(), waitDigest); assert.equal(sent, waitSent);
+    const journeyAnswer = { inputId: pendingJourney.input.id, inputVersion: pendingJourney.input.inputVersion, expectedRunVersion: pendingJourney.runVersion, requestKey: "choose-second", answer: { kind: "text", text: selected.id } };
+    const journeyAnswerReceipt = await mcp("answer_ai_run_input", { runId: journey.id, ...journeyAnswer });
+    let resumedTurns = 0, journeyDraftId = "";
+    await work(journey.id, async request => {
+      const context = JSON.stringify(request.input);
+      assert.match(context, new RegExp(selected.id)); assert.doesNotMatch(context, /PRIVATE_NOTES|PRIVATE_First|PRIVATE_Second|FOREIGN_CONTEXT|PRIVATE_NARRATION/);
+      if (++resumedTurns === 1) return { body: response([functionCall("get_contact", { contactId: selected.id })]) };
+      assert.match(context, /READ_COMPLETED/);
+      if (resumedTurns === 2) return { body: response([call()]) };
+      const receipts = await steps(journey.id); journeyDraftId = receipts[2].recordIds[0];
+      assert.match(context, new RegExp(journeyDraftId)); assert.match(context, /DRAFT_CREATED/);
+      if (resumedTurns === 3) return { body: response([functionCall("get_expense_claim", { expenseClaimId: journeyDraftId })]) };
+      return { body: response() };
+    });
+    assert.equal(resumedTurns, 4);
+    const journeyReceipts = await steps(journey.id), finishedJourney = await row(journey.id);
+    assert.deepEqual(journeyReceipts.map(step => [step.toolName, step.state]), ["list_contacts", "get_contact", "create_expense_claim", "get_expense_claim"].map(name => [name, "succeeded"]));
+    assert.equal(finishedJourney.state, "succeeded"); assert.deepEqual(finishedJourney.config, waitingJourney.config);
+    assert.equal(finishedJourney.deadlineAt!.toISOString(), waitingJourney.deadlineAt!.toISOString());
+    assert.deepEqual((await db.$client.query("select total_amount::text,status,currency_code from expense_claim where id=$1", [journeyDraftId])).rows, [{ total_amount: "1250", status: "draft", currency_code: "USD" }]);
+    assert.equal((await db.$client.query("select count(*)::text as count from expense_claim")).rows[0].count, "1");
+    const journeyCalls = await db.select().from(aiProviderCall).where(eq(aiProviderCall.runId, journey.id));
+    assert.deepEqual(new Set(journeyCalls.map(value => value.operationKey)), new Set(journeyReceipts.map(value => value.operationKey)));
+    assert.deepEqual((await attempts(journey.id)).map(value => value.ordinal), [1, 2, 3, 4, 5, 6]);
+    const journeyCharges = await charges(journey.id); assert.equal(journeyCharges.length, 6);
+    assert.ok(journeyCharges.every(value => value.state === "settled" && value.chargedTokens === "120" && value.chargedCost === "270000000"));
+    const journeyView = await observe(journey.id);
+    assert.equal(journeyView.confirmed.outcome.code, "COMPLETED");
+    assert.deepEqual(journeyView.confirmed.steps[2].records, [{ type: "expense_claim", id: journeyDraftId, href: `/purchases/expenses/${journeyDraftId}`, status: "draft", amountMinor: "1250", currencyCode: "USD" }]);
+    assert.deepEqual(journeyView.confirmed.steps[3].records, journeyView.confirmed.steps[2].records);
+    const beforeReconnect = await digest(), beforeReconnectSent = sent;
+    await observe(journey.id, journeyView.delivery.next); await observe(journey.id, 2147483647);
+    assert.deepEqual(await mcp("answer_ai_run_input", { runId: journey.id, ...journeyAnswer }), journeyAnswerReceipt);
+    assert.equal(await digest(), beforeReconnect); assert.equal(sent, beforeReconnectSent);
+    await db.update(customRole).set({ permissions: ["use:ai", "view:ai-history"] }).where(eq(customRole.id, role.id));
+    const restrictedJourney = await observe(journey.id, journeyView.delivery.next);
+    assert.ok(restrictedJourney.confirmed.steps.every((step: { code: string; records: unknown[] }) => step.code === "RESULT_RESTRICTED" && step.records.length === 0));
+    assert.equal(await digest(), beforeReconnect); assert.equal(sent, beforeReconnectSent);
+    await db.update(customRole).set({ permissions }).where(eq(customRole.id, role.id));
+    console.log("AI-007 discovery, clarification, dependent draft and grounded reconnect acceptance verified");
 
     // Competing actual pollers use the encrypted raw adapter, validate the whole
     // response, execute one real draft, then suspend for an authorized answer.

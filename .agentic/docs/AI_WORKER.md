@@ -71,8 +71,8 @@ run IDs, prompts, arguments, secrets, raw exceptions or private reasoning. Exist
 REST/MCP progress/input/events remain observation/answer contracts; connecting
 or reconnecting never starts this process or dispatches effects. The matching
 provisional snapshot contract is documented in [AI_RUN_OBSERVATION](AI_RUN_OBSERVATION.md).
-AI-007 retains independent acceptance; completed worker integration checks are
-described below and do not accept that parent.
+The AI-007 parent acceptance combines these contracts in a separate discovery,
+clarification and dependent-draft journey, described below.
 
 ## Qualification
 
@@ -111,6 +111,20 @@ runtime off; a different answer conflicts. REST/MCP reconnect and content-free
 events do not mutate runs, input, messages, approvals, call associations, charges
 or business records. Clarification text grants no approval authority. See the
 [AI-023 integration evidence](../evidence/AI-023-attempt-1.md).
+
+AI-007 extends the raw-adapter polling fixture with two matching contacts and a
+foreign-organization match. Discovery yields only authorized references; the run
+asks which contact to use and stops until a versioned answer arrives. Another
+polling invocation reads the selected contact, creates one exact USD draft and
+reads that new record back. Six metered attempts preserve the original snapshot
+and deadline across the question. REST/MCP request-key retries and reconnects
+return the same persisted run without dispatching or changing business records.
+Final record links and draft status come from live receipts, even when provider
+prose claims payment and supplies a forged URL. Same-cursor observation after
+permission revocation removes those links. Combined with the stop, uncertainty,
+ceiling and fresh-process recovery regressions, this accepts the local backend
+integration in [AI-007 evidence](../evidence/AI-007-attempt-1.md). Assistant UI and
+sensitive approval execution remain their separately scheduled tasks.
 
 Live provider entitlement, prices/tokenizers, hosting, PostgreSQL16/hosted CI,
 raw token streaming, browser/native-Persian UX and rollout are unqualified.

@@ -14,7 +14,7 @@ const RUN_MS = 600000, QUEUE_MS = 86400000, LEASE_MS = 30000;
 type Run = typeof aiRun.$inferSelect;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const terminal = new Set(["succeeded", "failed", "cancelled", "expired"]);
-const publicEventKinds = new Set(["queued", "running", "awaiting_approval", "awaiting_input", "input_answered", "reconciliation_required", "succeeded", "failed", "cancelled", "expired", "claimed", "stop_requested", "authorization_or_configuration_changed", "recovered", "step_prepared", "step_updated"]);
+const publicEventKinds = new Set(["queued", "running", "awaiting_approval", "approval_recorded", "approval_rejected", "awaiting_input", "input_answered", "reconciliation_required", "succeeded", "failed", "cancelled", "expired", "claimed", "stop_requested", "authorization_or_configuration_changed", "recovered", "step_prepared", "step_updated"]);
 const id = z.string().uuid().describe("Opaque run/conversation UUID scoped to the authenticated owner and organization.");
 export const submitRunSchema = z.object({ conversationId: id,
   requestKey: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).describe("Client idempotency key within this conversation; reuse requires identical input."),

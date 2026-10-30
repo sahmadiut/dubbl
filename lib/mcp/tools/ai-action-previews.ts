@@ -3,10 +3,19 @@ import type { AuthContext } from "@/lib/api/auth-context";
 import { wrapTool } from "@/lib/mcp/errors";
 import { journalPostPreviewSchema, previewJournalPost, previewJournalDelete } from "@/lib/ai/action-preview";
 import { getActionBatch, getActionBatchSchema, reviseActionBatch, reviseActionBatchSchema } from "@/lib/ai/action-batches";
+import { actionDecisionSchema, approveActionBatch, rejectActionBatch } from "@/lib/ai/action-batches";
 
 import { settlementPreviewSchema, previewSettlement, emailActionPreviewSchema, previewInvoiceEmail } from "@/lib/ai/action-adapters";
 
 export function registerAiActionPreviewTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("approve_ai_action_batch", {
+    description: "Record explicit approval of one own exact persisted batch selection using batch/run versions, bindingDigest, selected item UUIDs and a unique requestKey. Returns a stable content-free decision receipt after current domain/resource/policy/expiry checks; amounts/arguments cannot be changed. Requires a live interactive user session: MCP tokens/API keys return DECISION_INTERACTION_REQUIRED and must open interactive approval. Existing business approval requirements cannot be satisfied by this operation. Never queues, executes, grants blanket permission or accepts model/clarification confirmation. Not model-callable.",
+    inputSchema: actionDecisionSchema,
+  }, input => wrapTool(ctx, () => approveActionBatch(ctx, input)));
+  server.registerTool("reject_ai_action_batch", {
+    description: "Explicitly reject one own entire persisted batch using exact batch/run versions, bindingDigest, complete selected item UUIDs and a unique requestKey. Returns a stable decision receipt; atomically cancels remaining prepared actions including dependents and erases proposal content, preserving completed effects. Current credential/history/domain access and current resource/policy/expiry apply; use cancel_ai_run for stale or expired proposals. Works with runtime disabled. No execution, rollback or approval authority; not model-callable.",
+    inputSchema: actionDecisionSchema,
+  }, input => wrapTool(ctx, () => rejectActionBatch(ctx, input)));
   server.registerTool("preview_ai_journal_delete", {
     description: "Read a permanent manual-draft journal deletion preview under current use:ai, view:data and edit:entries. Strict entryId UUID and optional expectedResourceVersion only. Requires a qualified balanced, unlinked draft; rejects document/reversal/attachment references and locked periods. Returns complete lines, separate exact currency minor strings (USD cents), deletion/cascade effects, current business policy and identity-free blockers. PREVIEW_ONLY never deletes, approves, queues or executes; not model-callable.",
     inputSchema: journalPostPreviewSchema,

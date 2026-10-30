@@ -2,12 +2,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiActionBatch, aiConversation, aiRun, aiStep, aiUsageAttempt, aiRunInput, aiEvent } from "@/lib/db/schema";
+import { aiActionBatch, aiActionDecision, aiConversation, aiRun, aiStep, aiUsageAttempt, aiRunInput, aiEvent } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
 import { assertRunLease, assertRuntimeEnabled, validateRunSnapshot } from "./run-lifecycle";
 import { actionItemSchema, adapterVersion, observeAction, actionResource, actionPermissions, type ActionItem } from "./action-adapters";
+import { eraseActionBatches } from "./action-batch-retention";
 
 const id = z.string().uuid().describe("Opaque own-run, proposal, item or organization-owned journal UUID.");
 const version = z.number().int().positive().max(2147483647);
@@ -24,6 +25,14 @@ export const getActionBatchSchema = z.object({ runId: id }).strict();
 export const reviseActionBatchSchema = z.object({ runId: id, batchId: id.describe("Exact pending batch UUID from get_ai_action_batch."),
   expectedVersion: version.describe("Exact pending batch version; every revision replaces it."),
   expectedRunVersion: version.describe("Exact observed run version; stale revisions conflict."), ...specFields }).strict();
+export const actionDecisionSchema = z.object({
+  runId: id, batchId: id.describe("Exact persisted batch UUID reviewed by the actor."),
+  expectedVersion: version.describe("Exact reviewed batch revision."),
+  expectedRunVersion: version.describe("Exact reviewed run version."),
+  bindingDigest: digest.describe("Exact bindingDigest returned with the complete reviewed preview; never a bearer capability."),
+  selectedItemIds: z.array(id).max(10).describe("Exact complete persisted selection, including all prerequisites; this operation cannot edit selection or arguments."),
+  requestKey: key.describe("Decision idempotency key within this run; retry exactly after a lost acknowledgement."),
+}).strict();
 type Spec = z.infer<typeof actionBatchSpecSchema>;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Run = typeof aiRun.$inferSelect;
@@ -35,10 +44,10 @@ const authoritySchema = z.object({ items: z.array(authorityItem).min(1).max(10),
 type Authority = z.infer<typeof authoritySchema>;
 type Preview = NonNullable<Awaited<ReturnType<typeof observeAction>>["preview"]>;
 type Display = { items: { itemId: string; stepId: string; selected: boolean; dependsOn: string[]; preview: Preview }[]; totals: { currencyCode: string; debitAmountMinor: string; creditAmountMinor: string }[] };
-type Code = "BATCH_DENIED" | "BATCH_NOT_FOUND" | "BATCH_STALE" | "BATCH_EXPIRED" | "BATCH_CONFLICT" | "BATCH_INVALID" | "BATCH_LIMIT" | "BATCH_DISABLED" | "BATCH_CONFIGURATION_CHANGED" | "BATCH_UNAVAILABLE";
+type Code = "BATCH_DENIED" | "BATCH_NOT_FOUND" | "BATCH_STALE" | "BATCH_EXPIRED" | "BATCH_CONFLICT" | "BATCH_INVALID" | "BATCH_LIMIT" | "BATCH_DISABLED" | "BATCH_CONFIGURATION_CHANGED" | "BATCH_UNAVAILABLE" | "DECISION_INTERACTION_REQUIRED";
 class Failure extends Error { constructor(readonly code: Code) { super(code); } }
 function fail(code: Code): never { throw new Failure(code); }
-function unavailable(code: Code) { return { code, batch: null, recovery: code === "BATCH_DENIED" ? ["contact_administrator"] : code === "BATCH_STALE" || code === "BATCH_CONFLICT" ? ["refresh_preview"] : ["inspect_run", "cancel_run"] }; }
+function unavailable(code: Code) { return { code, batch: null, recovery: code === "DECISION_INTERACTION_REQUIRED" ? ["open_interactive_approval"] : code === "BATCH_DENIED" ? ["contact_administrator"] : code === "BATCH_STALE" || code === "BATCH_CONFLICT" ? ["refresh_preview"] : ["inspect_run", "cancel_run"] }; }
 async function safe<T>(fn: () => Promise<T>) {
   try { return await fn(); } catch (err) {
     if (err instanceof Failure) return unavailable(err.code);
@@ -187,6 +196,7 @@ export async function getActionBatch(ctx: AuthContext, input: unknown) {
       if (!parsed.success) fail("BATCH_UNAVAILABLE");
       const authority = parsed.data;
       normalized({ ...authority, requestKey: row.requestKey });
+      let businessApprovalRequired = false;
       for (const i of authority.items) {
         if (i.adapterVersion !== adapterVersion(i.action) || !i.policyVersion) fail("BATCH_STALE");
         const [step] = await tx.select().from(aiStep).where(and(eq(aiStep.id, i.stepId), eq(aiStep.runId, run.id), eq(aiStep.organizationId, current.organizationId), eq(aiStep.ownerId, current.userId)));
@@ -194,11 +204,17 @@ export async function getActionBatch(ctx: AuthContext, input: unknown) {
         const observed = await observeAction(current, i, i.resourceVersion);
         if (!observed.preview) fail(observed.code === "PREVIEW_DENIED" ? "BATCH_DENIED" : "BATCH_STALE");
         if (observed.preview.businessApproval.policyVersion !== i.policyVersion) fail("BATCH_STALE");
+        if (authority.selectedItemIds.includes(i.itemId) && observed.preview.businessApproval.required) businessApprovalRequired = true;
       }
+      const [decision] = await tx.select().from(aiActionDecision).where(eq(aiActionDecision.batchId, row.id));
+      let ready = false;
+      try { assertRuntimeEnabled(); await validateRunSnapshot(run); ready = true; } catch { /* Reading a preview does not require an executable runtime/configuration. */ }
       await actor(ctx, false, authority.items);
       if (row.expiresAt.getTime() <= Date.now() || run.deadlineAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");
       return { code: "BATCH_PREVIEW_ONLY", runId: run.id, runVersion: run.version, batch: { id: row.id, version: row.version, expiresAt: row.expiresAt,
-        bindingDigest: row.bindingDigest, display: row.display, authority: "preview_only", canApprove: false }, recovery: ["revise_preview", "cancel_run"] };
+        bindingDigest: row.bindingDigest, display: row.display, authority: "preview_only",
+        canApprove: ready && !decision && !businessApprovalRequired && authority.selectedItemIds.length > 0 && executionIdentity(current).kind === "session",
+        ...(decision ? { decision: decisionReceipt(decision) } : {}) }, recovery: ["revise_preview", "cancel_run"] };
     });
   });
 }
@@ -233,3 +249,96 @@ export async function reviseActionBatch(ctx: AuthContext, input: unknown) {
     });
   });
 }
+
+const decisionReceipt = (r: typeof aiActionDecision.$inferSelect) => ({
+  code: r.decision === "approve" ? "DECISION_APPROVED" as const : "DECISION_REJECTED" as const,
+  decisionId: r.id, runId: r.runId, batchId: r.batchId, version: r.batchVersion,
+  acceptedRunVersion: r.acceptedRunVersion, authority: "decision_only" as const,
+});
+async function currentResources(ctx: AuthContext, authority: Authority) {
+  const previews: { itemId: string; preview: Preview }[] = [];
+  for (const item of authority.items) {
+    if (item.adapterVersion !== adapterVersion(item.action) || !item.policyVersion) fail("BATCH_STALE");
+    const observed = await observeAction(ctx, item, item.resourceVersion);
+    if (!observed.preview) fail(observed.code === "PREVIEW_DENIED" ? "BATCH_DENIED" : "BATCH_STALE");
+    if (observed.preview.businessApproval.policyVersion !== item.policyVersion) fail("BATCH_STALE");
+    previews.push({ itemId: item.itemId, preview: observed.preview });
+  }
+  return previews;
+}
+
+/** Explicit client decisions only. The automatic model catalog has no route to
+ * this operation. Credential-backed agents cannot assert human confirmation;
+ * approval additionally requires a live interactive session. AI-044 alone owns
+ * fenced execution integration, so no decision here queues or dispatches work.
+ */
+async function decideActionBatch(ctx: AuthContext, input: unknown, decision: "approve" | "reject") {
+  const parsed = actionDecisionSchema.parse(input);
+  const value = { ...parsed, runId: parsed.runId.toLowerCase(), batchId: parsed.batchId.toLowerCase(), selectedItemIds: parsed.selectedItemIds.map(id => id.toLowerCase()).sort() };
+  return safe(async () => {
+    if (new Set(value.selectedItemIds).size !== value.selectedItemIds.length) fail("BATCH_INVALID");
+    const current = await actor(ctx, false);
+    if (decision === "approve" && executionIdentity(current).kind !== "session") fail("DECISION_INTERACTION_REQUIRED");
+    const requestDigest = hash({ ...value, decision });
+    return db.transaction(async tx => {
+      const { run } = await locked(tx, current, value.runId, true);
+      const [previous] = await tx.select().from(aiActionDecision).where(and(eq(aiActionDecision.runId, run.id), eq(aiActionDecision.requestKey, value.requestKey)));
+      if (previous) {
+        if (previous.requestDigest !== requestDigest) fail("BATCH_CONFLICT");
+        // Content-free acknowledgement only, even after revision/cancellation or
+        // expiry. Current credentials/grants still govern disclosure.
+        const fresh = await actor(ctx, false);
+        for (const permission of previous.requiredPermissions) requireRole(fresh, permission);
+        return decisionReceipt(previous);
+      }
+      const [row] = await tx.select().from(aiActionBatch).where(and(eq(aiActionBatch.id, value.batchId), eq(aiActionBatch.runId, run.id))).for("update");
+      if (!row || row.version !== value.expectedVersion || run.version !== value.expectedRunVersion) fail("BATCH_CONFLICT");
+      if (row.expiresAt.getTime() <= Date.now() || !run.deadlineAt || run.deadlineAt.getTime() <= Date.now() || row.state === "expired") fail("BATCH_EXPIRED");
+      if (row.state !== "pending" || run.state !== "awaiting_approval" || run.cancelRequestedAt || !row.authority || !row.display || binding(row) !== row.bindingDigest) fail("BATCH_UNAVAILABLE");
+      if (value.bindingDigest !== row.bindingDigest) fail("BATCH_STALE");
+      const authority = authoritySchema.safeParse(row.authority); if (!authority.success) fail("BATCH_UNAVAILABLE");
+      normalized({ ...authority.data, requestKey: row.requestKey });
+      if (hash(value.selectedItemIds) !== hash(authority.data.selectedItemIds)) fail("BATCH_CONFLICT");
+      if (decision === "approve" && !value.selectedItemIds.length) fail("BATCH_INVALID");
+      const [existing] = await tx.select({ id: aiActionDecision.id }).from(aiActionDecision).where(eq(aiActionDecision.batchId, row.id));
+      if (existing) fail("BATCH_CONFLICT");
+      await actor(ctx, false, authority.data.items);
+      const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id)).orderBy(asc(aiStep.id)).for("update");
+      if (steps.some(s => s.state === "executing" || s.state === "uncertain")) fail("BATCH_UNAVAILABLE");
+      if (steps.some(s => s.state === "prepared" && !authority.data.items.some(i => i.stepId === s.id))) fail("BATCH_UNAVAILABLE");
+      for (const item of authority.data.items) {
+        const step = steps.find(s => s.id === item.stepId);
+        if (!step || step.ownerId !== current.userId || step.organizationId !== current.organizationId || step.state !== "prepared" || step.version !== item.stepVersion || step.toolName !== item.action || step.argumentDigest !== argumentHash(item) || step.operationKey !== item.stepId || step.dispatchLease !== null) fail("BATCH_UNAVAILABLE");
+      }
+      const previews = await currentResources(current, authority.data);
+      if (decision === "approve") {
+        await writable(run, current, authority.data.items);
+        const blocked = previews.filter(i => value.selectedItemIds.includes(i.itemId) && i.preview.businessApproval.required);
+        if (blocked.length) return { code: "DECISION_BUSINESS_APPROVAL_REQUIRED", batch: null,
+          nextActors: [...new Set(blocked.flatMap(i => i.preview.businessApproval.nextActors))].sort(),
+          recovery: ["complete_business_approval", "refresh_preview", "cancel_run"] };
+      }
+      const [recorded] = await tx.insert(aiActionDecision).values({ batchId: row.id, runId: run.id, organizationId: current.organizationId, ownerId: current.userId,
+        decision, batchVersion: row.version, acceptedRunVersion: run.version + 1, bindingDigest: row.bindingDigest,
+        selectionDigest: hash(value.selectedItemIds), requestKey: value.requestKey, requestDigest, expiresAt: row.expiresAt,
+        requiredPermissions: [...new Set(authority.data.items.flatMap(i => actionPermissions(i.action)))].sort() }).returning();
+      const now = new Date();
+      await tx.update(aiRun).set({ version: run.version + 1, updatedAt: now,
+        ...(decision === "reject" ? { state: "cancelled" as const, cancelRequestedAt: now, finishedAt: now, leaseOwner: null, leaseExpiresAt: null } : {}) }).where(eq(aiRun.id, run.id));
+      await tx.insert(aiEvent).values({ runId: run.id, ownerId: run.ownerId, organizationId: run.organizationId, sequence: run.version + 1, kind: decision === "approve" ? "approval_recorded" : "approval_rejected" });
+      if (decision === "reject") {
+        await tx.update(aiStep).set({ state: "skipped", version: sql`${aiStep.version} + 1`, updatedAt: now }).where(and(eq(aiStep.runId, run.id), eq(aiStep.state, "prepared")));
+        await eraseActionBatches(tx, run.id, "cancelled");
+      }
+      // All SQL writes can wait on locks. Recheck live resources/policy and
+      // credentials after those waits, rolling the whole decision back on drift.
+      await currentResources(current, authority.data);
+      if (decision === "approve") await writable(run, current, authority.data.items);
+      else await actor(ctx, false, authority.data.items);
+      if (row.expiresAt.getTime() <= Date.now() || run.deadlineAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");
+      return decisionReceipt(recorded);
+    });
+  });
+}
+export const approveActionBatch = (ctx: AuthContext, input: unknown) => decideActionBatch(ctx, input, "approve");
+export const rejectActionBatch = (ctx: AuthContext, input: unknown) => decideActionBatch(ctx, input, "reject");

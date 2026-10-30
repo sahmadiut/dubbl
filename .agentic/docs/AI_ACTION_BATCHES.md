@@ -1,5 +1,11 @@
 # Durable action proposal batches
 
+AI-043 now supplies [explicit scoped decisions](AI_ACTION_DECISIONS.md). Current
+batch reads include an existing decision receipt and live canApprove readiness;
+standalone per-action previews remain observations. Decisions do not dispatch or
+queue work. AI-044 retains execution integration. The original storage guarantees
+and historical child qualification below remain applicable.
+
 AI-042 independently qualifies the combined finite adapters and versioned
 storage through [replacement, concurrency and retention acceptance](AI_ACTION_STORAGE_ACCEPTANCE.md).
 AI-008 remains the outer parent; AI-043/044 retain decisions and dispatch.

@@ -1,7 +1,7 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiRun, aiStep, contact, expenseClaim, journalEntry, type AiRunState } from "@/lib/db/schema";
+import { aiConversation, aiEvent, aiProviderAttempt, aiRun, aiStep, contact, expenseClaim, journalEntry, type AiRunState } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { hasPermission } from "@/lib/plans";
@@ -14,6 +14,11 @@ export const progressSchema = z.object({
   afterStepId: id.optional().describe("Last step UUID from this run's previous page; use with that page's expectedVersion. Never an execution key."),
   limit: z.number().int().min(1).max(20).default(10).describe("Maximum ordered step summaries, 1..20. Each exposes at most ten currently accessible record references."),
 }).strict().refine(v => !v.afterStepId || v.expectedVersion !== undefined, "Step pagination requires expectedVersion");
+
+export const observationSchema = z.object({
+  runId: id,
+  after: z.number().int().min(0).max(2147483647).default(0).describe("Last observed execution version, or zero on first read/cursor loss. Always replace the display with the returned snapshot: permissions and records can change without a new execution version. Never an execution or retry key."),
+}).strict();
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Step = typeof aiStep.$inferSelect;
@@ -66,8 +71,8 @@ async function stepSummary(tx: Tx, ctx: AuthContext, step: Step) {
 /** Observation only: no dispatch, maintenance, retry, resume or policy writes.
  * Conversation -> run lock order matches erasure. Step writers lock the run, so
  * each page and its version describe one committed snapshot of execution state. */
-export async function getRunProgress(ctx: AuthContext, input: unknown) {
-  const value = progressSchema.parse(input), identity = executionIdentity(ctx);
+async function readRunProgress(ctx: AuthContext, value: z.infer<typeof progressSchema>, after?: number) {
+  const identity = executionIdentity(ctx);
   const current = await authorizeExecution(identity, ctx.organizationId, "view:ai-history");
   return db.transaction(async tx => {
     const scope = and(eq(aiRun.id, value.runId), eq(aiRun.organizationId, current.organizationId), eq(aiRun.ownerId, current.userId));
@@ -87,13 +92,35 @@ export async function getRunProgress(ctx: AuthContext, input: unknown) {
     const rows = await tx.select().from(aiStep).where(and(eq(aiStep.runId, run.id), value.afterStepId
       ? sql`(${aiStep.createdAt}, ${aiStep.id}) > (select created_at, id from ai_step where id = ${value.afterStepId} and run_id = ${run.id})` : undefined))
       .orderBy(aiStep.createdAt, aiStep.id).limit(value.limit + 1);
-    const steps = [];
-    for (const step of rows.slice(0, value.limit)) steps.push(await stepSummary(tx, actor, step));
     const hasMore = rows.length > value.limit;
-    const states = await tx.select({ state: aiStep.state }).from(aiStep).where(eq(aiStep.runId, run.id));
+    const states = await tx.select({ state: aiStep.state }).from(aiStep).where(eq(aiStep.runId, run.id)).limit(21);
+    if (states.length > 20) throw new AuthError("Run step limit exceeded", 413);
     const stopped = run.cancelRequestedAt !== null;
     const code = stopped && run.state === "running" ? "STOP_REQUESTED" : stateCodes[run.state];
-    return {
+    // Only finite server-authored milestones cross this boundary. Provider text,
+    // even a validated final answer, is neither safe display data nor a receipt.
+    // Select no request/response blobs, tool arguments, keys, leases or digests.
+    const [attempt] = after === undefined ? [] : await tx.select({ state: aiProviderAttempt.state })
+      .from(aiProviderAttempt).where(eq(aiProviderAttempt.runId, run.id)).orderBy(desc(aiProviderAttempt.ordinal)).limit(1);
+    const delayed = run.state === "running" && (!run.leaseExpiresAt || run.leaseExpiresAt.getTime() <= Date.now() || !run.deadlineAt || run.deadlineAt.getTime() <= Date.now());
+    const provisionalCode = stopped && run.state === "running" ? "STOP_REQUESTED" : delayed ? "OBSERVATION_DELAYED" : run.state === "queued" ? "WAITING_FOR_EXECUTION"
+      : run.state === "running" ? attempt?.state === "dispatched" ? "WAITING_FOR_RESPONSE" : attempt?.state === "reserved" ? "PREPARING_RESPONSE" : "PROCESSING"
+      : "NO_PROVISIONAL_CONTENT";
+    const [cursor] = !after ? [] : await tx.select({ sequence: aiEvent.sequence }).from(aiEvent)
+      .where(and(eq(aiEvent.runId, run.id), eq(aiEvent.sequence, after))).limit(1);
+    const cursorReset = !!after && (after > run.version || !cursor);
+    // Expiry and grants can change during asynchronous reads. Discard the
+    // entire response on a late authority change; clients fetch a fresh snapshot.
+    const latest = await authorizeExecution(identity, current.organizationId, "view:ai-history");
+    const grants = (context: AuthContext) => JSON.stringify({ role: context.role, permissions: context.permissions ? [...context.permissions].sort() : null,
+      customRoleId: context.customRoleId, isAdvisor: context.isAdvisor, advisorRole: context.advisorRole });
+    if (grants(latest) !== grants(actor)) throw new AuthError("Run disclosure changed; fetch a fresh snapshot", 409);
+    // Resolve domain records after the execution/cursor and authorization waits,
+    // so those waits cannot release a previously read, now-deleted record link.
+    const steps = [];
+    for (const step of rows.slice(0, value.limit)) steps.push(await stepSummary(tx, latest, step));
+    if (conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Run not found or expired", 404);
+    const progress = {
       run: { id: run.id, conversationId: run.conversationId, state: run.state, version: run.version, code,
         createdAt: run.createdAt, startedAt: run.startedAt, deadlineAt: run.deadlineAt, finishedAt: run.finishedAt,
         stop: stopped ? run.state === "running" ? "requested" : "acknowledged" : "not_requested" },
@@ -106,5 +133,20 @@ export async function getRunProgress(ctx: AuthContext, input: unknown) {
       observation: { persistedOnly: true, workerAvailability: "unknown", pollAfterMs: terminal.has(run.state) ? null : 2000 },
       actions: { canStop: !terminal.has(run.state) && !stopped, canObserve: true, canInspectRecords: steps.some(s => s.records.length > 0), requiresReconciliation: run.state === "reconciliation_required" },
     };
+    return { progress, provisional: { state: provisionalCode === "NO_PROVISIONAL_CONTENT" ? "unavailable" : "provisional", code: provisionalCode, source: "server_status", records: [] },
+      delivery: { mode: "snapshot_poll", next: run.version, cursorReset, executionChanged: after !== run.version || cursorReset, replace: true } };
   });
+}
+
+export async function getRunProgress(ctx: AuthContext, input: unknown) {
+  return (await readRunProgress(ctx, progressSchema.parse(input))).progress;
+}
+
+/** A fresh bounded display snapshot, never execution authority or a text stream.
+ * The whole-response adapter still validates all raw provider JSON before calls
+ * are accepted. Reconnecting reads receipts; it cannot replay any effect. */
+export async function getRunObservation(ctx: AuthContext, input: unknown) {
+  const value = observationSchema.parse(input);
+  const view = await readRunProgress(ctx, progressSchema.parse({ runId: value.runId, limit: 20 }), value.after);
+  return { provisional: view.provisional, confirmed: view.progress, delivery: view.delivery };
 }

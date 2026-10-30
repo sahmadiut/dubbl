@@ -2,11 +2,15 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { wrapTool } from "@/lib/mcp/errors";
 import { submitRunSchema, runIdSchema, eventsSchema, submitRun, getRun, cancelRun, getRunEvents } from "@/lib/ai/run-lifecycle";
-import { getRunProgress, progressSchema } from "@/lib/ai/run-progress";
+import { getRunProgress, progressSchema, getRunObservation, observationSchema } from "@/lib/ai/run-progress";
 import { getRunInput, getRunInputSchema, answerRunInput, answerRunInputSchema } from "@/lib/ai/run-input";
 
-export const AI_RUN_LIFECYCLE_TOOLS = new Set(["submit_ai_run", "get_ai_run", "cancel_ai_run", "get_ai_run_events", "get_ai_run_progress", "get_ai_run_input", "answer_ai_run_input"]);
+export const AI_RUN_LIFECYCLE_TOOLS = new Set(["submit_ai_run", "get_ai_run", "cancel_ai_run", "get_ai_run_events", "get_ai_run_progress", "get_ai_run_observation", "get_ai_run_input", "answer_ai_run_input"]);
 export function registerAiRunTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("get_ai_run_observation", {
+    description: "Observe an own run using its UUID and optional last execution version after. Returns one fresh bounded snapshot: finite server-generated provisional status codes separately from confirmed persisted outcomes and live scoped record links (expense amountMinor strings in explicit currency, USD cents). Always replace the display even if executionChanged is false; grants and records can change independently. Lost/future cursors reset safely. No raw model text/reasoning/arguments, no execution/retry/resume authority, no worker availability claim. Polling works with runtime off and never replays effects. Not model-callable.",
+    inputSchema: observationSchema,
+  }, input => wrapTool(ctx, () => getRunObservation(ctx, input)));
   server.registerTool("get_ai_run_input", {
     description: "Read the own run's bounded pending clarification and live scoped record choices under current history/domain access. Returns inputId/inputVersion and runVersion to answer, or a safe unavailable code. Read works while runtime is disabled; no approval authority or money input. Not model-callable.",
     inputSchema: getRunInputSchema,

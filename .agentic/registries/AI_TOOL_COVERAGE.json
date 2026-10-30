@@ -3,11 +3,11 @@
   "interpretation": "Exhaustive source disposition, not a full feature claim. Every unlisted tool, REST method and UI action is unsupported by chat. Shared domain names and source presence do not prove per-operation parity. Frozen/security/provider operations cannot be enabled by follow-up work without applicable owner authorization. Policies default to deny; this registry does not enable runtime/providers.",
   "counts": {
     "modules": 109,
-    "tools": 815,
-    "apiRoutes": 577,
+    "tools": 816,
+    "apiRoutes": 578,
     "pages": 210,
     "reviewedTools": 7,
-    "unlistedTools": 808
+    "unlistedTools": 809
   },
   "modules": [
     {
@@ -186,6 +186,10 @@
         },
         {
           "name": "get_ai_run_input",
+          "status": "not-allowlisted"
+        },
+        {
+          "name": "get_ai_run_observation",
           "status": "not-allowlisted"
         },
         {
@@ -4616,6 +4620,14 @@
     },
     {
       "source": "app/api/v1/ai/runs/[id]/input/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/observation/route.ts",
       "methods": [
         "GET"
       ],

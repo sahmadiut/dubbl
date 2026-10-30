@@ -16,7 +16,7 @@ let session: unknown;
 mock.module("../../lib/auth", { namedExports: { auth: async () => session } });
 const endpoint = "https://runtime.fixture.invalid/v1/responses";
 type Reply = { body: string; status?: number; beforeEnd?: () => Promise<void> };
-let wire: (request: Record<string, unknown>) => Promise<Reply>, dnsHook: (() => Promise<void>) | undefined, sent = 0;
+let wire: (request: Record<string, unknown>) => Promise<Reply>, dnsHook: (() => Promise<void>) | undefined, sent = 0, abortedRequests = 0;
 const mockFailures: unknown[] = [];
 mock.module("node:dns/promises", { namedExports: { lookup: async () => { await dnsHook?.(); return [{ address: "8.8.8.8", family: 4 }]; } } });
 // Every HTTPS request is intercepted before network access. The production
@@ -26,7 +26,7 @@ mock.module("node:https", { namedExports: { request: (url: URL, options: Request
   assert.equal((options.headers as Record<string, string>).authorization, "Bearer synthetic-runtime-secret");
   options.lookup!(url.hostname, {}, (error, address) => { assert.equal(error, null); assert.equal(address, "8.8.8.8"); });
   const req = new EventEmitter() as EventEmitter & { end: (body: string) => void };
-  const aborted = () => req.emit("error", new Error("PRIVATE_TRANSPORT"));
+  const aborted = () => { abortedRequests++; req.emit("error", new Error("PRIVATE_TRANSPORT")); };
   options.signal?.addEventListener("abort", aborted, { once: true });
   req.end = body => {
     void (async () => {
@@ -115,6 +115,11 @@ async function main() {
   try {
     const off = await enqueue();
     await assert.rejects(runWorker({ signal: new AbortController().signal }), /disabled/);
+    const queuedState = await digest(), queuedView = await observe(off.id);
+    assert.equal(queuedView.confirmed.run.code, "QUEUED");
+    assert.equal(queuedView.provisional.code, "WAITING_FOR_EXECUTION");
+    assert.doesNotMatch(JSON.stringify(queuedView), /queuePosition|estimated|workerAvailable|percent/);
+    assert.equal(await digest(), queuedState);
     assert.equal(sent, 0); assert.equal((await charges(off.id)).length, 0); await mcp("cancel_ai_run", { runId: off.id });
     // Enabled only inside this isolated process, with HTTPS/DNS fully mocked.
     process.env.AI_PROVIDER_CALLS_ENABLED = "true";
@@ -182,6 +187,61 @@ async function main() {
     view = await observe(revoked.id); assert.equal(view.confirmed.steps[0].code, "RESULT_RESTRICTED"); assert.deepEqual(view.confirmed.steps[0].records, []);
     await db.update(customRole).set({ permissions }).where(eq(customRole.id, role.id));
 
+    // AI-031 acceptance: stop authority while a second raw response is still
+    // missing its final byte. The already committed draft remains observable;
+    // a late complete, valid call cannot acquire an operation or erase a charge.
+    for (const action of ["cancel", "policy", "kill"] as const) {
+      const stopped = await enqueue(); turns = 0;
+      let partial = false, release!: () => void;
+      const gate = new Promise<void>(resolve => { release = resolve; });
+      const aborts: number = abortedRequests, requests: number = sent;
+      await work(stopped.id, async () => ({ body: response([call()]), ...(++turns === 2 ? { beforeEnd: async () => { partial = true; await gate; } } : {}) }), async () => {
+        try {
+          await until(() => partial, `${action} pending response`);
+          const pending = await observe(stopped.id);
+          assert.equal(pending.provisional.code, "WAITING_FOR_RESPONSE");
+          assert.equal(pending.confirmed.steps[0].records[0].amountMinor, "1250");
+          if (action === "cancel") await mcp("cancel_ai_run", { runId: stopped.id });
+          if (action === "policy") await db.update(aiToolPolicy).set({ enabled: false }).where(eq(aiToolPolicy.organizationId, org.id));
+          if (action === "kill") process.env.AI_RUNTIME_KILL_SWITCH = "true";
+          await until(() => abortedRequests > aborts, `${action} raw adapter abort`);
+          await until(async () => !["queued", "running"].includes((await row(stopped.id)).state), `${action} fenced closure`);
+        } finally { release(); }
+      });
+      process.env.AI_RUNTIME_KILL_SWITCH = "false";
+      await db.update(aiToolPolicy).set({ enabled: true }).where(eq(aiToolPolicy.organizationId, org.id));
+      const draft = await draftReceipt(stopped.id);
+      assert.equal(turns, 2); assert.equal(sent - requests, 2);
+      assert.equal((await row(stopped.id)).state, action === "cancel" ? "cancelled" : "reconciliation_required");
+      const associations = await db.select().from(aiProviderCall).where(eq(aiProviderCall.runId, stopped.id));
+      assert.deepEqual(associations.map(value => value.operationKey), [draft.operationKey]);
+      assert.deepEqual((await charges(stopped.id)).map(value => value.state).sort(), ["settled", "unknown"]);
+      assert.ok((await charges(stopped.id)).filter(value => value.state === "unknown").every(value => BigInt(value.chargedTokens) > 0n && value.chargedCost === value.reservedCost));
+      const state = await digest(), late = await observe(stopped.id, 2147483647);
+      assert.equal(late.confirmed.outcome.code, action === "cancel" ? "PARTIAL_COMPLETION" : "RECONCILIATION_REQUIRED");
+      assert.equal(late.confirmed.steps[0].records[0].id, draft.recordIds[0]);
+      assert.equal(await digest(), state);
+    }
+
+    // A fresh poller resuming an answered clarification obeys a stricter live
+    // budget before transmission, retaining both earlier effects and usage.
+    const limited = await enqueue(); turns = 0;
+    await work(limited.id, async () => ({ body: ++turns === 1 ? response([call()]) : response([text(JSON.stringify({ kind: "clarification", question: "Which date?" }))]) }));
+    const original = await row(limited.id), originalAttempts = await attempts(limited.id), originalCharges = await charges(limited.id);
+    const pending = await mcp("get_ai_run_input", { runId: limited.id });
+    await mcp("answer_ai_run_input", { runId: limited.id, inputId: pending.input.id, inputVersion: pending.input.inputVersion, expectedRunVersion: pending.runVersion, requestKey: "limited-answer", answer: { kind: "text", text: "2026-10-30" } });
+    await db.update(aiBudget).set({ runTokens: "0" }).where(eq(aiBudget.organizationId, org.id));
+    const requests: number = sent;
+    await work(limited.id, async () => { assert.fail("stricter live budget transmitted a request"); });
+    assert.equal(sent, requests); assert.equal((await row(limited.id)).state, "failed");
+    assert.equal((await row(limited.id)).deadlineAt!.toISOString(), original.deadlineAt!.toISOString());
+    assert.deepEqual((await row(limited.id)).config, original.config);
+    assert.deepEqual(await attempts(limited.id), originalAttempts);
+    assert.deepEqual(await charges(limited.id), originalCharges);
+    await draftReceipt(limited.id);
+    assert.equal((await observe(limited.id)).confirmed.outcome.code, "PARTIAL_COMPLETION");
+    await db.update(aiBudget).set({ runTokens: "100000" }).where(eq(aiBudget.organizationId, org.id));
+
     process.env.AI_PROVIDER_CALLS_ENABLED = "false"; process.env.AI_RUNTIME_ENABLED = "false";
     const state = await digest(), count = sent;
     for (const after of [0, view.delivery.next, 2147483647]) await observe(revoked.id, after);
@@ -189,6 +249,7 @@ async function main() {
     const messages = await db.select().from(aiMessage);
     assert.doesNotMatch(JSON.stringify(messages.filter(message => message.role === "assistant")), /PRIVATE_|PAID|forged.invalid|synthetic-runtime-secret/);
     console.log("AI-033 raw-adapter polling acceptance verified");
+    console.log("AI-031 delayed-response stop and stricter-budget acceptance verified");
   } finally { await client.close(); await server.close(); await db.$client.end(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

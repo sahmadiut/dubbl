@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { applyCurrent, withDatabase } from "./fixtures";
 
-test("AI-033 polling through encrypted raw adapter, protocol, metering, tools and observation", async () => {
+test("AI-033/031 raw-adapter polling, metering, observation and delayed-authority recovery", async () => {
   await withDatabase(async (_pool, url) => {
     applyCurrent(url);
     const result = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "tests/integration/ai-runtime-acceptance-worker.ts"], {
@@ -12,5 +12,6 @@ test("AI-033 polling through encrypted raw adapter, protocol, metering, tools an
     });
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     assert.match(result.stdout, /AI-033 raw-adapter polling acceptance verified/);
+    assert.match(result.stdout, /AI-031 delayed-response stop and stricter-budget acceptance verified/);
   });
 });

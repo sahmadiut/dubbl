@@ -71,7 +71,8 @@ run IDs, prompts, arguments, secrets, raw exceptions or private reasoning. Exist
 REST/MCP progress/input/events remain observation/answer contracts; connecting
 or reconnecting never starts this process or dispatches effects. The matching
 provisional snapshot contract is documented in [AI_RUN_OBSERVATION](AI_RUN_OBSERVATION.md).
-AI-033/031/023/007 retain independent acceptance.
+AI-023/007 retain independent acceptance; completed worker integration checks are
+described below and do not accept those parents.
 
 ## Qualification
 
@@ -90,6 +91,17 @@ settled plus unknown charges and no duplicate draft. Another fresh-process
 continuation answers the original clarification without resetting its limits.
 REST/MCP reconnects remain read-only with runtime off, including stale/missing
 cursors and revoked grants. See [acceptance evidence](../evidence/AI-036-attempt-1.md).
+
+AI-033 and AI-031 also exercise the encrypted raw adapter with mocked DNS/HTTPS,
+without a transport override in the poller. AI-031 withholds a second response's
+final JSON byte after a committed draft, then cancels the run, disables policy or
+activates the kill switch. The adapter aborts; late valid calls create no further
+operation, the exact draft remains inspectable, and unknown usage stays charged.
+A new polling invocation after clarification also obeys a stricter live budget
+before transmission, retaining original attempts, charges, configuration and
+deadline. Queued observation with provider calls disabled reports only waiting
+for execution, without asserting worker availability. See the
+[AI-031 integration evidence](../evidence/AI-031-attempt-1.md).
 
 Live provider entitlement, prices/tokenizers, hosting, PostgreSQL16/hosted CI,
 raw token streaming, browser/native-Persian UX and rollout are unqualified.

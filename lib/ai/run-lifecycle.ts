@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { aiConversation, aiRun, aiRunInput, aiMessage, aiEvent, aiStep, aiProvider, aiProviderConfig, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
+import { eraseActionBatches } from "./action-batch-retention";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { boundedPayload, getConversation, purgeExpiredContent } from "./persistence";
 import { discoverTools } from "./tool-registry";
@@ -114,6 +115,7 @@ export async function cancelRun(ctx: AuthContext, input: unknown) {
     const state = executing && run.state === "running" ? "running" : uncertain || executing ? "reconciliation_required" : "cancelled";
     const changed = await event(tx, run, state, "stop_requested", { cancelRequestedAt: new Date() });
     await tx.update(aiRunInput).set({ state: "cancelled", question: null, candidates: null }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
+    await eraseActionBatches(tx, run.id, "cancelled");
     await closeProviderAttempts(tx, run);
     await audit(tx, current, run.id, "ai.run.stop_requested");
     return publicRun(changed);
@@ -182,7 +184,7 @@ export async function heartbeatRun(runId: string, leaseToken: string) {
 export async function maintainRuns() {
   const result = await db.transaction(async tx => {
     const now = new Date();
-    const runs = await tx.select().from(aiRun).where(sql`(${aiRun.state} = 'running' and (${aiRun.leaseExpiresAt} <= ${now} or ${aiRun.deadlineAt} <= ${now})) or (${aiRun.state} = 'queued' and ${aiRun.createdAt} <= ${new Date(now.getTime() - QUEUE_MS)}) or (${aiRun.state} = 'awaiting_input' and (${aiRun.deadlineAt} <= ${now} or exists (select 1 from ai_run_input where run_id = ${aiRun.id} and (state = 'expired' or (state = 'pending' and expires_at <= ${now}))) or exists (select 1 from ai_conversation where id = ${aiRun.conversationId} and (deleted_at is not null or content_expires_at <= ${now}))))`).limit(100).for("update", { skipLocked: true });
+    const runs = await tx.select().from(aiRun).where(sql`(${aiRun.state} = 'running' and (${aiRun.leaseExpiresAt} <= ${now} or ${aiRun.deadlineAt} <= ${now})) or (${aiRun.state} = 'queued' and ${aiRun.createdAt} <= ${new Date(now.getTime() - QUEUE_MS)}) or (${aiRun.state} = 'awaiting_input' and (${aiRun.deadlineAt} <= ${now} or exists (select 1 from ai_run_input where run_id = ${aiRun.id} and (state = 'expired' or (state = 'pending' and expires_at <= ${now}))) or exists (select 1 from ai_conversation where id = ${aiRun.conversationId} and (deleted_at is not null or content_expires_at <= ${now})))) or (${aiRun.state} = 'awaiting_approval' and (${aiRun.deadlineAt} <= ${now} or exists (select 1 from ai_action_batch where run_id = ${aiRun.id} and (state = 'expired' or (state = 'pending' and expires_at <= ${now}))) or exists (select 1 from ai_conversation where id = ${aiRun.conversationId} and (deleted_at is not null or content_expires_at <= ${now}))))`).limit(100).for("update", { skipLocked: true });
     for (const run of runs) {
       const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id)).for("update");
       const uncertain = steps.some(s => s.state === "executing" || s.state === "uncertain");
@@ -190,9 +192,13 @@ export async function maintainRuns() {
       // Runtime always locks a run before its step/attempt. Stale callbacks may
       // settle usage but cannot restore an executable lease or replay effects.
       await closeProviderAttempts(tx, run);
-      const expired = run.state === "awaiting_input" || run.createdAt.getTime() + QUEUE_MS <= now.getTime() || run.deadlineAt && run.deadlineAt <= now;
+      const expired = run.state === "awaiting_input" || run.state === "awaiting_approval" || run.createdAt.getTime() + QUEUE_MS <= now.getTime() || run.deadlineAt && run.deadlineAt <= now;
       const state = uncertain ? "reconciliation_required" : run.cancelRequestedAt ? "cancelled" : expired ? "expired" : "queued";
       await event(tx, run, state, "recovered");
+      if (state === "expired" || state === "cancelled") {
+        await tx.update(aiStep).set({ state: "skipped", version: sql`${aiStep.version} + 1`, updatedAt: now }).where(and(eq(aiStep.runId, run.id), eq(aiStep.state, "prepared")));
+        await eraseActionBatches(tx, run.id, state);
+      }
       await tx.update(aiRunInput).set({ state: "expired", question: null, candidates: null }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
     }
     return { recovered: runs.length };

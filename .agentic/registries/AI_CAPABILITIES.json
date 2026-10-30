@@ -3,8 +3,8 @@
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
     "modules": 110,
-    "tools": 817,
-    "apiRoutes": 579,
+    "tools": 819,
+    "apiRoutes": 581,
     "pages": 210
   },
   "modules": [
@@ -58,7 +58,9 @@
       "module": "ai-action-previews",
       "source": "lib/mcp/tools/ai-action-previews.ts",
       "tools": [
-        "preview_ai_journal_post"
+        "get_ai_action_batch",
+        "preview_ai_journal_post",
+        "revise_ai_action_batch"
       ],
       "apiImports": [
         "@/lib/api/auth-context"
@@ -5949,6 +5951,19 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "get_ai_action_batch",
+      "module": "ai-action-previews",
+      "line": 8,
+      "description": "Read the complete current own-run journal action proposal with live history, AI and domain permissions and resource checks. Input runId UUID. Returns version, fixed expiry, selection/dependencies, step references and every proposed business effect with exact per-currency minor-unit strings (USD cents), or a finite unavailable/stale/expired code. Works with runtime disabled; reads never refresh expiry, approve, queue or execute. No raw execution arguments or model approval authority. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/action-batches#getActionBatch",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "get_ai_conversation",
       "module": "ai-history",
       "line": 18,
@@ -9959,7 +9974,7 @@
     {
       "name": "preview_ai_journal_post",
       "module": "ai-action-previews",
-      "line": 7,
+      "line": 16,
       "description": "Read a business preview for an existing organization-owned manual draft journal UUID under live use:ai, view:data and post:entries permissions. Returns before/after status, account lines, exact minor-unit strings grouped by currency (USD cents), scheduled reversal, business approval observation, resource fingerprint and five-minute display expiry. Optional expectedResourceVersion detects stale content; omit to refresh. PREVIEW_ONLY never approves, posts, queues or changes a record. Approval workflow conditions are not evaluated. Unsupported sources/invalid/oversized records fail closed. Not available to the ordinary chat model.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -10820,6 +10835,19 @@
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/api/expense-claims#reverseExpenseClaim",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "revise_ai_action_batch",
+      "module": "ai-action-previews",
+      "line": 12,
+      "description": "Explicitly replace an own pending journal proposal's complete items, selection and dependencies using exact batch/run versions and an idempotency key. Validates current resources and permission/configuration; invalidates prior preview/steps without extending original expiry/deadline. Returns a stable metadata receipt; retry identical input after a lost response, then get_ai_action_batch. Never approves, queues or executes. Arguments contain existing journal UUIDs, no amount input; selected totals use exact currency minor strings (USD cents). Initial proposal creation is trusted-worker-only; this tool is not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/action-batches#reviseActionBatch",
         "@/lib/mcp/errors#wrapTool"
       ],
       "directDatabase": false,
@@ -13272,6 +13300,20 @@
       "methods": [
         "GET",
         "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/action-batch/revise/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/action-batch/route.ts",
+      "methods": [
+        "GET"
       ],
       "domain": "ai"
     },

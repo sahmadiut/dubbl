@@ -169,6 +169,13 @@
       "when": 1793231792269,
       "tag": "0023_pink_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793337971381,
+      "tag": "0024_serious_chat",
+      "breakpoints": true
     }
   ]
 }

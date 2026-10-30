@@ -558,3 +558,17 @@ execution authority. Ordinary chat retains its seven-operation automatic catalog
 posting/payment/deletion/external sending are unavailable until their separately
 reviewed adapters and approval execution boundary are complete. No provider,
 security, role, Stripe or production-activation scope is expanded.
+
+
+## AI-042 durable proposal and adapter slices (2026-10-30)
+
+- [AI-045](../tasks/AI-045.md): durable scoped journal action batches, complete
+  explicit selection/dependencies, shared reads/revision and lifecycle retention;
+  depends on AI-041, with no approval or execution authority.
+- [AI-046](../tasks/AI-046.md): finite additional posting/payment/deletion/sending
+  adapters and existing business-policy evaluation; depends on AI-045.
+
+AI-042 retains every original criterion and independent combined acceptance;
+AI-008 remains its outer parent, and AI-043/044 decisions/dispatch stay separate.
+See [durable batch contract](../docs/AI_ACTION_BATCHES.md). No Stripe/security,
+provider/model catalog or production-activation scope is expanded.

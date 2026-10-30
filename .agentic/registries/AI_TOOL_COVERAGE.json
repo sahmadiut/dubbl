@@ -3,11 +3,11 @@
   "interpretation": "Exhaustive source disposition, not a full feature claim. Every unlisted tool, REST method and UI action is unsupported by chat. Shared domain names and source presence do not prove per-operation parity. Frozen/security/provider operations cannot be enabled by follow-up work without applicable owner authorization. Policies default to deny; this registry does not enable runtime/providers.",
   "counts": {
     "modules": 110,
-    "tools": 817,
-    "apiRoutes": 579,
+    "tools": 819,
+    "apiRoutes": 581,
     "pages": 210,
     "reviewedTools": 7,
-    "unlistedTools": 810
+    "unlistedTools": 812
   },
   "modules": [
     {
@@ -97,7 +97,15 @@
       "disposition": "excluded-from-chat-security-provider-or-frozen-scope",
       "tools": [
         {
+          "name": "get_ai_action_batch",
+          "status": "not-allowlisted"
+        },
+        {
           "name": "preview_ai_journal_post",
+          "status": "not-allowlisted"
+        },
+        {
+          "name": "revise_ai_action_batch",
           "status": "not-allowlisted"
         }
       ]
@@ -4610,6 +4618,22 @@
       "methods": [
         "GET",
         "POST"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/action-batch/revise/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/ai/runs/[id]/action-batch/route.ts",
+      "methods": [
+        "GET"
       ],
       "domain": "ai",
       "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"

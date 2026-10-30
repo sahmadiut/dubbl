@@ -7,6 +7,7 @@ import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity, type ExecutionIdentity } from "@/lib/api/execution-identity";
 import { ALL_PERMISSIONS, hasPermission } from "@/lib/plans";
 import { closeProviderAttempts } from "./provider-recovery";
+import { eraseActionBatches, expireActionBatchContent } from "./action-batch-retention";
 
 const DAY = 86400000;
 const terminal = new Set<AiRunState>(["succeeded", "failed", "cancelled", "expired"]);
@@ -193,6 +194,7 @@ export async function deleteConversation(ctx: AuthContext, id: string) {
     const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, id)).for("update");
     for (const run of runs) {
       await closeProviderAttempts(tx, run);
+      await eraseActionBatches(tx, run.id, "cancelled");
       await tx.update(aiRunInput).set({ question: null, candidates: null, answer: null }).where(eq(aiRunInput.runId, run.id));
       await tx.update(aiRunInput).set({ state: "cancelled" }).where(and(eq(aiRunInput.runId, run.id), eq(aiRunInput.state, "pending")));
       const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id));
@@ -222,6 +224,7 @@ export async function purgeExpiredContent(now = new Date()) {
       const runs = await tx.select().from(aiRun).where(eq(aiRun.conversationId, c.id)).for("update");
       for (const r of runs) {
         await closeProviderAttempts(tx, r);
+        await eraseActionBatches(tx, r.id, "expired");
         await tx.update(aiRunInput).set({ question: null, candidates: null, answer: null }).where(eq(aiRunInput.runId, r.id));
         await tx.update(aiRunInput).set({ state: "expired" }).where(and(eq(aiRunInput.runId, r.id), eq(aiRunInput.state, "pending")));
         const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, r.id));
@@ -232,6 +235,7 @@ export async function purgeExpiredContent(now = new Date()) {
       if (c.metadataExpiresAt <= now && runs.every(r => terminal.has(r.state)) && !unsettled.length) await tx.delete(aiConversation).where(eq(aiConversation.id, c.id));
     }
     await tx.update(aiApproval).set({ state: "expired", preview: null }).where(and(eq(aiApproval.state, "pending"), lte(aiApproval.expiresAt, now)));
+    await expireActionBatchContent(tx, now);
     return { processed: conversations.length };
   });
 }

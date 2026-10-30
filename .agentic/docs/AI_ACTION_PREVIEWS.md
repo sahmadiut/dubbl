@@ -5,6 +5,11 @@ integration parent; AI-042 supplies additional reviewed sensitive adapters and
 durable selected batches, AI-043 explicit decisions, and AI-044 approved execution.
 No sensitive operation was added to the seven-operation automatic model catalog.
 
+AI-045 adds [durable journal proposal batches](AI_ACTION_BATCHES.md), shared own
+reads and explicit revisions. AI-046 expands domain adapters and policy checks;
+AI-042 remains their integration parent. Batches remain preview-only; this
+document's standalone AI-041 adapter still creates no durable proposal itself.
+
 ## Manual journal posting observation
 
 `POST /api/v1/ai/previews/journal-post` and MCP `preview_ai_journal_post` call

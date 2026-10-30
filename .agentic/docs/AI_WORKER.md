@@ -71,8 +71,8 @@ run IDs, prompts, arguments, secrets, raw exceptions or private reasoning. Exist
 REST/MCP progress/input/events remain observation/answer contracts; connecting
 or reconnecting never starts this process or dispatches effects. The matching
 provisional snapshot contract is documented in [AI_RUN_OBSERVATION](AI_RUN_OBSERVATION.md).
-AI-023/007 retain independent acceptance; completed worker integration checks are
-described below and do not accept those parents.
+AI-007 retains independent acceptance; completed worker integration checks are
+described below and do not accept that parent.
 
 ## Qualification
 
@@ -102,6 +102,15 @@ before transmission, retaining original attempts, charges, configuration and
 deadline. Queued observation with provider calls disabled reports only waiting
 for execution, without asserting worker availability. See the
 [AI-031 integration evidence](../evidence/AI-031-attempt-1.md).
+
+AI-023 also combines the real raw adapter/poller with REST clarification and
+concurrent MCP acknowledgement retries. A lost answer response queues the same
+run once, preserving the original attempts, charges, draft and deadline. After
+completion, retrying the same answer returns its historical receipt even with
+runtime off; a different answer conflicts. REST/MCP reconnect and content-free
+events do not mutate runs, input, messages, approvals, call associations, charges
+or business records. Clarification text grants no approval authority. See the
+[AI-023 integration evidence](../evidence/AI-023-attempt-1.md).
 
 Live provider entitlement, prices/tokenizers, hosting, PostgreSQL16/hosted CI,
 raw token streaming, browser/native-Persian UX and rollout are unqualified.

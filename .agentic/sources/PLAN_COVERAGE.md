@@ -539,3 +539,22 @@ Owner-requested planning review: [experience contract](../docs/AI_PRODUCT_EXPERI
 | [AI-028](../tasks/AI-028.md) | Integrated usability/accessibility qualification | AI-009, AI-011, AI-024, AI-025, AI-014..021 |
 
 AI-009 retains its original criteria and independently integrates AI-026/027. AI-023/007 own consumable runtime state and clarification contracts; AI-008 owns concrete previews/approval services; AI-011 supplies price/budget management and meaningful usage views. AI-014..021 retain finite operation scope with domain-specific journeys and structured results. AI-012 now depends on AI-028; AI-013 therefore transitively waits for every AI task, including domain coverage previously absent from its dependency closure. Phase order and all existing scope/qualification gates are preserved.
+
+
+## AI-008 action approval implementation slices (2026-10-30)
+
+AI-008 retains all original acceptance and independent combined integration.
+
+| Child | Outcome | Prerequisite |
+|---|---|---|
+| [AI-041](../tasks/AI-041.md) | Permission-scoped read-only manual journal posting preview | AI-007 |
+| [AI-042](../tasks/AI-042.md) | Additional finite sensitive adapters and durable versioned selected batches | AI-041 |
+| [AI-043](../tasks/AI-043.md) | Explicit approval/rejection decisions and replay-safe receipts | AI-042 |
+| [AI-044](../tasks/AI-044.md) | Fenced approved execution, dependencies and uncertain-effect recovery | AI-043 |
+
+See [action preview contract](../docs/AI_ACTION_PREVIEWS.md). The first preview
+returns structured business effects and an observation fingerprint, never
+execution authority. Ordinary chat retains its seven-operation automatic catalog;
+posting/payment/deletion/external sending are unavailable until their separately
+reviewed adapters and approval execution boundary are complete. No provider,
+security, role, Stripe or production-activation scope is expanded.

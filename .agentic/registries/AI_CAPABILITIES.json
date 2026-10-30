@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 109,
-    "tools": 816,
-    "apiRoutes": 578,
+    "modules": 110,
+    "tools": 817,
+    "apiRoutes": 579,
     "pages": 210
   },
   "modules": [
@@ -51,6 +51,16 @@
       ],
       "apiImports": [
         "@/lib/api/admin-organization",
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-action-previews",
+      "source": "lib/mcp/tools/ai-action-previews.ts",
+      "tools": [
+        "preview_ai_journal_post"
+      ],
+      "apiImports": [
         "@/lib/api/auth-context"
       ]
     },
@@ -9947,6 +9957,19 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "preview_ai_journal_post",
+      "module": "ai-action-previews",
+      "line": 7,
+      "description": "Read a business preview for an existing organization-owned manual draft journal UUID under live use:ai, view:data and post:entries permissions. Returns before/after status, account lines, exact minor-unit strings grouped by currency (USD cents), scheduled reversal, business approval observation, resource fingerprint and five-minute display expiry. Optional expectedResourceVersion detects stale content; omit to refresh. PREVIEW_ONLY never approves, posts, queues or changes a record. Approval workflow conditions are not evaluated. Unsupported sources/invalid/oversized records fail closed. Not available to the ordinary chat model.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/action-preview#previewJournalPost",
+        "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "preview_bank_statement_import",
       "module": "bank-imports",
       "line": 11,
@@ -13188,6 +13211,13 @@
       "source": "app/api/v1/ai/conversations/route.ts",
       "methods": [
         "GET",
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/previews/journal-post/route.ts",
+      "methods": [
         "POST"
       ],
       "domain": "ai"

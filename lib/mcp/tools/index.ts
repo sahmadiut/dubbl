@@ -1,3 +1,4 @@
+import { registerAiActionPreviewTools } from "./ai-action-previews";
 import { registerAiUsageTools } from "./ai-usage";
 import { registerAiToolPolicyTools } from "./ai-tool-policy";
 import { registerAiRunTools } from "./ai-runs";
@@ -220,4 +221,5 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerAiUsageTools(server, ctx);
   registerAiToolPolicyTools(server, ctx);
   registerAiRunTools(server, ctx);
+  registerAiActionPreviewTools(server, ctx);
 }

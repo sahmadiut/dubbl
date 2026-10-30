@@ -67,3 +67,9 @@ qualification. The harness explicitly queues approved runs using fixture SQL to
 exercise real lease claiming; no application resume behavior is implied. No live
 provider, domain execution, external sending, UI/native Persian, deployment or
 production activation is qualified. Runtime/provider rollout defaults remain off.
+
+Subsequent domain slices: AI-052 qualifies [atomic journal effects](AI_JOURNAL_EXECUTION.md)
+and AI-053 qualifies [atomic cash settlements](AI_SETTLEMENT_EXECUTION.md).
+Those contracts retain the original one-time consumption fence and explicitly
+bound their additional domain qualification. AI-054 delivery, AI-050 combined
+acceptance and AI-051 resume/worker orchestration remain separate.

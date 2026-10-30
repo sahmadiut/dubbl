@@ -374,8 +374,15 @@ export function createSettlementPayment(ctx: AuthContext, input: unknown, reques
   return settle(ctx, { ...parsed, ...amounts }, "create", request);
 }
 export function payDocument(ctx: AuthContext, kind: "invoice" | "bill", id: string, input: unknown, request?: Request) {
+  return payDocumentWithExecutor(ctx, kind, id, input, request);
+}
+/** Trusted orchestration commits the cash effect and its receipt together. */
+export function payDocumentInTransaction(ctx: AuthContext, kind: "invoice" | "bill", id: string, input: unknown, tx: Tx) {
+  return payDocumentWithExecutor(ctx, kind, id, input, undefined, tx);
+}
+function payDocumentWithExecutor(ctx: AuthContext, kind: "invoice" | "bill", id: string, input: unknown, request?: Request, tx?: Tx) {
   requireRole(ctx, "manage:payments"); z.string().uuid().parse(id);
   const parsed = paymentPaySchema.parse(input), amount = creditAmount(parsed);
   return settle(ctx, { ...parsed, amount, type: kind === "invoice" ? "received" : "made",
-    allocations: [{ documentType: kind, documentId: id, amount }] }, `pay:${kind}:${id}`, request);
+    allocations: [{ documentType: kind, documentId: id, amount }] }, `pay:${kind}:${id}`, request, tx);
 }

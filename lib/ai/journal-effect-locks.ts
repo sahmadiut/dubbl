@@ -32,3 +32,24 @@ export async function lockJournalEffect(tx: Tx, deletion: boolean) {
   const ordered = [...tables].sort((a, b) => getTableConfig(a).name.localeCompare(getTableConfig(b).name));
   await tx.execute(sql`lock table ${sql.join(ordered, sql`, `)} in share mode`);
 }
+
+/** Serialize cash documents/history, recognition, rates, numbering and audit
+ * provenance against ordinary SQL writers, including insertion of absent rows.
+ * Use the journal adapter's first lock order. These global locks intentionally
+ * favor correctness; lock/deadlock failures never authorize an automatic retry.
+ */
+export async function lockSettlementEffect(tx: Tx) {
+  await tx.execute(sql`set local lock_timeout = '5s'`);
+  await tx.execute(sql`set local statement_timeout = '10s'`);
+  await tx.execute(sql`lock table ${schema.journalEntry}, ${schema.journalLine} in share row exclusive mode`);
+  await tx.execute(sql`lock table ${schema.organization}, ${schema.invoice}, ${schema.bill}, ${schema.payment}, ${schema.paymentAllocation}, ${schema.numberSequence}, ${schema.auditLog} in share row exclusive mode`);
+  const tables = [schema.users, schema.member, schema.customRole, schema.advisorAccess,
+    schema.apiKey, schema.mcpAccessToken, schema.subscription,
+    schema.aiProvider, schema.aiProviderConfig, schema.aiToolPolicy,
+    schema.chartAccount, schema.costCenter, schema.project, schema.fiscalYear, schema.periodLock,
+    schema.approvalWorkflow, schema.approvalWorkflowStep, schema.approvalRequest, schema.approvalAction,
+    schema.contact, schema.bankAccount, schema.exchangeRate, schema.invoiceLine, schema.billLine,
+    schema.creditNote, schema.debitNote, schema.customerCredit];
+  tables.sort((a, b) => getTableConfig(a).name.localeCompare(getTableConfig(b).name));
+  await tx.execute(sql`lock table ${sql.join(tables, sql`, `)} in share mode`);
+}

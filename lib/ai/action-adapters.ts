@@ -81,9 +81,16 @@ async function observe<T>(ctx: AuthContext, action: ActionItem["action"], read: 
 const window = () => { const observedAt = new Date(); return { observedAt: observedAt.toISOString(), expiresAt: new Date(observedAt.getTime() + 300000).toISOString() }; };
 type Amount = { currencyCode: string; debitAmountMinor: string; creditAmountMinor: string };
 
-export async function previewSettlement(ctx: AuthContext, input: unknown) {
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+/** Effect callers supply a transaction with the complete settlement lock set. */
+export function previewSettlementInTransaction(ctx: AuthContext, input: unknown, tx: Tx) {
+  return settlementPreview(ctx, input, tx);
+}
+export function previewSettlement(ctx: AuthContext, input: unknown) { return settlementPreview(ctx, input); }
+async function settlementPreview(ctx: AuthContext, input: unknown, executor?: Tx) {
   const { expectedResourceVersion, ...args } = settlementPreviewSchema.parse(input);
-  return observe(ctx, "settle_document", current => db.transaction(async tx => {
+  return observe(ctx, "settle_document", current => {
+    const read = async (tx: Tx) => {
     const [org] = await tx.select().from(organization).where(and(eq(organization.id, current.organizationId), isNull(organization.deletedAt)));
     if (!org) throw new AuthError("Organization not found", 404);
     const base = currencyCodeSchema.parse(org.defaultCurrency ?? "USD"), amount = Number(args.amountMinor);
@@ -109,7 +116,9 @@ export async function previewSettlement(ctx: AuthContext, input: unknown) {
       effects: ["records_cash_settlement", "creates_payment_and_allocation", "posts_balanced_settlement_journal", "changes_document_outstanding_balance", "posted_history_requires_reversal"],
       businessApproval, authority: "preview_only", canApprove: false, recovery: ["inspect_record", "refresh_preview"] };
     bounded(preview); return { code: "PREVIEW_ONLY", preview, recovery: ["inspect_record", "refresh_preview"] };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" }));
+    };
+    return executor ? read(executor) : db.transaction(read, { isolationLevel: "repeatable read", accessMode: "read only" });
+  });
 }
 
 export async function previewInvoiceEmail(ctx: AuthContext, input: unknown) {

@@ -3,8 +3,10 @@
 AI-038, 2026-10-29. `lib/ai/executor.ts` exports the internal
 `executeRun(runId, lease, transport?, options?)` entrypoint for one already claimed
 run. It neither claims nor polls, renews leases, starts a process, enables flags,
-or exposes dispatch through REST/MCP. AI-036 owns that process integration;
-AI-035 retains independent acceptance of all original integration criteria.
+or exposes dispatch through REST/MCP. The explicit polling process and lifecycle
+are documented in [AI_WORKER](AI_WORKER.md). AI-035/036 supply the completed local
+executor and polling/observation integration evidence; AI-031/023/007 retain
+their independent integration acceptance.
 
 ## Authority and context
 
@@ -93,7 +95,18 @@ strict protocol decoder. Administrative probes retain their parsed-object API.
 Tests exercise actual REST handlers, registered linked MCP business tools and
 independent disposable PostgreSQL assertions. DNS/HTTPS are mocked for raw
 adapter tests, including split buffers, duplicate keys, invalid UTF-8, overflow,
-redirects, compression and disclosure changes during DNS. No live account/model,
-entitlement, tokenizer, actual pricing, hosting, polling/heartbeat/shutdown,
-provisional streaming, browser/native-Persian UX, deployment or rollout is
-qualified. Existing default-off flags and Stripe remain unchanged.
+redirects, compression and disclosure changes during DNS.
+
+AI-033 independently composes the actual polling runner and encrypted-credential
+raw adapter with mocked HTTPS/DNS, real protocol/usage services, registered MCP
+business effects and REST/MCP observation. Its combined fixture covers competing
+pollers, dependent exact-money drafts, clarification/resume, charged HTTP503/429
+retry limits, partial-response withholding, sensitive/duplicate/unknown/oversized
+response rejection, post-DNS revocation and runtime-off reconnect without writes.
+Related process fixtures exercise crash/restart, bounded shutdown and known
+effects surviving cancellation. See [AI-033 evidence](../evidence/AI-033-attempt-1.md).
+
+These are local deterministic checks. No live account/model, entitlement,
+tokenizer, actual pricing, deployed host/supervisor/POSIX signals, raw token
+streaming, browser/native-Persian UX, PostgreSQL16/hosted CI, deployment or rollout
+is qualified. Existing default-off flags and Stripe remain unchanged.

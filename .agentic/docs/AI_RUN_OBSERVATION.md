@@ -64,8 +64,12 @@ existing cancellation, receipt and no-replay behavior.
 
 The shared reader locks conversation then run, refreshes authorization after
 writer waits, bounds step history, checks domain scope on every read and rejects
-expiry or changed grants before releasing a response. No new persistence,
-migration, usage reservation, deadline, price or ceiling is introduced.
+expiry or changed grants before releasing a response. Its final grant check runs
+after domain records resolve: a table writer delaying those reads cannot release
+records under grants revoked during the wait. REST returns 409 and MCP returns
+an error without record details; the next snapshot uses current permissions.
+No new persistence, migration, usage reservation, deadline, price or ceiling is
+introduced.
 
 ## Qualification
 
@@ -78,7 +82,12 @@ record changes, foreign scope, actual writer waits, expiry, stale leases,
 Existing worker/executor/protocol fixtures cover additional raw faults,
 clarification, ceiling preservation and recovery.
 
-This implementation does not activate AI. AI-036 retains independent integration
-acceptance, along with AI-033/031/023/007. Live provider/account/model/tokenizer/
+AI-036 combined local acceptance additionally exercises fresh-process
+clarification/resume, known-effect crash/recovery, graceful stop and reconnect
+without replay, plus late grant revocation during domain reads through both REST
+and MCP. See [acceptance evidence](../evidence/AI-036-attempt-1.md).
+
+This implementation does not activate AI. AI-033/031/023/007 retain independent
+integration acceptance. Live provider/account/model/tokenizer/
 price, deployed process/supervisor, PostgreSQL16/hosted CI, UI/native-Persian,
 token streaming, deployment and rollout qualification remain outside this task.

@@ -69,8 +69,9 @@ remain separate obligations. Shutdown itself is not a user cancellation request.
 Only finite content-free AI_WORKER_* event names are printed. Events expose no
 run IDs, prompts, arguments, secrets, raw exceptions or private reasoning. Existing
 REST/MCP progress/input/events remain observation/answer contracts; connecting
-or reconnecting never starts this process or dispatches effects. Provisional
-streaming remains AI-040; AI-036/033/031/023/007 retain independent acceptance.
+or reconnecting never starts this process or dispatches effects. The matching
+provisional snapshot contract is documented in [AI_RUN_OBSERVATION](AI_RUN_OBSERVATION.md).
+AI-033/031/023/007 retain independent acceptance.
 
 ## Qualification
 
@@ -82,5 +83,13 @@ budget/rate denial, blocked business writes, bounded drain, separate-process
 graceful stop and kill/restart. Windows process tests use IPC to trigger the same
 AbortController shutdown path because Windows SIGTERM terminates a child directly;
 POSIX signal delivery and the deployed host/supervisor still need qualification.
+The independent AI-036 combined fixture observes a committed draft in a pending
+provider turn, kills that worker and starts a new polling process. It verifies
+unchanged operation/attempt identities, original snapshots/deadline/reservations,
+settled plus unknown charges and no duplicate draft. Another fresh-process
+continuation answers the original clarification without resetting its limits.
+REST/MCP reconnects remain read-only with runtime off, including stale/missing
+cursors and revoked grants. See [acceptance evidence](../evidence/AI-036-attempt-1.md).
+
 Live provider entitlement, prices/tokenizers, hosting, PostgreSQL16/hosted CI,
-provisional streaming, browser/native-Persian UX and rollout are unqualified.
+raw token streaming, browser/native-Persian UX and rollout are unqualified.

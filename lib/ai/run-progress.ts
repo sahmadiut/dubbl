@@ -119,6 +119,10 @@ async function readRunProgress(ctx: AuthContext, value: z.infer<typeof progressS
     // so those waits cannot release a previously read, now-deleted record link.
     const steps = [];
     for (const step of rows.slice(0, value.limit)) steps.push(await stepSummary(tx, latest, step));
+    // Domain reads can also wait behind writers. A grant change during those
+    // waits must discard the resolved records, including on same-cursor reads.
+    const finalActor = await authorizeExecution(identity, current.organizationId, "view:ai-history");
+    if (grants(finalActor) !== grants(latest)) throw new AuthError("Run disclosure changed; fetch a fresh snapshot", 409);
     if (conversation.contentExpiresAt.getTime() <= Date.now()) throw new AuthError("Run not found or expired", 404);
     const progress = {
       run: { id: run.id, conversationId: run.conversationId, state: run.state, version: run.version, code,

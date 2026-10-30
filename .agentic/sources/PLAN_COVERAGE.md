@@ -579,6 +579,9 @@ provider/model catalog or production-activation scope is expanded.
   policy in shared REST/MCP previews and durable proposals; depends on AI-045.
 - [AI-048](../tasks/AI-048.md): finite payment/deletion/external-sending preflight
   adapters with strict exact arguments and proposal integration; depends on AI-047.
+  The [finite adapter contract](../docs/AI_FINITE_ACTION_ADAPTERS.md) covers single
+  invoice/bill cash settlements, qualified manual draft deletion and derived
+  saved-contact invoice email; decisions/dispatch and parent integration remain separate.
 
 AI-046 retains every criterion and combined integration; AI-042/008 remain open
 parents, and AI-043/044 decisions/dispatch remain separate. See the

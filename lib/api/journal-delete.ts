@@ -6,12 +6,21 @@ import { assertNotLocked } from "./period-lock";
 import { requireRole } from "./require-role";
 import { logAudit } from "./audit";
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Shared deletion guard; callers may supply their read-only snapshot. */
+export async function assertDraftJournalDeletion(ctx: AuthContext, entry: typeof journalEntry.$inferSelect, exec: typeof db | Tx = db) {
+  requireRole(ctx, "edit:entries");
+  if (entry.organizationId !== ctx.organizationId) throw new AuthError("Entry not found", 404);
+  if (entry.status !== "draft") throw new AuthError("Only draft entries can be deleted", 400);
+  await assertNotLocked(ctx.organizationId, entry.date, undefined, exec);
+}
+
 export async function deleteDraftJournal(ctx: AuthContext, id: string, request?: Request) {
   requireRole(ctx, "edit:entries");
   const entry = await db.query.journalEntry.findFirst({ where: and(eq(journalEntry.id, id), eq(journalEntry.organizationId, ctx.organizationId)) });
   if (!entry) throw new AuthError("Entry not found", 404);
-  if (entry.status !== "draft") throw new AuthError("Only draft entries can be deleted", 400);
-  await assertNotLocked(ctx.organizationId, entry.date);
+  await assertDraftJournalDeletion(ctx, entry);
   // FK cascade removes the legs only if the tenant-owned draft is still deletable.
   const deleted = await db.delete(journalEntry).where(and(eq(journalEntry.id, id), eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.status, "draft"))).returning({ id: journalEntry.id });
   if (!deleted.length) throw new AuthError("Entry changed before deletion", 409);

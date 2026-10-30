@@ -1,5 +1,10 @@
 # AI action previews
 
+AI-048 adds the [finite settlement, draft-deletion and invoice-email adapters](AI_FINITE_ACTION_ADAPTERS.md), shared REST/MCP observations and mixed persisted
+proposals. Their strict arguments, per-action live permissions, domain gates,
+separate cash/base amounts, derived recipients and observation-only limits are
+specified there. The journal contracts below remain applicable to that adapter.
+
 AI-041 supplies the first **observation-only** adapter. AI-008 remains the
 integration parent; AI-042 supplies additional reviewed sensitive adapters and
 durable selected batches, AI-043 explicit decisions, and AI-044 approved execution.

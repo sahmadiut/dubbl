@@ -11,8 +11,10 @@ export class LimitExceededError extends Error {
   }
 }
 
-export async function getOrgPlanLimits(orgId: string) {
-  const sub = await db.query.subscription.findFirst({
+type ReadExecutor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export async function getOrgPlanLimits(orgId: string, exec: ReadExecutor = db) {
+  const sub = await exec.query.subscription.findFirst({
     where: eq(subscription.organizationId, orgId),
   });
   const limits = getEffectiveLimits(
@@ -135,8 +137,8 @@ export async function checkMultiCurrency(orgId: string, currencyCode: string) {
   }
 }
 
-export async function checkEmailLimit(orgId: string) {
-  const { sub } = await getOrgPlanLimits(orgId);
+export async function checkEmailLimit(orgId: string, exec: ReadExecutor = db) {
+  const { sub } = await getOrgPlanLimits(orgId, exec);
   const plan = (sub?.plan ?? "free") as PlanName;
   const storagePlan = (sub?.storagePlan ?? "free") as StoragePlanName;
 
@@ -147,7 +149,7 @@ export async function checkEmailLimit(orgId: string) {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [countResult] = await db
+  const [countResult] = await exec
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
     .from(documentEmailLog)
     .where(
@@ -164,6 +166,7 @@ export async function checkEmailLimit(orgId: string) {
       `You've reached the limit of ${max} emails per month. Upgrade your plan for more.`
     );
   }
+  return { current, max, monthStart: monthStart.toISOString() };
 }
 
 export async function checkOrganizationLimit(userId: string) {

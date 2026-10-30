@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { approvalWorkflow, approvalWorkflowStep, approvalRequest, approvalAction, member, journalEntry } from "@/lib/db/schema";
 import type { AuthContext } from "@/lib/api/auth-context";
 import { checkApprovalRequired } from "@/lib/approvals/engine";
-import { conditionDto, evaluateConditions } from "@/lib/approvals/conditions";
+import { conditionDto, evaluateConditions, type ApprovalEntity } from "@/lib/approvals/conditions";
 import { WireCompatibilityError } from "@/lib/money/wire";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -21,13 +21,17 @@ function bounded(value: unknown) {
  * approved request cannot satisfy approval of this observed resource revision.
  * No workflow/step/request/member IDs, names or conditions leave this helper.
  */
-export async function previewJournalBusinessPolicy(tx: Tx, ctx: AuthContext, entry: typeof journalEntry.$inferSelect) {
+export function previewJournalBusinessPolicy(tx: Tx, ctx: AuthContext, entry: typeof journalEntry.$inferSelect) {
+  return previewBusinessPolicy(tx, ctx, "journal_entry", entry);
+}
+
+export async function previewBusinessPolicy(tx: Tx, ctx: AuthContext, entityType: ApprovalEntity, entry: { id: string; organizationId: string; createdBy?: string | null } & Record<string, unknown>) {
   if (entry.organizationId !== ctx.organizationId) invalid();
   const workflows = await tx.select().from(approvalWorkflow).where(and(eq(approvalWorkflow.organizationId, ctx.organizationId),
-    eq(approvalWorkflow.entityType, "journal_entry"), eq(approvalWorkflow.isActive, true), isNull(approvalWorkflow.deletedAt))).orderBy(asc(approvalWorkflow.id)).limit(21);
+    eq(approvalWorkflow.entityType, entityType), eq(approvalWorkflow.isActive, true), isNull(approvalWorkflow.deletedAt))).orderBy(asc(approvalWorkflow.id)).limit(21);
   if (workflows.length > 20) throw new PreviewPolicyError("PREVIEW_TOO_LARGE");
   const [request] = await tx.select().from(approvalRequest).where(and(eq(approvalRequest.organizationId, ctx.organizationId),
-    eq(approvalRequest.entityType, "journal_entry"), eq(approvalRequest.entityId, entry.id))).orderBy(desc(approvalRequest.createdAt), asc(approvalRequest.id)).limit(1);
+    eq(approvalRequest.entityType, entityType), eq(approvalRequest.entityId, entry.id))).orderBy(desc(approvalRequest.createdAt), asc(approvalRequest.id)).limit(1);
   // Include the latest request's historical workflow even if now inactive or
   // deleted. Neither a foreign reference nor an old approval is a capability.
   const [historical] = request && !workflows.some(w => w.id === request.workflowId)
@@ -36,12 +40,12 @@ export async function previewJournalBusinessPolicy(tx: Tx, ctx: AuthContext, ent
   const policies = historical ? [...workflows, historical].sort((a, b) => a.id.localeCompare(b.id)) : workflows;
   const snapshots = [];
   for (const workflow of policies) {
-    if (workflow.entityType !== "journal_entry") invalid();
+    if (workflow.entityType !== entityType) invalid();
     bounded(workflow);
     const steps = await tx.select().from(approvalWorkflowStep).where(eq(approvalWorkflowStep.workflowId, workflow.id)).orderBy(asc(approvalWorkflowStep.stepOrder), asc(approvalWorkflowStep.id)).limit(101);
     if (steps.length > 100) throw new PreviewPolicyError("PREVIEW_TOO_LARGE");
     if (!steps.length || steps.some((s, i) => !Number.isInteger(s.stepOrder) || s.stepOrder < 1 || s.stepOrder > 2147483647 || (i > 0 && s.stepOrder <= steps[i - 1].stepOrder))) invalid();
-    try { conditionDto("journal_entry", workflow.conditions); }
+    try { conditionDto(entityType, workflow.conditions); }
     catch (err) { if (err instanceof WireCompatibilityError) invalid(); throw err; }
     snapshots.push({ ...workflow, steps });
   }
@@ -61,9 +65,9 @@ export async function previewJournalBusinessPolicy(tx: Tx, ctx: AuthContext, ent
     // Existing domain engine owns condition semantics. Multiple matching rules
     // have no stable precedence in that engine; observation fails closed rather
     // than suggesting a policy chosen by incidental SQL row order.
-    const matches = workflows.filter(w => evaluateConditions("journal_entry", w.conditions, entry));
+    const matches = workflows.filter(w => evaluateConditions(entityType, w.conditions, entry));
     if (matches.length > 1) invalid();
-    selected = await checkApprovalRequired(ctx.organizationId, "journal_entry", entry, tx);
+    selected = await checkApprovalRequired(ctx.organizationId, entityType, entry, tx);
     if ((selected?.id ?? null) !== (matches[0]?.id ?? null)) invalid();
   } catch (err) { if (err instanceof WireCompatibilityError) invalid(); throw err; }
   const requester = actors.find(a => a.id === request?.requestedById)?.userId;

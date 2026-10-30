@@ -1,5 +1,10 @@
 # Business-policy observation for journal proposals
 
+AI-048 adds the [finite settlement, draft-deletion and invoice-email adapters](AI_FINITE_ACTION_ADAPTERS.md), shared REST/MCP observations and mixed persisted
+proposals. Their strict arguments, per-action live permissions, domain gates,
+separate cash/base amounts, derived recipients and observation-only limits are
+specified there. The journal contracts below remain applicable to that adapter.
+
 AI-047 implements only the existing manual-draft `post_entry` preview. It adds
 no action, endpoint or MCP operation: the existing standalone journal preview and
 own-batch read/revision operations share this behavior. AI-048 retains additional

@@ -1,5 +1,10 @@
 # Durable action proposal batches
 
+AI-048 adds the [finite settlement, draft-deletion and invoice-email adapters](AI_FINITE_ACTION_ADAPTERS.md), shared REST/MCP observations and mixed persisted
+proposals. Their strict arguments, per-action live permissions, domain gates,
+separate cash/base amounts, derived recipients and observation-only limits are
+specified there. The journal contracts below remain applicable to that adapter.
+
 AI-045 implements storage and explicit revisions for the existing AI-041 manual
 journal posting preview. AI-046 owns additional finite sensitive adapters and
 business-policy integration; its child AI-047 binds current journal policy and

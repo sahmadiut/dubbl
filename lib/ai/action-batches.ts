@@ -7,21 +7,16 @@ import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
 import { assertRunLease, assertRuntimeEnabled, validateRunSnapshot } from "./run-lifecycle";
-import { previewJournalPost, JOURNAL_POST_ADAPTER_VERSION } from "./action-preview";
+import { actionItemSchema, adapterVersion, observeAction, actionResource, actionPermissions, type ActionItem } from "./action-adapters";
 
 const id = z.string().uuid().describe("Opaque own-run, proposal, item or organization-owned journal UUID.");
 const version = z.number().int().positive().max(2147483647);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
 const key = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/).describe("Unique proposal/revision idempotency key; replay identical input after a lost response.");
-const item = z.object({
-  itemId: id.describe("Stable proposal item UUID, unique within this batch."),
-  action: z.literal("post_entry").describe("Only the reviewed manual-journal posting observation adapter is available; never dispatches it."),
-  arguments: z.object({ entryId: id.describe("Existing scoped manual draft journal UUID; no arbitrary tool arguments.") }).strict().describe("Full exact validated domain arguments, persisted separately from display."),
-  dependsOn: z.array(id).max(9).describe("Exact prerequisite item UUIDs in this batch; duplicates, cycles and self-dependencies are rejected."),
-}).strict();
+const item = actionItemSchema;
 const specFields = {
   requestKey: key,
-  items: z.array(item).min(1).max(10).describe("Complete proposed effect set, at most ten distinct existing journal records; never hidden or truncated."),
+  items: z.array(item).min(1).max(10).describe("Complete proposed effect set, at most ten distinct existing resources from the finite journal/settlement/invoice-email adapters; never hidden or truncated."),
   selectedItemIds: z.array(id).max(10).describe("Explicit selection; use [] for an initially unselected proposal. Selected dependencies must also be selected. Selection is not approval."),
 };
 export const actionBatchSpecSchema = z.object(specFields).strict();
@@ -33,9 +28,12 @@ type Spec = z.infer<typeof actionBatchSpecSchema>;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Run = typeof aiRun.$inferSelect;
 type Batch = typeof aiActionBatch.$inferSelect;
-const authoritySchema = z.object({ items: z.array(item.extend({ stepId: id, stepVersion: z.literal(1), adapterVersion: z.union([z.literal(1), z.literal(2)]), resourceVersion: digest, policyVersion: digest.optional() }).strict()).min(1).max(10), selectedItemIds: z.array(id).max(10) }).strict();
+const authorityFields = { stepId: id, stepVersion: z.literal(1), adapterVersion: z.union([z.literal(1), z.literal(2)]), resourceVersion: digest, policyVersion: digest.optional() };
+const authorityItem = z.discriminatedUnion("action", [item.options[0].extend(authorityFields), item.options[1].extend(authorityFields), item.options[2].extend(authorityFields), item.options[3].extend(authorityFields)]);
+const authoritySchema = z.object({ items: z.array(authorityItem).min(1).max(10), selectedItemIds: z.array(id).max(10) }).strict();
+
 type Authority = z.infer<typeof authoritySchema>;
-type Preview = NonNullable<Awaited<ReturnType<typeof previewJournalPost>>["preview"]>;
+type Preview = NonNullable<Awaited<ReturnType<typeof observeAction>>["preview"]>;
 type Display = { items: { itemId: string; stepId: string; selected: boolean; dependsOn: string[]; preview: Preview }[]; totals: { currencyCode: string; debitAmountMinor: string; creditAmountMinor: string }[] };
 type Code = "BATCH_DENIED" | "BATCH_NOT_FOUND" | "BATCH_STALE" | "BATCH_EXPIRED" | "BATCH_CONFLICT" | "BATCH_INVALID" | "BATCH_LIMIT" | "BATCH_DISABLED" | "BATCH_CONFIGURATION_CHANGED" | "BATCH_UNAVAILABLE";
 class Failure extends Error { constructor(readonly code: Code) { super(code); } }
@@ -60,7 +58,7 @@ const argumentHash = (i: z.infer<typeof item>) => hash({ name: i.action, version
 function normalized(spec: Spec): Spec {
   const items = spec.items.map(i => ({ ...i, dependsOn: [...i.dependsOn].sort() })).sort((a, b) => a.itemId.localeCompare(b.itemId));
   const selectedItemIds = [...spec.selectedItemIds].sort(), ids = new Set(items.map(i => i.itemId));
-  if (ids.size !== items.length || new Set(items.map(i => i.arguments.entryId)).size !== items.length || new Set(selectedItemIds).size !== selectedItemIds.length || selectedItemIds.some(i => !ids.has(i))) fail("BATCH_INVALID");
+  if (ids.size !== items.length || new Set(items.map(actionResource)).size !== items.length || new Set(selectedItemIds).size !== selectedItemIds.length || selectedItemIds.some(i => !ids.has(i))) fail("BATCH_INVALID");
   const visiting = new Set<string>(), visited = new Set<string>();
   function visit(i: typeof items[number]) {
     if (visiting.has(i.itemId)) fail("BATCH_INVALID");
@@ -77,9 +75,10 @@ function normalized(spec: Spec): Spec {
   items.forEach(visit);
   return { requestKey: spec.requestKey, items, selectedItemIds };
 }
-async function actor(ctx: AuthContext, write: boolean) {
+async function actor(ctx: AuthContext, write: boolean, items: Pick<ActionItem, "action">[] = []) {
   const current = await authorizeExecution(executionIdentity(ctx), ctx.organizationId, "view:ai-history");
-  requireRole(current, "use:ai"); requireRole(current, "view:data"); requireRole(current, "post:entries");
+  requireRole(current, "use:ai"); requireRole(current, "view:data");
+  for (const item of items) for (const permission of actionPermissions(item.action)) requireRole(current, permission);
   if (write) { try { assertRuntimeEnabled(); } catch { fail("BATCH_DISABLED"); } }
   return current;
 }
@@ -93,8 +92,8 @@ async function locked(tx: Tx, ctx: AuthContext, runId: string, write: boolean) {
   if (!run) fail("BATCH_NOT_FOUND");
   return { run, conversation };
 }
-async function writable(run: Run, ctx: AuthContext) {
-  await actor(ctx, true);
+async function writable(run: Run, ctx: AuthContext, items: Pick<ActionItem, "action">[] = []) {
+  await actor(ctx, true, items);
   try { await validateRunSnapshot(run); } catch { fail("BATCH_CONFIGURATION_CHANGED"); }
   if (!run.deadlineAt || run.deadlineAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");
   if (run.cancelRequestedAt) fail("BATCH_UNAVAILABLE");
@@ -106,12 +105,12 @@ const receipt = (r: Batch) => ({ code: "BATCH_PREVIEW_RECORDED" as const, runId:
 async function snapshot(ctx: AuthContext, spec: Spec) {
   const items: Authority["items"] = [], display: Display = { items: [], totals: [] }, totals = new Map<string, { debit: bigint; credit: bigint }>();
   for (const item of spec.items) {
-    const observed = await previewJournalPost(ctx, item.arguments);
+    const observed = await observeAction(ctx, item);
     if (!observed.preview) fail(observed.code === "PREVIEW_DENIED" ? "BATCH_DENIED" : "BATCH_STALE");
     const preview = observed.preview, stepId = randomUUID(), selected = spec.selectedItemIds.includes(item.itemId);
-    items.push({ ...item, stepId, stepVersion: 1, adapterVersion: JOURNAL_POST_ADAPTER_VERSION, resourceVersion: preview.resourceVersion, policyVersion: preview.businessApproval.policyVersion });
+    items.push({ ...item, stepId, stepVersion: 1, adapterVersion: adapterVersion(item.action), resourceVersion: preview.resourceVersion, policyVersion: preview.businessApproval.policyVersion });
     display.items.push({ itemId: item.itemId, stepId, selected, dependsOn: item.dependsOn, preview });
-    if (selected) for (const amount of preview.amounts) {
+    if (selected && item.action !== "delete_draft_journal") for (const amount of preview.amounts) {
       const t = totals.get(amount.currencyCode) ?? { debit: 0n, credit: 0n };
       t.debit += BigInt(amount.debitAmountMinor); t.credit += BigInt(amount.creditAmountMinor); totals.set(amount.currencyCode, t);
     }
@@ -132,17 +131,17 @@ async function persist(tx: Tx, run: Run, ctx: AuthContext, spec: Spec, expiresAt
   for (const item of data.display.items) item.preview.expiresAt = expiresAt.toISOString();
   const bytes = Buffer.byteLength(JSON.stringify(data));
   if (run.payloadBytes + bytes > 1048576) fail("BATCH_LIMIT");
-  await writable(run, ctx);
+  await writable(run, ctx, spec.items);
   if (expiresAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");
   const row = { id: randomUUID(), runId: run.id, ownerId: run.ownerId, organizationId: run.organizationId, version: nextVersion, acceptedRunVersion: run.version + 1, expiresAt, ...data };
   const [batch] = await tx.insert(aiActionBatch).values({ ...row, requestKey: spec.requestKey, requestDigest, bindingDigest: binding(row) }).returning();
   for (const i of data.authority.items) await tx.insert(aiStep).values({ id: i.stepId, operationKey: i.stepId, runId: run.id, ownerId: run.ownerId, organizationId: run.organizationId,
-    toolName: i.action, argumentDigest: argumentHash(i), input: null, requiredPermissions: ["view:data", "post:entries"] });
+    toolName: i.action, argumentDigest: argumentHash(i), input: null, requiredPermissions: actionPermissions(i.action) });
   await tx.update(aiRun).set({ state: "awaiting_approval", version: run.version + 1, payloadBytes: run.payloadBytes + bytes, leaseOwner: null, leaseExpiresAt: null, updatedAt: new Date() }).where(eq(aiRun.id, run.id));
   await tx.insert(aiEvent).values({ runId: run.id, ownerId: run.ownerId, organizationId: run.organizationId, sequence: run.version + 1, kind: "awaiting_approval" });
   // Inserts/unique constraints can wait too. Revocation or expiry during that
   // wait must roll the complete proposal transaction back before acknowledgement.
-  await writable(run, ctx);
+  await writable(run, ctx, spec.items);
   if (expiresAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");
   return receipt(batch);
 }
@@ -187,14 +186,14 @@ export async function getActionBatch(ctx: AuthContext, input: unknown) {
       const authority = parsed.data;
       normalized({ ...authority, requestKey: row.requestKey });
       for (const i of authority.items) {
-        if (i.adapterVersion !== JOURNAL_POST_ADAPTER_VERSION || !i.policyVersion) fail("BATCH_STALE");
+        if (i.adapterVersion !== adapterVersion(i.action) || !i.policyVersion) fail("BATCH_STALE");
         const [step] = await tx.select().from(aiStep).where(and(eq(aiStep.id, i.stepId), eq(aiStep.runId, run.id), eq(aiStep.organizationId, current.organizationId), eq(aiStep.ownerId, current.userId)));
         if (!step || step.state !== "prepared" || step.version !== i.stepVersion || step.toolName !== i.action || step.operationKey !== i.stepId || step.dispatchLease !== null || step.argumentDigest !== argumentHash(i)) fail("BATCH_UNAVAILABLE");
-        const observed = await previewJournalPost(current, { ...i.arguments, expectedResourceVersion: i.resourceVersion });
+        const observed = await observeAction(current, i, i.resourceVersion);
         if (!observed.preview) fail(observed.code === "PREVIEW_DENIED" ? "BATCH_DENIED" : "BATCH_STALE");
         if (observed.preview.businessApproval.policyVersion !== i.policyVersion) fail("BATCH_STALE");
       }
-      await actor(ctx, false);
+      await actor(ctx, false, authority.items);
       if (row.expiresAt.getTime() <= Date.now() || run.deadlineAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");
       return { code: "BATCH_PREVIEW_ONLY", runId: run.id, runVersion: run.version, batch: { id: row.id, version: row.version, expiresAt: row.expiresAt,
         bindingDigest: row.bindingDigest, display: row.display, authority: "preview_only", canApprove: false }, recovery: ["revise_preview", "cancel_run"] };

@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import * as schema from "@/lib/db/schema";
+import { is } from "drizzle-orm";
+import { PgTable, getTableConfig } from "drizzle-orm/pg-core";
+import { assertDraftJournalDeletion } from "@/lib/api/journal-delete";
 import { journalEntry, journalLine, chartAccount } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
@@ -24,10 +28,10 @@ type UnavailableCode = "PREVIEW_DENIED" | "PREVIEW_NOT_FOUND" | "PREVIEW_STALE" 
 function unavailable(code: UnavailableCode) {
   return { code, preview: null, recovery: code === "PREVIEW_DENIED" || code === "PREVIEW_POLICY_INVALID" ? ["contact_administrator"] : code === "PREVIEW_STALE" ? ["refresh_preview"] : ["inspect_record"] };
 }
-async function actor(ctx: AuthContext) {
+async function actor(ctx: AuthContext, action: "post_entry" | "delete_draft_journal") {
   const current = await authorizeExecution(executionIdentity(ctx), ctx.organizationId, "use:ai");
   requireRole(current, "view:data");
-  requireRole(current, "post:entries");
+  requireRole(current, action === "post_entry" ? "post:entries" : "edit:entries");
   return current;
 }
 
@@ -36,15 +40,31 @@ async function actor(ctx: AuthContext) {
  * Restrict the first adapter to manual drafts, whose saved currency tags own
  * their amounts. Other sources must receive separate reviewed adapters.
  */
-export async function previewJournalPost(ctx: AuthContext, input: unknown) {
+export function previewJournalPost(ctx: AuthContext, input: unknown) { return previewJournal(ctx, input, "post_entry"); }
+export function previewJournalDelete(ctx: AuthContext, input: unknown) { return previewJournal(ctx, input, "delete_draft_journal"); }
+
+async function previewJournal(ctx: AuthContext, input: unknown, action: "post_entry" | "delete_draft_journal") {
   const value = journalPostPreviewSchema.parse(input);
   let current: AuthContext;
-  try { current = await actor(ctx); }
+  try { current = await actor(ctx, action); }
   catch (err) { if (err instanceof AuthError) return unavailable("PREVIEW_DENIED"); throw err; }
   const result = await db.transaction(async tx => {
     const [entry] = await tx.select().from(journalEntry).where(and(eq(journalEntry.id, value.entryId), eq(journalEntry.organizationId, current.organizationId), isNull(journalEntry.deletedAt)));
     if (!entry) return unavailable("PREVIEW_NOT_FOUND");
     if (entry.status !== "draft" || (entry.sourceType !== null && entry.sourceType !== "manual") || entry.sourceId || entry.reversesEntryId || entry.reversedByEntryId) return unavailable("PREVIEW_UNSUPPORTED");
+    if (action === "delete_draft_journal") {
+      for (const table of Object.values(schema)) {
+        if (!is(table, PgTable) || table === journalLine) continue;
+        for (const key of getTableConfig(table).foreignKeys) {
+          const reference = key.reference();
+          if (reference.foreignTable !== journalEntry) continue;
+          const [linked] = await tx.select({ exists: sql<number>`1` }).from(table).where(eq(reference.columns[0], entry.id)).limit(1);
+          if (linked) return unavailable("PREVIEW_UNSUPPORTED");
+        }
+      }
+      const [reversal] = await tx.select({ id: journalEntry.id }).from(journalEntry).where(sql`${journalEntry.reversesEntryId} = ${entry.id} or ${journalEntry.reversedByEntryId} = ${entry.id}`).limit(1);
+      if (reversal) return unavailable("PREVIEW_UNSUPPORTED");
+    }
     const lines = await tx.select({ ...getTableColumns(journalLine),
       debitAmount: sql<string>`${journalLine.debitAmount}::text`, creditAmount: sql<string>`${journalLine.creditAmount}::text`, rateExact: sql<string | null>`${journalLine.rateExact}::text`,
     }).from(journalLine).where(eq(journalLine.journalEntryId, entry.id)).orderBy(asc(journalLine.id)).limit(101);
@@ -52,7 +72,8 @@ export async function previewJournalPost(ctx: AuthContext, input: unknown) {
     if (lines.length < 2) return unavailable("PREVIEW_INVALID_RECORD");
     try {
       await assertJournalReferences(current.organizationId, lines, entry.fiscalYearId, false, tx);
-      await assertNotLocked(current.organizationId, entry.date, current, tx);
+      if (action === "delete_draft_journal") await assertDraftJournalDeletion(current, entry, tx);
+      else await assertNotLocked(current.organizationId, entry.date, current, tx);
     } catch (err) {
       if (err instanceof PeriodLockedError) return unavailable("PREVIEW_PERIOD_LOCKED");
       if (err instanceof z.ZodError) return unavailable("PREVIEW_INVALID_RECORD");
@@ -89,20 +110,20 @@ export async function previewJournalPost(ctx: AuthContext, input: unknown) {
       debitAmountMinor: l.debitAmount, creditAmountMinor: l.creditAmount, currencyCode: l.currencyCode,
       costCenterId: l.costCenterId, projectId: l.projectId, exchangeRate: l.exchangeRate, rateExact: l.rateExact, rateDirection: l.rateDirection }));
     const resourceVersion = createHash("sha256").update(JSON.stringify({ schemaVersion: JOURNAL_POST_ADAPTER_VERSION, actor: current.userId, organization: current.organizationId,
-      action: "post_entry", arguments: { entryId: entry.id }, entry, lines, displayedLines, businessApproval })).digest("hex");
+      action, arguments: { entryId: entry.id }, entry, lines, displayedLines, businessApproval })).digest("hex");
     if (value.expectedResourceVersion && value.expectedResourceVersion !== resourceVersion) return unavailable("PREVIEW_STALE");
     const observedAt = new Date();
-    const preview = { schemaVersion: JOURNAL_POST_ADAPTER_VERSION, action: "post_entry", labelKey: "post_journal", target: { type: "journal_entry", id: entry.id, reference: String(entry.entryNumber), href: `/accounting/${entry.id}` },
+    const preview = { schemaVersion: JOURNAL_POST_ADAPTER_VERSION, action, labelKey: action === "post_entry" ? "post_journal" : "delete_draft_journal", target: { type: "journal_entry", id: entry.id, reference: String(entry.entryNumber), href: `/accounting/${entry.id}` },
       resourceVersion, observedAt: observedAt.toISOString(), expiresAt: new Date(observedAt.getTime() + 300_000).toISOString(),
-      before: { status: "draft" }, after: { status: "posted" }, date: entry.date, description: entry.description, reference: entry.reference,
+      before: { status: "draft" }, after: { status: action === "post_entry" ? "posted" : "deleted" }, date: entry.date, description: entry.description, reference: entry.reference,
       lines: displayedLines, amounts: [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([currencyCode, t]) => ({ currencyCode, debitAmountMinor: String(t.debit), creditAmountMinor: String(t.credit) })),
-      recipients: [], effects: ["posts_journal", "posted_history_requires_reversal", ...(entry.autoReverseDate ? ["scheduled_reversal"] : [])], autoReverseDate: entry.autoReverseDate,
+      recipients: [], effects: action === "post_entry" ? ["posts_journal", "posted_history_requires_reversal", ...(entry.autoReverseDate ? ["scheduled_reversal"] : [])] : ["permanently_deletes_draft_journal", "permanently_deletes_all_journal_lines", "cannot_undo_deletion"], autoReverseDate: entry.autoReverseDate,
       businessApproval, authority: "preview_only", canApprove: false, recovery: ["inspect_record", "refresh_preview"] };
     if (Buffer.byteLength(JSON.stringify(preview), "utf8") > 32768) return unavailable("PREVIEW_TOO_LARGE");
     return { code: "PREVIEW_ONLY", preview, recovery: ["inspect_record", "refresh_preview"] };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
   // Revoke disclosure if the current credential or grants changed during reads.
-  try { await actor(ctx); }
+  try { await actor(ctx, action); }
   catch (err) { if (err instanceof AuthError) return unavailable("PREVIEW_DENIED"); throw err; }
   return result;
 }

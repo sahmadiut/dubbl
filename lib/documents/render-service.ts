@@ -46,14 +46,13 @@ async function output(kind: DocumentKind, data: DocumentData, org: ReturnType<ty
 
 type Capability = { type: "portal"; token: string } | { type: "pay"; token: string };
 /** One read-only snapshot for ownership, references, saved parties, money and rendering. */
-export async function renderDocument(ctx: AuthContext | null, kind: DocumentKind, id: string, format: "html" | "pdf", capability?: Capability) {
-  renderFormat.parse(format);
+export async function readDocumentForRendering(ctx: AuthContext | null, kind: DocumentKind, id: string, capability?: Capability, executor?: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
   if (ctx) requireRole(ctx, "view:data");
   else if (!capability) throw new AuthError("Not authenticated", 401);
   if (!capability || capability.type === "portal") renderId.parse(id);
   if (capability && kind !== "invoice") throw new AuthError("Invalid rendering capability", 403);
   const access = capability?.type === "portal" ? await getPortalAccess(capability.token, ctx?.organizationId, 404) : null;
-  return db.transaction(async tx => {
+  const read = async (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => {
     const orgId = access?.organizationId ?? ctx?.organizationId;
     const invoiceScope = and(isNull(invoice.deletedAt), orgId ? eq(invoice.organizationId, orgId) : undefined,
       capability?.type === "pay" ? eq(invoice.paymentLinkToken, capability.token) : eq(invoice.id, id),
@@ -88,8 +87,16 @@ export async function renderDocument(ctx: AuthContext | null, kind: DocumentKind
       lines: found.lines.map(line => ({ description: line.description, quantity: line.quantity, unitPrice: line.unitPrice, taxAmount: line.taxAmount, amount: line.amount })),
       subtotal: found.subtotal, taxTotal: found.taxTotal, total: found.total, currencyCode: found.currencyCode,
       ...("amountPaid" in found ? { amountPaid: found.amountPaid, amountDue: found.amountDue } : {}), reference: found.reference, notes: found.notes };
-    return output(kind, data, sender, template ?? {}, format);
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+    return { document: documentRenderDto(data), data, sender, template: template ?? {}, snapshot: { found, org, template } };
+  };
+  return executor ? read(executor) : db.transaction(read, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
+/** Render only after the shared read-only domain preflight succeeds. */
+export async function renderDocument(ctx: AuthContext | null, kind: DocumentKind, id: string, format: "html" | "pdf", capability?: Capability) {
+  renderFormat.parse(format);
+  const value = await readDocumentForRendering(ctx, kind, id, capability);
+  return output(kind, value.data, value.sender, value.template, format);
 }
 
 export async function previewDocumentTemplate(ctx: AuthContext, id: string, format: "html" | "pdf") {

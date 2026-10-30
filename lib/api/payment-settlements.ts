@@ -33,20 +33,23 @@ function fail(message: string): never { throw new AuthError(message, 400); }
 function unsupported(message: string): never { throw new WireCompatibilityError(message); }
 const memo = (id: string) => `Settlement document ${id}`;
 
-async function ownedAccount(tx: Tx, ctx: AuthContext, id: string, active = false) {
-  const [row] = await tx.select().from(chartAccount).where(and(eq(chartAccount.id, id), eq(chartAccount.organizationId, ctx.organizationId))).for("share");
+async function ownedAccount(tx: Tx, ctx: AuthContext, id: string, active = false, locking = true) {
+  const query = tx.select().from(chartAccount).where(and(eq(chartAccount.id, id), eq(chartAccount.organizationId, ctx.organizationId)));
+  const [row] = await (locking ? query.for("share") : query);
   if (!row || (active && (!row.isActive || row.deletedAt))) unsupported("Settlement account is unavailable in this organization");
   return row;
 }
-async function savedJournal(tx: Tx, ctx: AuthContext, id: string | null, source: string, documentId: string, currency: string, reference: string) {
-  const [entry] = id ? await tx.select().from(journalEntry).where(and(eq(journalEntry.id, id), eq(journalEntry.organizationId, ctx.organizationId))).for("update") : [];
+async function savedJournal(tx: Tx, ctx: AuthContext, id: string | null, source: string, documentId: string, currency: string, reference: string, locking = true) {
+  const query = tx.select().from(journalEntry).where(and(eq(journalEntry.id, id ?? "00000000-0000-0000-0000-000000000000"), eq(journalEntry.organizationId, ctx.organizationId)));
+  const [entry] = id ? await (locking ? query.for("update") : query) : [];
   if (!entry || entry.deletedAt || entry.status !== "posted" || entry.reversedByEntryId || entry.sourceType !== source ||
     (entry.sourceId !== null ? entry.sourceId !== documentId : entry.reference !== reference)) unsupported("Settlement requires qualified unreversed recognition history");
-  const lines = await tx.select().from(journalLine).where(eq(journalLine.journalEntryId, entry.id));
+  const lines = await tx.select().from(journalLine).where(eq(journalLine.journalEntryId, entry.id)).limit(locking ? 2147483647 : 101);
+  if (!locking && lines.length > 100) unsupported("Preview recognition history is oversized");
   const first = lines[0]; let debit = 0n, credit = 0n;
   if (!first?.rateExact) unsupported("Recognition history has no saved exact FX");
   for (const line of lines) {
-    journalLineDto(line); await ownedAccount(tx, ctx, line.accountId);
+    journalLineDto(line); await ownedAccount(tx, ctx, line.accountId, false, locking);
     if (line.currencyCode !== currency || line.rateExact !== first.rateExact || line.rateMigrationStatus !== "exact" ||
       line.rateFormatVersion !== 1 || line.debitAmount < 0 || line.creditAmount < 0 || (line.debitAmount && line.creditAmount))
       unsupported("Recognition history has inconsistent saved FX or amounts");
@@ -56,9 +59,10 @@ async function savedJournal(tx: Tx, ctx: AuthContext, id: string | null, source:
   if (debit !== credit || debit <= 0n) unsupported("Recognition history must balance");
   return { entry, lines, rateExact: first.rateExact! };
 }
-async function loadDocument(tx: Tx, ctx: AuthContext, alloc: Allocation) {
+async function loadDocument(tx: Tx, ctx: AuthContext, alloc: Allocation, locking = true) {
   const table = alloc.documentType === "invoice" ? invoice : bill;
-  const [row] = await tx.select().from(table).where(and(eq(table.id, alloc.documentId), eq(table.organizationId, ctx.organizationId), isNull(table.deletedAt))).for("update");
+  const query = tx.select().from(table).where(and(eq(table.id, alloc.documentId), eq(table.organizationId, ctx.organizationId), isNull(table.deletedAt)));
+  const [row] = await (locking ? query.for("update") : query);
   if (!row) throw new AuthError(`${alloc.documentType} not found`, 404);
   lifecycleDto(row); currencyCodeSchema.parse(row.currencyCode); rateDateSchema.parse(row.issueDate);
   const statuses = alloc.documentType === "invoice" ? ["sent", "partial", "overdue"] : ["received", "partial", "overdue"];
@@ -66,56 +70,65 @@ async function loadDocument(tx: Tx, ctx: AuthContext, alloc: Allocation) {
   if (alloc.amount > row.amountDue) fail("Payment exceeds the outstanding document balance");
   return row;
 }
-async function recognition(tx: Tx, ctx: AuthContext, row: Document, kind: "invoice" | "bill") {
+async function recognition(tx: Tx, ctx: AuthContext, row: Document, kind: "invoice" | "bill", locking = true) {
   const reference = "invoiceNumber" in row ? row.invoiceNumber : row.billNumber;
-  if (kind === "invoice") return savedJournal(tx, ctx, row.journalEntryId, "invoice", row.id, row.currencyCode, reference);
+  if (kind === "invoice") return savedJournal(tx, ctx, row.journalEntryId, "invoice", row.id, row.currencyCode, reference, locking);
   // GRNI-matched bills can recognize AP partly/entirely in a separate clearing
   // journal. Both saved entries form the payable; tax-only main AP is not enough.
-  const entries = await tx.select().from(journalEntry).where(and(eq(journalEntry.organizationId, ctx.organizationId),
-    sql`(${journalEntry.id} = ${row.journalEntryId} or (${journalEntry.sourceId} = ${row.id} and ${journalEntry.sourceType} in ('bill','bill_grni')))`)).for("update");
+  const query = tx.select().from(journalEntry).where(and(eq(journalEntry.organizationId, ctx.organizationId),
+    sql`(${journalEntry.id} = ${row.journalEntryId} or (${journalEntry.sourceId} = ${row.id} and ${journalEntry.sourceType} in ('bill','bill_grni')))`));
+  const entries = await (locking ? query.for("update") : query);
   const primary = entries.find(entry => entry.id === row.journalEntryId);
   if (!primary || !["bill", "bill_grni"].includes(primary.sourceType ?? "") || entries.length > 2 || new Set(entries.map(e => e.sourceType)).size !== entries.length)
     unsupported("Bill recognition/GRNI history is missing or ambiguous");
   const snapshots: Awaited<ReturnType<typeof savedJournal>>[] = [];
   for (const entry of entries) {
-    const saved = await savedJournal(tx, ctx, entry.id, entry.sourceType!, row.id, row.currencyCode, reference);
+    const saved = await savedJournal(tx, ctx, entry.id, entry.sourceType!, row.id, row.currencyCode, reference, locking);
     if (entry.date !== row.issueDate) unsupported("Bill recognition posting date differs from its issue date"); snapshots.push(saved);
   }
   if (snapshots.some(saved => saved.rateExact !== snapshots[0].rateExact)) unsupported("Bill and GRNI recognition FX disagree");
   return { entry: primary, lines: snapshots.flatMap(saved => saved.lines), rateExact: snapshots[0].rateExact };
 }
 async function previousCarrying(tx: Tx, ctx: AuthContext, row: Document, alloc: Allocation, controlId: string,
-  original: number, payable: number, base: string, recognitionRate: string) {
-  const history = await tx.select({ allocation: paymentAllocation, payment }).from(paymentAllocation)
+  original: number, payable: number, base: string, recognitionRate: string, locking = true) {
+  const historyQuery = tx.select({ allocation: paymentAllocation, payment }).from(paymentAllocation)
     .innerJoin(payment, eq(payment.id, paymentAllocation.paymentId))
     .where(and(eq(paymentAllocation.documentId, row.id), eq(paymentAllocation.documentType, alloc.documentType), isNull(payment.deletedAt)))
-    .orderBy(payment.id).for("update");
+    .orderBy(payment.id).limit(locking ? 2147483647 : 101);
+  const history = await (locking ? historyQuery.for("update") : historyQuery);
+  if (!locking && history.length > 100) unsupported("Preview settlement history is oversized");
   let paid = 0n, carrying = 0n;
+  const observations: unknown[] = [history];
   for (const h of history) {
     const p = h.payment; publicMoneyDto(p, ["amount"]); publicMoneyDto(h.allocation, ["amount"]);
     if (p.organizationId !== ctx.organizationId || p.contactId !== row.contactId || p.currencyCode !== row.currencyCode ||
       p.type !== (alloc.documentType === "invoice" ? "received" : "made") || h.allocation.amount <= 0) unsupported("Saved settlement allocation is inconsistent or foreign");
     paid += BigInt(h.allocation.amount);
-    const pairs = await tx.select().from(paymentAllocation).where(eq(paymentAllocation.paymentId, p.id));
+    const pairs = await tx.select().from(paymentAllocation).where(eq(paymentAllocation.paymentId, p.id)).limit(locking ? 2147483647 : 101);
+    if (!locking && pairs.length > 100) unsupported("Preview allocation history is oversized");
+    observations.push(pairs);
     const prepaid = pairs.find(a => a.documentType === "prepayment");
     if (prepaid) {
       if (alloc.documentType !== "invoice" || pairs.length !== 2 || prepaid.amount !== h.allocation.amount || p.amount !== h.allocation.amount)
         unsupported("Unqualified prepayment carrier allocations");
-      const [credit] = await tx.select().from(customerCredit).where(and(eq(customerCredit.id, prepaid.documentId), eq(customerCredit.organizationId, ctx.organizationId))).for("share");
+      const query = tx.select().from(customerCredit).where(and(eq(customerCredit.id, prepaid.documentId), eq(customerCredit.organizationId, ctx.organizationId)));
+      const [credit] = await (locking ? query.for("share") : query);
       if (!credit || credit.deletedAt || !["open", "applied"].includes(credit.status) || credit.contactId !== row.contactId || credit.currencyCode !== row.currencyCode)
         unsupported("Prepayment carrier belongs to unavailable or foreign credit");
       publicMoneyDto(credit, ["originalAmount", "amountRemaining"]);
       const saved = await savedJournal(tx, ctx, p.journalEntryId, "customer_credit_application", credit.id, row.currencyCode,
-        "invoiceNumber" in row ? row.invoiceNumber : "");
+        "invoiceNumber" in row ? row.invoiceNumber : "", locking);
+      observations.push(credit, saved);
       const value = saved.lines.filter(line => line.accountId === controlId).reduce((sum, line) => sum + BigInt(line.creditAmount) - BigInt(line.debitAmount), 0n);
       if (value <= 0n || saved.rateExact !== recognitionRate || value * BigInt(payable) !== BigInt(original) * BigInt(h.allocation.amount))
         unsupported("Prepayment carrying FX/rounding requires separate qualification");
       carrying += value;
     } else if (p.journalEntryId) {
-      const saved = await savedJournal(tx, ctx, p.journalEntryId, "payment", p.id, row.currencyCode, p.paymentNumber);
+      const saved = await savedJournal(tx, ctx, p.journalEntryId, "payment", p.id, row.currencyCode, p.paymentNumber, locking);
       const [audit] = await tx.select({ changes: auditLog.changes }).from(auditLog).where(and(eq(auditLog.organizationId, ctx.organizationId),
         eq(auditLog.entityType, "payment"), eq(auditLog.entityId, p.id), eq(auditLog.action, "settle")));
       if ((audit?.changes as { baseCurrencyCode?: string } | null)?.baseCurrencyCode !== base) unsupported("Saved cash settlement lacks qualified base-currency provenance");
+      observations.push(saved, audit);
       const matching = saved.lines.filter(line => line.accountId === controlId && line.description === memo(row.id));
       if (matching.length !== 1) unsupported("Historical cash settlement needs a document-specific carrying leg");
       const line = matching[0];
@@ -129,11 +142,13 @@ async function previousCarrying(tx: Tx, ctx: AuthContext, row: Document, alloc: 
       if (pairs.length !== 2 || !noteAlloc || noteAlloc.amount !== h.allocation.amount || p.amount !== h.allocation.amount)
         unsupported("Unqualified noncash/prepayment carrier history");
       const table = kind === "credit_note" ? creditNote : debitNote;
-      const [note] = await tx.select().from(table).where(and(eq(table.id, noteAlloc.documentId), eq(table.organizationId, ctx.organizationId))).for("share");
+      const query = tx.select().from(table).where(and(eq(table.id, noteAlloc.documentId), eq(table.organizationId, ctx.organizationId)));
+      const [note] = await (locking ? query.for("share") : query);
       if (!note || note.deletedAt || !["sent", "applied"].includes(note.status) || note.contactId !== row.contactId || note.currencyCode !== row.currencyCode || note.total <= 0)
         unsupported("Noncash note history is unavailable or foreign");
       const saved = await savedJournal(tx, ctx, note.journalEntryId, kind, note.id, row.currencyCode,
-        "creditNoteNumber" in note ? note.creditNoteNumber : note.debitNoteNumber);
+        "creditNoteNumber" in note ? note.creditNoteNumber : note.debitNoteNumber, locking);
+      observations.push(note, saved);
       const credit = saved.lines.filter(line => line.accountId === controlId).reduce((s, line) => s + (kind === "credit_note"
         ? BigInt(line.creditAmount) - BigInt(line.debitAmount) : BigInt(line.debitAmount) - BigInt(line.creditAmount)), 0n);
       if (saved.rateExact !== recognitionRate || credit * BigInt(payable) !== BigInt(original) * BigInt(note.total)
@@ -143,6 +158,7 @@ async function previousCarrying(tx: Tx, ctx: AuthContext, row: Document, alloc: 
   }
   if (paid !== BigInt(row.amountPaid) || carrying !== invoiceRound(BigInt(original) * paid, BigInt(payable)))
     unsupported("Document paid balance and saved settlement carrying history disagree");
+  return observations;
 }
 
 /** Internal period-end consumer: qualify the saved base GL and its cumulative releases.
@@ -201,6 +217,71 @@ async function nextNumber(tx: Tx, ctx: AuthContext) {
 }
 
 type SettlementInput = Pay & { amount: number; type: "received" | "made"; allocations: Allocation[]; contactId?: string; currencyCode?: string; notes?: string | null };
+/** Shared settlement validation. Observation callers must use a read-only snapshot.
+ * Read mode takes no row locks and requires existing bank/FX ledger accounts.
+ * It never allocates numbers, accounts, payments, approvals or audit records.
+ */
+export async function preflightSettlement(tx: Tx, ctx: AuthContext, input: SettlementInput, base: string, readOnly = false) {
+    await assertNotLocked(ctx.organizationId, input.date, ctx, tx);
+    const docs: { row: Document; allocation: Allocation; carrying: number; rateExact: string; recognition: Awaited<ReturnType<typeof recognition>>; history: unknown[] }[] = [];
+    const loaded = [];
+    for (const allocation of input.allocations) loaded.push({ row: await loadDocument(tx, ctx, allocation, !readOnly), allocation });
+    const control = await receivableAccount(tx, ctx.organizationId, input.type === "received" ? "1200" : "2100");
+    if (control.type !== (input.type === "received" ? "asset" : "liability")) unsupported("Invalid settlement control account type");
+    let contactId = input.contactId, currency = input.currencyCode;
+    for (const { row, allocation } of loaded) {
+      contactId ??= row.contactId; currency ??= row.currencyCode;
+      if (contactId !== row.contactId || currency !== row.currencyCode) fail("All settlement documents must share the payment contact and currency");
+      if (input.date < row.issueDate) fail("Cash settlement cannot predate document recognition");
+      const snapshot = "senderSnapshot" in row ? row.senderSnapshot as { baseCurrencyCode?: string } | null : null;
+      if (snapshot?.baseCurrencyCode && snapshot.baseCurrencyCode !== base) unsupported("Base currency changed after document recognition");
+      const saved = await recognition(tx, ctx, row, allocation.documentType, !readOnly);
+      if (readOnly) await assertJournalReferences(ctx.organizationId, saved.lines, saved.entry.fiscalYearId, true, tx);
+      if (saved.entry.date !== row.issueDate) unsupported("Recognition posting date differs from the document issue date");
+      // Control accounts identify the historical base denomination even for old bills.
+      if (control.currencyCode !== base || (currency === base && saved.rateExact !== "1")) unsupported("Recognition base currency is not qualified for this organization");
+      const original = safeInvoiceMinor(saved.lines.filter(line => line.accountId === control.id).reduce((sum, line) => sum + (input.type === "received"
+        ? BigInt(line.debitAmount) - BigInt(line.creditAmount) : BigInt(line.creditAmount) - BigInt(line.debitAmount)), 0n));
+      const payable = safeInvoiceMinor(BigInt(row.amountPaid) + BigInt(row.amountDue));
+      if (original <= 0 || payable <= 0 || (allocation.documentType === "invoice" && payable !== row.total)) unsupported("Recognition and document payable are inconsistent");
+      if (allocation.documentType === "invoice" && original !== paymentCashBase(payable, currency, base, saved.rateExact))
+        unsupported("Invoice recognition no longer covers the outstanding total; additional recognition requires qualification");
+      const history = await previousCarrying(tx, ctx, row, allocation, control.id, original, payable, base, saved.rateExact, !readOnly);
+      docs.push({ row, allocation, carrying: paymentCarryingBase(original, payable, row.amountPaid, allocation.amount), rateExact: saved.rateExact, recognition: saved, history });
+    }
+    const partyQuery = tx.select().from(contact).where(and(eq(contact.id, contactId!), eq(contact.organizationId, ctx.organizationId)));
+    const [party] = await (readOnly ? partyQuery : partyQuery.for("share"));
+    if (!party || party.deletedAt || (input.type === "received" ? party.type === "supplier" : party.type === "customer")) fail("Payment contact is unavailable for this direction");
+    // Preflight the contact output before any write (creditLimit can be unsafe history).
+    if (party.creditLimit !== null) publicMoneyDto({ amount: party.creditLimit }, ["amount"]);
+    let cashAccountId: string;
+    let bankSnapshot: typeof bankAccount.$inferSelect | undefined;
+    if (input.bankAccountId) {
+      const bankQuery = tx.select().from(bankAccount).where(and(eq(bankAccount.id, input.bankAccountId), eq(bankAccount.organizationId, ctx.organizationId)));
+      const [bank] = await (readOnly ? bankQuery : bankQuery.for("update"));
+      bankSnapshot = bank;
+      if (!bank || bank.deletedAt || !bank.isActive || bank.currencyCode !== currency) fail("Payment bank must be active, organization-owned and in the document currency");
+      if (readOnly && !bank.chartAccountId) unsupported("Preview requires an existing bank ledger link");
+      cashAccountId = readOnly ? bank.chartAccountId! : await ensureBankLedgerAccount(ctx.organizationId, bank, tx);
+    } else cashAccountId = (await receivableAccount(tx, ctx.organizationId, "1100")).id;
+    const cashAccount = await ownedAccount(tx, ctx, cashAccountId, true, !readOnly);
+    if (cashAccount.type !== "asset" || cashAccountId === control.id) unsupported("Settlement cash account must be a distinct active asset account");
+    const fx = await createHistoricalRateResolver(ctx.organizationId, tx)(currency!, base, input.date);
+    if (!fx) throw new MissingExchangeRateError(currency!, base, input.date);
+    const cash = paymentCashBase(input.amount, currency!, base, fx.rateExact);
+    if (cash <= 0) unsupported("Cash settlement rounds to zero base minor units");
+    const carrying = safeInvoiceMinor(docs.reduce((sum, doc) => sum + BigInt(doc.carrying), 0n));
+    const gain = input.type === "received" ? BigInt(cash) - BigInt(carrying) : BigInt(carrying) - BigInt(cash);
+    const difference = safeInvoiceMinor(gain < 0n ? -gain : gain);
+    const fxAccount = difference ? await receivableAccount(tx, ctx.organizationId, gain > 0n ? "4910" : "5930",
+      readOnly ? undefined : { name: gain > 0n ? "Realised Currency Gains" : "Realised Currency Losses", type: gain > 0n ? "revenue" : "expense", subType: "non_operating" }, base) : null;
+    if (fxAccount && fxAccount.type !== (gain > 0n ? "revenue" : "expense")) unsupported("Invalid realised FX account type");
+    // Both sides and every individual result must remain numerically representable.
+    safeInvoiceMinor((input.type === "received" ? BigInt(cash) : BigInt(carrying)) + (gain < 0n ? BigInt(difference) : 0n));
+    safeInvoiceMinor((input.type === "received" ? BigInt(carrying) : BigInt(cash)) + (gain > 0n ? BigInt(difference) : 0n));
+    return { docs, control, contactId: contactId!, currency: currency!, cashAccountId, cashAccount, fx, cash, carrying, gain, difference, fxAccount, party, bankSnapshot };
+}
+
 async function settle(ctx: AuthContext, input: SettlementInput, operation: string, request?: Request, executor?: Tx, permission = "manage:payments"): Promise<Record<string, unknown>> {
   requireRole(ctx, permission);
   const canonical = { operation, type: input.type, contactId: input.contactId ?? null, currencyCode: input.currencyCode ?? null,
@@ -222,57 +303,7 @@ async function settle(ctx: AuthContext, input: SettlementInput, operation: strin
       }
     }
     const base = currencyCodeSchema.parse(org.defaultCurrency ?? "USD");
-    await assertNotLocked(ctx.organizationId, input.date, ctx);
-    const docs: { row: Document; allocation: Allocation; carrying: number; rateExact: string }[] = [];
-    const loaded = [];
-    for (const allocation of input.allocations) loaded.push({ row: await loadDocument(tx, ctx, allocation), allocation });
-    const control = await receivableAccount(tx, ctx.organizationId, input.type === "received" ? "1200" : "2100");
-    if (control.type !== (input.type === "received" ? "asset" : "liability")) unsupported("Invalid settlement control account type");
-    let contactId = input.contactId, currency = input.currencyCode;
-    for (const { row, allocation } of loaded) {
-      contactId ??= row.contactId; currency ??= row.currencyCode;
-      if (contactId !== row.contactId || currency !== row.currencyCode) fail("All settlement documents must share the payment contact and currency");
-      if (input.date < row.issueDate) fail("Cash settlement cannot predate document recognition");
-      const snapshot = "senderSnapshot" in row ? row.senderSnapshot as { baseCurrencyCode?: string } | null : null;
-      if (snapshot?.baseCurrencyCode && snapshot.baseCurrencyCode !== base) unsupported("Base currency changed after document recognition");
-      const saved = await recognition(tx, ctx, row, allocation.documentType);
-      if (saved.entry.date !== row.issueDate) unsupported("Recognition posting date differs from the document issue date");
-      // Control accounts identify the historical base denomination even for old bills.
-      if (control.currencyCode !== base || (currency === base && saved.rateExact !== "1")) unsupported("Recognition base currency is not qualified for this organization");
-      const original = safeInvoiceMinor(saved.lines.filter(line => line.accountId === control.id).reduce((sum, line) => sum + (input.type === "received"
-        ? BigInt(line.debitAmount) - BigInt(line.creditAmount) : BigInt(line.creditAmount) - BigInt(line.debitAmount)), 0n));
-      const payable = safeInvoiceMinor(BigInt(row.amountPaid) + BigInt(row.amountDue));
-      if (original <= 0 || payable <= 0 || (allocation.documentType === "invoice" && payable !== row.total)) unsupported("Recognition and document payable are inconsistent");
-      if (allocation.documentType === "invoice" && original !== paymentCashBase(payable, currency, base, saved.rateExact))
-        unsupported("Invoice recognition no longer covers the outstanding total; additional recognition requires qualification");
-      await previousCarrying(tx, ctx, row, allocation, control.id, original, payable, base, saved.rateExact);
-      docs.push({ row, allocation, carrying: paymentCarryingBase(original, payable, row.amountPaid, allocation.amount), rateExact: saved.rateExact });
-    }
-    const [party] = await tx.select().from(contact).where(and(eq(contact.id, contactId!), eq(contact.organizationId, ctx.organizationId))).for("share");
-    if (!party || party.deletedAt || (input.type === "received" ? party.type === "supplier" : party.type === "customer")) fail("Payment contact is unavailable for this direction");
-    // Preflight the contact output before any write (creditLimit can be unsafe history).
-    if (party.creditLimit !== null) publicMoneyDto({ amount: party.creditLimit }, ["amount"]);
-    let cashAccountId: string;
-    if (input.bankAccountId) {
-      const [bank] = await tx.select().from(bankAccount).where(and(eq(bankAccount.id, input.bankAccountId), eq(bankAccount.organizationId, ctx.organizationId))).for("update");
-      if (!bank || bank.deletedAt || !bank.isActive || bank.currencyCode !== currency) fail("Payment bank must be active, organization-owned and in the document currency");
-      cashAccountId = await ensureBankLedgerAccount(ctx.organizationId, bank, tx);
-    } else cashAccountId = (await receivableAccount(tx, ctx.organizationId, "1100")).id;
-    const cashAccount = await ownedAccount(tx, ctx, cashAccountId, true);
-    if (cashAccount.type !== "asset" || cashAccountId === control.id) unsupported("Settlement cash account must be a distinct active asset account");
-    const fx = await createHistoricalRateResolver(ctx.organizationId, tx)(currency!, base, input.date);
-    if (!fx) throw new MissingExchangeRateError(currency!, base, input.date);
-    const cash = paymentCashBase(input.amount, currency!, base, fx.rateExact);
-    if (cash <= 0) unsupported("Cash settlement rounds to zero base minor units");
-    const carrying = safeInvoiceMinor(docs.reduce((sum, doc) => sum + BigInt(doc.carrying), 0n));
-    const gain = input.type === "received" ? BigInt(cash) - BigInt(carrying) : BigInt(carrying) - BigInt(cash);
-    const difference = safeInvoiceMinor(gain < 0n ? -gain : gain);
-    const fxAccount = difference ? await receivableAccount(tx, ctx.organizationId, gain > 0n ? "4910" : "5930",
-      { name: gain > 0n ? "Realised Currency Gains" : "Realised Currency Losses", type: gain > 0n ? "revenue" : "expense", subType: "non_operating" }, base) : null;
-    if (fxAccount && fxAccount.type !== (gain > 0n ? "revenue" : "expense")) unsupported("Invalid realised FX account type");
-    // Both sides and every individual result must remain numerically representable.
-    safeInvoiceMinor((input.type === "received" ? BigInt(cash) : BigInt(carrying)) + (gain < 0n ? BigInt(difference) : 0n));
-    safeInvoiceMinor((input.type === "received" ? BigInt(carrying) : BigInt(cash)) + (gain > 0n ? BigInt(difference) : 0n));
+    const { docs, control, contactId, currency, cashAccountId, fx, cash, gain, difference, fxAccount } = await preflightSettlement(tx, ctx, input, base);
     const [created] = await tx.insert(payment).values({ organizationId: ctx.organizationId, contactId: contactId!,
       paymentNumber: await nextNumber(tx, ctx), type: input.type, date: input.date, amount: input.amount, currencyCode: currency!,
       method: input.method, reference: input.reference || null, notes: input.notes || null, bankAccountId: input.bankAccountId ?? null, createdBy: ctx.userId }).returning();

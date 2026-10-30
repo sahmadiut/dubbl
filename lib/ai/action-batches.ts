@@ -2,18 +2,24 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiActionBatch, aiActionDecision, aiActionConsumption, aiConversation, aiRun, aiStep, aiUsageAttempt, aiRunInput, aiEvent, auditLog } from "@/lib/db/schema";
+import { aiActionBatch, aiActionDecision, aiActionConsumption, aiActionDelivery, documentEmailLog, aiConversation, aiRun, aiStep, aiUsageAttempt, aiRunInput, aiEvent, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
 import { assertRunLease, assertRuntimeEnabled, validateRunSnapshot } from "./run-lifecycle";
-import { actionItemSchema, adapterVersion, observeAction, actionResource, actionPermissions, previewSettlementInTransaction, type ActionItem } from "./action-adapters";
+import { actionItemSchema, adapterVersion, observeAction, actionResource, actionPermissions, previewSettlementInTransaction, previewInvoiceEmailInTransaction, type ActionItem } from "./action-adapters";
 import { eraseActionBatches } from "./action-batch-retention";
 import { previewJournalInTransaction } from "./action-preview";
 import { lockJournalEffect, lockSettlementEffect } from "./journal-effect-locks";
 import { payDocumentInTransaction } from "@/lib/api/payment-settlements";
 import { postJournalInTransaction } from "@/lib/api/journal-lifecycle";
 import { deleteDraftJournalInTransaction } from "@/lib/api/journal-delete";
+import { lockEmailEffect } from "./email-effect-locks";
+import { renderDocumentEmailHtml } from "@/lib/email/render-document-email";
+import { prepareDocumentEmailDelivery } from "@/lib/email/document-sender";
+import { documentMoneyText } from "@/lib/documents/render-wire";
+import { legacyMinor } from "@/lib/money/wire";
+import { EmailDeliveryRejectedError } from "@/lib/email/delivery-errors";
 
 const id = z.string().uuid().describe("Opaque own-run, proposal, item or organization-owned journal UUID.");
 const version = z.number().int().positive().max(2147483647);
@@ -364,7 +370,7 @@ function executableApproval(run: Run, lease: string, batch: Batch, conversation:
  * A lost fresh return is uncertain and must be reconciled, never reconstructed.
  */
 export function consumeApprovedAction(input: unknown) { return consumeAction(input); }
-async function consumeAction(input: unknown, domain?: "journal" | "settlement") {
+async function consumeAction(input: unknown, domain?: "journal" | "settlement" | "email") {
   const parsed = consumptionInput.parse(input);
   const value = { runId: parsed.runId.toLowerCase(), lease: parsed.lease.toLowerCase(), batchId: parsed.batchId.toLowerCase(), itemId: parsed.itemId.toLowerCase() };
   const lease = await assertRunLease(value.runId, value.lease);
@@ -380,6 +386,7 @@ async function consumeAction(input: unknown, domain?: "journal" | "settlement") 
     if (!item) fail("BATCH_INVALID");
     if (domain === "journal" && item.action !== "post_entry" && item.action !== "delete_draft_journal") fail("BATCH_INVALID");
     if (domain === "settlement" && item.action !== "settle_document") fail("BATCH_INVALID");
+    if (domain === "email" && item.action !== "email_invoice") fail("BATCH_INVALID");
     const [decision] = await tx.select().from(aiActionDecision).where(eq(aiActionDecision.batchId, row.id));
     if (!decision || decision.decision !== "approve" || decision.runId !== run.id || decision.ownerId !== run.ownerId || decision.organizationId !== run.organizationId ||
       decision.batchVersion !== row.version || decision.bindingDigest !== row.bindingDigest || decision.selectionDigest !== hash(authority.selectedItemIds) ||
@@ -468,18 +475,49 @@ export async function executeApprovedJournal(input: unknown) {
 export async function executeApprovedSettlement(input: unknown) {
   return executeApprovedEffect(input, "settlement");
 }
-async function executeApprovedEffect(input: unknown, domain: "journal" | "settlement") {
+/** Trusted worker only, never an automatic/model/public sending tool. */
+export async function executeApprovedInvoiceEmail(input: unknown) {
+  return executeApprovedEffect(input, "email");
+}
+async function invoiceEnvelope(preview: NonNullable<Awaited<ReturnType<typeof previewInvoiceEmailInTransaction>>["preview"]>) {
+  const content = preview.content;
+  const date = (value: string | null | undefined) => value ? new Date(`${value}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : undefined;
+  const body = await renderDocumentEmailHtml({ organizationName: content.organizationName, contactName: content.contactName,
+    documentType: "invoice", documentNumber: content.documentNumber,
+    amountFormatted: documentMoneyText(legacyMinor(BigInt(content.amountMinor)), content.currencyCode),
+    issueDateFormatted: date(content.issueDate), dueDateFormatted: date(content.dueDate) });
+  return { recipientEmail: preview.recipients[0].email, subject: preview.subject, body, replyTo: preview.replyTo || undefined, attachPdf: false };
+}
+async function executeApprovedEffect(input: unknown, domain: "journal" | "settlement" | "email") {
   const parsed = consumptionInput.parse(input);
   const value = { runId: parsed.runId.toLowerCase(), lease: parsed.lease.toLowerCase(), batchId: parsed.batchId.toLowerCase(), itemId: parsed.itemId.toLowerCase() };
   const fresh = await consumeAction(value, domain);
   if (fresh.code !== "ACTION_CONSUMED") return fresh;
   const action = fresh.action;
-  if (action.action === "email_invoice") fail("BATCH_INVALID");
+  let delivery: typeof aiActionDelivery.$inferSelect | undefined;
+  let dispatched = false, confirmed = false;
   try {
+    if (action.action === "email_invoice") {
+      const [run] = await db.select().from(aiRun).where(eq(aiRun.id, value.runId));
+      const ctx = await validateRunSnapshot(run);
+      const observed = await previewInvoiceEmailInTransaction(ctx, action.arguments);
+      if (!observed.preview) fail("BATCH_STALE");
+      const envelope = await invoiceEnvelope(observed.preview);
+      // The attempt and immutable content live durably before any external call.
+      // A lost commit acknowledgement cannot recreate this one-time handoff.
+      delivery = await db.transaction(async tx => {
+        const [log] = await tx.insert(documentEmailLog).values({ ...envelope, organizationId: ctx.organizationId, sentBy: ctx.userId,
+          documentType: "invoice", documentId: action.arguments.documentId, status: "uncertain", aiAttempt: true }).returning();
+        const [attempt] = await tx.insert(aiActionDelivery).values({ consumptionId: fresh.consumptionId,
+          organizationId: ctx.organizationId, ownerId: ctx.userId, emailLogId: log.id, envelopeDigest: hash(envelope) }).returning();
+        return attempt;
+      });
+    }
     const receipt = await db.transaction(async tx => {
       // Acquire domain/policy/credential locks BEFORE run locks, so Stop can win
       // while the effect waits on a resource. Read committed observes those waits.
-      if (action.action === "settle_document") await lockSettlementEffect(tx);
+      if (action.action === "email_invoice") await lockEmailEffect(tx);
+      else if (action.action === "settle_document") await lockSettlementEffect(tx);
       else await lockJournalEffect(tx, action.action === "delete_draft_journal");
       const [found] = await tx.select().from(aiRun).where(eq(aiRun.id, value.runId));
       if (!found) fail("BATCH_NOT_FOUND");
@@ -508,11 +546,34 @@ async function executeApprovedEffect(input: unknown, domain: "journal" | "settle
       await verify();
       const observed = action.action === "settle_document"
         ? await previewSettlementInTransaction(ctx, { ...action.arguments, expectedResourceVersion: item.resourceVersion }, tx)
+        : action.action === "email_invoice"
+        ? await previewInvoiceEmailInTransaction(ctx, { ...action.arguments, expectedResourceVersion: item.resourceVersion }, tx, delivery?.emailLogId)
         : await previewJournalInTransaction(ctx, { ...action.arguments, expectedResourceVersion: item.resourceVersion }, action.action, tx);
       if (!observed.preview || observed.preview.businessApproval.policyVersion !== item.policyVersion || observed.preview.businessApproval.required) fail("BATCH_STALE");
       await verify();
       let recordIds: string[];
-      if (action.action === "settle_document") {
+      if (action.action === "email_invoice") {
+        const email = await previewInvoiceEmailInTransaction(ctx, { ...action.arguments, expectedResourceVersion: item.resourceVersion }, tx, delivery?.emailLogId);
+        if (!email.preview || !delivery) fail("BATCH_STALE");
+        const envelope = await invoiceEnvelope(email.preview);
+        if (hash(envelope) !== delivery.envelopeDigest) fail("BATCH_STALE");
+        const send = await prepareDocumentEmailDelivery({ ...envelope, orgId: ctx.organizationId, userId: ctx.userId,
+          documentType: "invoice", documentId: action.arguments.documentId });
+        // SQL waits (including the audit) precede the LAST live check. Domain,
+        // policy, credential and run locks remain held through dispatch. Stop
+        // after this boundary observes the actual completed/uncertain effect.
+        await tx.insert(auditLog).values({ organizationId: run.organizationId, userId: run.ownerId, action: "ai.email.dispatch",
+          entityType: "document_email", entityId: delivery.emailLogId, changes: { consumptionId: consumption.id, operationKey: step.operationKey } });
+        await verify();
+        dispatched = true;
+        await send();
+        confirmed = true;
+        await tx.update(aiActionDelivery).set({ state: "confirmed" }).where(eq(aiActionDelivery.id, delivery.id));
+        await tx.update(documentEmailLog).set({ status: "sent" }).where(eq(documentEmailLog.id, delivery.emailLogId));
+        // Delivery already happened: expiry/Stop cannot roll it back or justify
+        // another send. Retain its bounded actual receipt on this original fence.
+        return settleApprovedAction(run.id, value.lease, consumption.id, { state: "succeeded", recordIds: [action.arguments.documentId, delivery.emailLogId] }, tx);
+      } else if (action.action === "settle_document") {
         const { documentType, documentId, ...paymentInput } = action.arguments;
         const result = await payDocumentInTransaction(ctx, documentType, documentId, paymentInput, tx);
         const saved = z.object({ payment: z.object({ id, journalEntryId: id }) }).parse(result);
@@ -539,6 +600,20 @@ async function executeApprovedEffect(input: unknown, domain: "journal" | "settle
     // domain status to guess that this operation performed the effect.
     const [step] = await db.select().from(aiStep).where(and(eq(aiStep.id, fresh.stepId), eq(aiStep.runId, value.runId)));
     if (step?.state === "succeeded") return { code: "ACTION_EXECUTED" as const, consumptionId: fresh.consumptionId, receipt: operationReceipt(step) };
+    if (action.action === "email_invoice") {
+      // Also finds a committed attempt whose creation acknowledgement was lost.
+      const [attempt] = await db.select().from(aiActionDelivery).where(eq(aiActionDelivery.consumptionId, fresh.consumptionId));
+      const unknown = dispatched && !(err instanceof EmailDeliveryRejectedError);
+      const state = confirmed ? "confirmed" : unknown ? "uncertain" : "failed";
+      if (attempt) await db.transaction(async tx => {
+        await tx.update(aiActionDelivery).set({ state }).where(and(eq(aiActionDelivery.id, attempt.id), eq(aiActionDelivery.state, "uncertain")));
+        await tx.update(documentEmailLog).set({ status: confirmed ? "sent" : state }).where(eq(documentEmailLog.id, attempt.emailLogId));
+      });
+      const receipt = await settleApprovedAction(value.runId, value.lease, fresh.consumptionId, {
+        state: confirmed ? "succeeded" : unknown ? "uncertain" : "failed", recordIds: attempt ? [action.arguments.documentId, attempt.emailLogId] : [] });
+      return { code: receipt.state === "succeeded" ? "ACTION_EXECUTED" as const : receipt.state === "failed" ? "ACTION_FAILED" as const : "ACTION_RECONCILIATION_REQUIRED" as const,
+        consumptionId: fresh.consumptionId, receipt };
+    }
     const known = err instanceof Failure || err instanceof AuthError || err instanceof z.ZodError;
     const receipt = await settleApprovedAction(value.runId, value.lease, fresh.consumptionId, { state: known ? "failed" : "uncertain", recordIds: [] });
     return { code: receipt.state === "failed" ? "ACTION_FAILED" as const : "ACTION_RECONCILIATION_REQUIRED" as const, consumptionId: fresh.consumptionId, receipt };

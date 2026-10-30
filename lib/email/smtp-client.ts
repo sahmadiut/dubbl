@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { EmailDeliveryRejectedError } from "./delivery-errors";
 
 const ALGORITHM = "aes-256-gcm";
 
@@ -67,7 +68,7 @@ export async function sendEmail(
     ? `"${config.fromName}" <${config.fromEmail}>`
     : config.fromEmail;
 
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from,
     replyTo: config.replyTo || undefined,
     to: options.to,
@@ -78,6 +79,7 @@ export async function sendEmail(
       content: a.content,
     })),
   });
+  if (Array.isArray(info?.rejected) && info.rejected.length && (!Array.isArray(info.accepted) || !info.accepted.length)) throw new EmailDeliveryRejectedError();
 }
 
 export async function verifyConnection(config: SmtpConfig): Promise<boolean> {

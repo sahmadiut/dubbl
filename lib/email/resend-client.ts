@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { EmailDeliveryRejectedError } from "./delivery-errors";
 
 interface EmailOptions {
   to: string;
@@ -21,7 +22,7 @@ export async function sendPlatformEmail(options: EmailOptions) {
 
   const resend = new Resend(apiKey);
 
-  await resend.emails.send({
+  const result = await resend.emails.send({
     from: options.from || "dubbl <noreply@dubbl.dev>",
     to: options.to,
     subject: options.subject,
@@ -32,4 +33,8 @@ export async function sendPlatformEmail(options: EmailOptions) {
       content: a.content,
     })),
   });
+  // The SDK resolves API rejections rather than throwing. Never record those
+  // responses as confirmed delivery, or persist their payload in AI metadata.
+  if (result.error) throw new EmailDeliveryRejectedError();
+  if (!result.data?.id) throw new Error("Email provider acknowledgement unavailable");
 }

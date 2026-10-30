@@ -62,5 +62,6 @@ export const aiActionConsumption = pgTable("ai_action_consumption", {
   foreignKey({ columns: [t.decisionId, t.batchId, t.runId, t.organizationId, t.ownerId], foreignColumns: [aiActionDecision.id, aiActionDecision.batchId, aiActionDecision.runId, aiActionDecision.organizationId, aiActionDecision.ownerId], name: "ai_action_consumption_decision_scope" }).onDelete("cascade"),
   foreignKey({ columns: [t.stepId, t.runId, t.organizationId, t.ownerId], foreignColumns: [aiStep.id, aiStep.runId, aiStep.organizationId, aiStep.ownerId], name: "ai_action_consumption_step_scope" }).onDelete("cascade"),
   unique("ai_action_consumption_step").on(t.stepId), unique("ai_action_consumption_item").on(t.decisionId, t.itemId),
+  unique("ai_action_consumption_scope").on(t.id, t.organizationId, t.ownerId),
   check("ai_action_consumption_digests", sql`${t.argumentDigest} ~ '^[a-f0-9]{64}$' and ${t.resourceVersion} ~ '^[a-f0-9]{64}$' and ${t.policyVersion} ~ '^[a-f0-9]{64}$'`),
 ]);

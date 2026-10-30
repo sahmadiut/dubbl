@@ -53,7 +53,7 @@ export function registerEmailTools(server: McpServer, ctx: AuthContext) {
   );
 
   server.registerTool("resend_document_email", {
-    description: "Resend an owned email log after document/reference/money preflight. Requires manage:invoices and view:data. Uses saved currency and exact PDF formatting; rendering failures do not silently omit attachments. Returns {success,emailLogId,status}; provider failures retain a failed log.",
+    description: "Resend an owned ordinary email log after document/reference/money preflight. AI delivery attempts cannot be resent; they require a fresh reviewed proposal. Requires manage:invoices and view:data. Uses saved currency and exact PDF formatting; rendering failures do not silently omit attachments. Returns {success,emailLogId,status}; provider failures retain a failed log.",
     inputSchema: z.strictObject({ emailLogId: renderId }),
   }, params => wrapTool(ctx, async () => {
     const result = await resendDocumentEmail(ctx, params.emailLogId);

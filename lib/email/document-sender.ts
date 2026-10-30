@@ -19,6 +19,18 @@ interface SendDocumentEmailOptions {
   replyTo?: string;
 }
 
+/** Shared transport preparation only. The trusted caller owns its durable log,
+ * limit checks and final authorization boundary; this never retries or logs. */
+export async function prepareDocumentEmailDelivery(options: SendDocumentEmailOptions) {
+  const smtp = await db.query.emailConfig.findFirst({ where: eq(emailConfig.organizationId, options.orgId) });
+  const attachments = options.attachPdf && options.pdfBuffer && options.pdfFilename
+    ? [{ filename: options.pdfFilename, content: options.pdfBuffer }] : undefined;
+  return () => smtp?.isVerified
+    ? sendEmail(smtp, { to: options.recipientEmail, subject: options.subject, html: options.body, attachments })
+    : sendPlatformEmail({ to: options.recipientEmail, subject: options.subject, html: options.body,
+      from: "dubbl <invoices@dubbl.dev>", replyTo: options.replyTo || undefined, attachments });
+}
+
 export async function sendDocumentEmail(options: SendDocumentEmailOptions): Promise<{
   id: string;
   status: "sent" | "failed";
@@ -26,37 +38,11 @@ export async function sendDocumentEmail(options: SendDocumentEmailOptions): Prom
   // Check email limit
   await checkEmailLimit(options.orgId);
 
-  const attachments =
-    options.attachPdf && options.pdfBuffer && options.pdfFilename
-      ? [{ filename: options.pdfFilename, content: options.pdfBuffer }]
-      : undefined;
-
   let status: "sent" | "failed" = "sent";
   let errorMessage: string | null = null;
 
   try {
-    // Check if org has verified SMTP config
-    const smtp = await db.query.emailConfig.findFirst({
-      where: eq(emailConfig.organizationId, options.orgId),
-    });
-
-    if (smtp && smtp.isVerified) {
-      await sendEmail(smtp, {
-        to: options.recipientEmail,
-        subject: options.subject,
-        html: options.body,
-        attachments,
-      });
-    } else {
-      await sendPlatformEmail({
-        to: options.recipientEmail,
-        subject: options.subject,
-        html: options.body,
-        from: "dubbl <invoices@dubbl.dev>",
-        replyTo: options.replyTo || undefined,
-        attachments,
-      });
-    }
+    await (await prepareDocumentEmailDelivery(options))();
   } catch (err) {
     status = "failed";
     errorMessage = err instanceof Error ? err.message : "Unknown error";

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { subscription, document, attachment, organization, documentEmailLog } from "@/lib/db/schema";
-import { eq, and, gte, sql, isNull } from "drizzle-orm";
+import { eq, and, or, ne, gte, sql, isNull } from "drizzle-orm";
 import { getEffectiveLimits, PLAN_LIMITS, STORAGE_PLANS, type PlanName, type StoragePlanName } from "@/lib/plans";
 import type { PgTable, PgColumn } from "drizzle-orm/pg-core";
 
@@ -137,7 +137,7 @@ export async function checkMultiCurrency(orgId: string, currencyCode: string) {
   }
 }
 
-export async function checkEmailLimit(orgId: string, exec: ReadExecutor = db) {
+export async function checkEmailLimit(orgId: string, exec: ReadExecutor = db, ownAttemptLogId?: string) {
   const { sub } = await getOrgPlanLimits(orgId, exec);
   const plan = (sub?.plan ?? "free") as PlanName;
   const storagePlan = (sub?.storagePlan ?? "free") as StoragePlanName;
@@ -155,7 +155,8 @@ export async function checkEmailLimit(orgId: string, exec: ReadExecutor = db) {
     .where(
       and(
         eq(documentEmailLog.organizationId, orgId),
-        eq(documentEmailLog.status, "sent"),
+        or(eq(documentEmailLog.status, "sent"), and(eq(documentEmailLog.aiAttempt, true), eq(documentEmailLog.status, "uncertain"))),
+        ownAttemptLogId ? ne(documentEmailLog.id, ownAttemptLogId) : undefined,
         gte(documentEmailLog.sentAt, monthStart)
       )
     );

@@ -61,6 +61,7 @@ export async function resendDocumentEmail(ctx: AuthContext, id: string) {
   const entry = await db.query.documentEmailLog.findFirst({ where: and(eq(documentEmailLog.id, id), eq(documentEmailLog.organizationId, ctx.organizationId)) });
   const org = await db.query.organization.findFirst({ where: and(eq(organization.id, ctx.organizationId), isNull(organization.deletedAt)) });
   if (!entry || !org) throw new AuthError("Email log entry not found", 404);
+  if (entry.aiAttempt) throw new AuthError("AI delivery requires a fresh reviewed proposal; an existing attempt cannot be resent", 409);
   const kind = z.enum(["invoice", "quote", "credit_note", "purchase_order", "debit_note"]).parse(entry.documentType);
   // Validate the owning document even without an attachment. Failed rendering
   // must not silently send a different email or create a success log.

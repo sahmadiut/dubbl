@@ -8,6 +8,7 @@ import {
   pgEnum,
   uniqueIndex,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { organization, users } from "./auth";
@@ -105,11 +106,12 @@ export const documentEmailLog = pgTable("document_email_log", {
   subject: text("subject").notNull(),
   body: text("body").notNull(),
   attachPdf: boolean("attach_pdf").notNull().default(true),
+  aiAttempt: boolean("ai_attempt").notNull().default(false),
   status: text("status").notNull(), // sent, failed
   errorMessage: text("error_message"),
   sentBy: uuid("sent_by").references(() => users.id),
   sentAt: timestamp("sent_at", { mode: "date" }).defaultNow().notNull(),
-});
+}, t => [unique("document_email_log_scope").on(t.id, t.organizationId)]);
 
 // Relations
 export const documentEmailLogRelations = relations(documentEmailLog, ({ one }) => ({

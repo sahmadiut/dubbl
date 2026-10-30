@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { organization } from "@/lib/db/schema";
+import { organization, emailConfig } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
@@ -122,8 +122,13 @@ async function settlementPreview(ctx: AuthContext, input: unknown, executor?: Tx
 }
 
 export async function previewInvoiceEmail(ctx: AuthContext, input: unknown) {
+  return previewInvoiceEmailInTransaction(ctx, input);
+}
+/** Effect callers serialize the complete email resource/policy/limit lock set. */
+export async function previewInvoiceEmailInTransaction(ctx: AuthContext, input: unknown, executor?: Tx, ownAttemptLogId?: string) {
   const { expectedResourceVersion, ...args } = emailActionPreviewSchema.parse(input);
-  return observe(ctx, "email_invoice", current => db.transaction(async tx => {
+  return observe(ctx, "email_invoice", current => {
+    const read = async (tx: Tx) => {
     const value = await readDocumentForRendering(current, "invoice", args.documentId, undefined, tx);
     const doc = value.document, found = value.snapshot.found;
     if (!("invoiceNumber" in found) || !["sent", "partial", "paid", "overdue"].includes(found.status)) return unavailable("PREVIEW_UNSUPPORTED");
@@ -132,14 +137,15 @@ export async function previewInvoiceEmail(ctx: AuthContext, input: unknown) {
     // addresses and saved/live disagreement. No model-controlled recipient.
     if (!email || !z.string().email().max(254).safeParse(email).success || /[\s,;<>\x00-\x1f\x7f]/.test(email) || email !== found.contact.email) invalid();
     if (value.snapshot.org.contactEmail && (!z.string().email().max(254).safeParse(value.snapshot.org.contactEmail).success || /[\s,;<>\x00-\x1f\x7f]/.test(value.snapshot.org.contactEmail))) invalid();
-    const emailLimit = await checkEmailLimit(current.organizationId, tx);
+    const emailLimit = await checkEmailLimit(current.organizationId, tx, ownAttemptLogId);
+    const transport = await tx.query.emailConfig.findFirst({ where: eq(emailConfig.organizationId, current.organizationId) });
     const businessApproval = await previewBusinessPolicy(tx, current, "invoice", found);
     bounded(value);
     const subject = outputTranslator()(`${outputDocumentKind("invoice")}Preview`, { documentNumber: doc.documentNumber, organizationName: value.snapshot.org.name });
     if (subject.length > 2000 || /[\x00-\x1f\x7f]/.test(subject)) invalid();
     const content = { organizationName: value.snapshot.org.name, contactName: doc.contactName, documentType: "invoice", documentNumber: doc.documentNumber,
       amountMinor: doc.totalMinor, currencyCode: doc.currencyCode, issueDate: doc.issueDate, dueDate: doc.secondDate, personalMessage: null, attachPdf: false, viewUrl: null };
-    const resourceVersion = hash({ adapter: 1, actor: current.userId, organizationId: current.organizationId, args, value, businessApproval, emailLimit, subject, content });
+    const resourceVersion = hash({ adapter: 1, actor: current.userId, organizationId: current.organizationId, args, value, businessApproval, emailLimit, subject, content, transport: transport ?? null });
     if (expectedResourceVersion && resourceVersion !== expectedResourceVersion) return unavailable("PREVIEW_STALE");
     const preview = { schemaVersion: 1, action: "email_invoice" as const, labelKey: "email_invoice", ...window(), resourceVersion,
       target: { type: "invoice", id: found.id, reference: doc.documentNumber, href: `/invoices/${found.id}` },
@@ -149,7 +155,9 @@ export async function previewInvoiceEmail(ctx: AuthContext, input: unknown) {
       effects: ["discloses_invoice_summary_to_saved_contact", "external_delivery_cannot_be_recalled", "records_delivery_attempt", "does_not_change_invoice_status"],
       businessApproval, authority: "preview_only", canApprove: false, recovery: ["inspect_record", "refresh_preview"] };
     bounded(preview); return { code: "PREVIEW_ONLY", preview, recovery: ["inspect_record", "refresh_preview"] };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" }));
+    };
+    return executor ? read(executor) : db.transaction(read, { isolationLevel: "repeatable read", accessMode: "read only" });
+  });
 }
 
 export function observeAction(ctx: AuthContext, item: ActionItem, expectedResourceVersion?: string) {

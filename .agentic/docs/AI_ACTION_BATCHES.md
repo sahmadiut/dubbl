@@ -1,5 +1,9 @@
 # Durable action proposal batches
 
+AI-042 independently qualifies the combined finite adapters and versioned
+storage through [replacement, concurrency and retention acceptance](AI_ACTION_STORAGE_ACCEPTANCE.md).
+AI-008 remains the outer parent; AI-043/044 retain decisions and dispatch.
+
 AI-048 adds the [finite settlement, draft-deletion and invoice-email adapters](AI_FINITE_ACTION_ADAPTERS.md), shared REST/MCP observations and mixed persisted
 proposals. Their strict arguments, per-action live permissions, domain gates,
 separate cash/base amounts, derived recipients and observation-only limits are

@@ -1,5 +1,9 @@
 # Combined sensitive observation acceptance
 
+AI-042 subsequently adds independent [versioned storage and lifecycle-race
+acceptance](AI_ACTION_STORAGE_ACCEPTANCE.md). Its parent journey supplements the
+AI-046 domain/policy checks below; AI-008 remains the outer integration gate.
+
 AI-046 qualifies the combined AI-047 current business-policy observer and AI-048
 finite adapters within AI-045 persisted proposals. The executable acceptance is
 tests/integration/ai-action-integration.test.ts and its independent worker. This

@@ -8,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { users, organization, member, customRole, chartAccount, journalEntry, journalLine, periodLock, approvalWorkflow, approvalRequest } from "../../lib/db/schema";
+import { users, organization, member, customRole, chartAccount, journalEntry, journalLine, periodLock, approvalWorkflow, approvalWorkflowStep, approvalRequest, approvalAction } from "../../lib/db/schema";
 
 let session: { user: { id: string }; iat: number; expires: string } | null = null;
 mock.module(new URL("../../lib/auth.ts", import.meta.url).href, { namedExports: { auth: async () => session } });
@@ -66,7 +66,12 @@ async function main() {
       (select count(*)::text from ai_step) as steps,
       (select count(*)::text from ai_event) as events,
       (select count(*)::text from audit_log) as audits,
-      (select count(*)::text from approval_request) as business_approvals`)).rows[0];
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_request t) as business_approvals,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_workflow t) as policies,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_workflow_step t) as policy_steps,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_action t) as policy_actions,
+      (select count(*)::text from payment) as payments,
+      (select count(*)::text from document_email_log) as deliveries`)).rows[0];
     const before = await snapshot(), result = await fn(); assert.deepEqual(await snapshot(), before); return result;
   }
   const semantic = (value: { preview: Record<string, unknown> }) => { const p = { ...value.preview }; delete p.observedAt; delete p.expiresAt; return { ...value, preview: p }; };
@@ -79,7 +84,11 @@ async function main() {
     assert.deepEqual(rest.preview.amounts, [{ currencyCode: "IRR", debitAmountMinor: "1250", creditAmountMinor: "1250" }, { currencyCode: "USD", debitAmountMinor: "1250", creditAmountMinor: "1250" }]);
     assert.deepEqual(rest.preview.recipients, []); assert.ok(rest.preview.effects.includes("scheduled_reversal"));
     assert.equal(Date.parse(rest.preview.expiresAt) - Date.parse(rest.preview.observedAt), 300000);
-    assert.equal(rest.preview.businessApproval.evaluation, "not_evaluated");
+    assert.equal(rest.preview.schemaVersion, 2);
+    assert.equal(rest.preview.businessApproval.evaluation, "evaluated");
+    assert.equal(rest.preview.businessApproval.requirement, "not_required");
+    assert.equal(rest.preview.businessApproval.approvalSatisfied, false);
+    assert.deepEqual(rest.preview.businessApproval.nextActors, []);
     assert.doesNotMatch(JSON.stringify(rest), /FOREIGN_ACCOUNT_SECRET|credential|leaseOwner|identity|argumentHash/);
     assert.deepEqual(semantic(await unchanged(() => mcp(body))), semantic(rest));
     assert.equal((await unchanged(() => read({ ...body, expectedResourceVersion: rest.preview.resourceVersion }))).code, "PREVIEW_ONLY");
@@ -92,12 +101,92 @@ async function main() {
     await db.update(journalEntry).set({ reference: "new reference" }).where(eq(journalEntry.id, local.entry.id));
     assert.equal((await read({ ...body, expectedResourceVersion: refreshed.preview.resourceVersion })).code, "PREVIEW_STALE");
     const [workflow] = await db.insert(approvalWorkflow).values({ organizationId: org.id, name: "Private approver name", entityType: "journal_entry" }).returning();
+    const [step] = await db.insert(approvalWorkflowStep).values({ workflowId: workflow.id, stepOrder: 1, approverId: membership.id }).returning();
     const [approval] = await db.insert(approvalRequest).values({ organizationId: org.id, workflowId: workflow.id, entityType: "journal_entry", entityId: local.entry.id, requestedById: membership.id }).returning();
-    const pending = await read(body); assert.deepEqual(pending.preview.businessApproval, { evaluation: "not_evaluated", activeWorkflowPresent: true, latestRequestStatus: "pending" });
+    const pending = await unchanged(() => read(body));
+    assert.equal(pending.preview.businessApproval.latestRequestStatus, "pending");
+    assert.equal(pending.preview.businessApproval.required, true);
+    assert.equal(pending.preview.businessApproval.requirement, "policy_repair_required");
+    assert.deepEqual(pending.preview.businessApproval.nextActors, ["approval_administrator"]);
+    assert.equal(pending.preview.businessApproval.canCurrentActorApprove, false);
     assert.doesNotMatch(JSON.stringify(pending), /Private approver name|approverId|workflowId|requestedById/);
     await db.update(approvalRequest).set({ status: "approved" }).where(eq(approvalRequest.id, approval.id));
     assert.equal((await mcp({ ...body, expectedResourceVersion: pending.preview.resourceVersion })).code, "PREVIEW_STALE");
     assert.equal((await read(body)).preview.canApprove, false);
+    const approved = await read(body);
+    assert.equal(approved.preview.businessApproval.approvalSatisfied, false);
+    assert.equal(approved.preview.businessApproval.resourceBoundApproval, false);
+    // Evaluate actual domain predicates; metadata alone never approves even an
+    // unchanged resource. Header/line edits change the resource fingerprint.
+    await db.update(approvalWorkflow).set({ conditions: [{ field: "reference", operator: "eq", value: "does not match" }] }).where(eq(approvalWorkflow.id, workflow.id));
+    assert.equal((await unchanged(() => mcp({ ...body, expectedResourceVersion: approved.preview.resourceVersion }))).code, "PREVIEW_STALE");
+    const nonmatching = await unchanged(() => mcp(body));
+    assert.equal(nonmatching.preview.businessApproval.required, false);
+    assert.equal(nonmatching.preview.businessApproval.latestRequestStatus, "approved");
+    assert.equal(nonmatching.preview.businessApproval.approvalSatisfied, false);
+    await db.update(approvalWorkflow).set({ conditions: [{ field: "entryNumber", operator: "gte", value: String(local.entry.entryNumber) }] }).where(eq(approvalWorkflow.id, workflow.id));
+    assert.equal((await read(body)).preview.businessApproval.required, true);
+    const [independent] = await db.insert(users).values({ name: "PRIVATE APPROVER", email: "ai047-independent@test.invalid" }).returning();
+    const [independentMember] = await db.insert(member).values({ organizationId: org.id, userId: independent.id, role: "member" }).returning();
+    await db.update(approvalWorkflowStep).set({ approverId: independentMember.id, isRequired: false }).where(eq(approvalWorkflowStep.id, step.id));
+    const independentView = await unchanged(() => mcp(body));
+    assert.deepEqual(independentView.preview.businessApproval.nextActors, ["independent_business_approver"]);
+    assert.equal(independentView.preview.businessApproval.requirement, "resource_bound_approval_required");
+    assert.equal(independentView.preview.businessApproval.canCurrentActorApprove, false);
+    assert.doesNotMatch(JSON.stringify(independentView), new RegExp(`${independent.id}|${independentMember.id}|PRIVATE APPROVER|${workflow.id}|${approval.id}`));
+    // Step/action changes invalidate snapshots without relying on updatedAt.
+    assert.equal((await read({ ...body, expectedResourceVersion: approved.preview.resourceVersion })).code, "PREVIEW_STALE");
+    const [action] = await db.insert(approvalAction).values({ requestId: approval.id, stepId: step.id, userId: independentMember.id, action: "approve", comment: "PRIVATE COMMENT" }).returning();
+    assert.equal((await unchanged(() => mcp({ ...body, expectedResourceVersion: independentView.preview.resourceVersion }))).code, "PREVIEW_STALE");
+    const withAction = await read(body);
+    assert.equal(withAction.preview.businessApproval.approvalSatisfied, false);
+    assert.doesNotMatch(JSON.stringify(withAction), /PRIVATE COMMENT/);
+    await db.update(approvalAction).set({ comment: "Changed without timestamp" }).where(eq(approvalAction.id, action.id));
+    assert.equal((await read({ ...body, expectedResourceVersion: withAction.preview.resourceVersion })).code, "PREVIEW_STALE");
+    await db.update(journalEntry).set({ createdBy: independent.id }).where(eq(journalEntry.id, local.entry.id));
+    assert.equal((await read(body)).preview.businessApproval.requirement, "policy_repair_required");
+    await db.update(journalEntry).set({ createdBy: null }).where(eq(journalEntry.id, local.entry.id));
+    const [foreignMembership] = await db.select().from(member).where(eq(member.organizationId, foreign.id));
+    await db.update(approvalWorkflowStep).set({ approverId: foreignMembership.id }).where(eq(approvalWorkflowStep.id, step.id));
+    assert.equal((await unchanged(() => mcp(body))).code, "PREVIEW_POLICY_INVALID");
+    await db.update(approvalWorkflowStep).set({ approverId: independentMember.id }).where(eq(approvalWorkflowStep.id, step.id));
+    for (const conditions of [[{ field: "total", operator: "gte", value: "1" }], [{ field: "entryNumber", operator: "gte", value: "01" }]]) {
+      await db.update(approvalWorkflow).set({ conditions }).where(eq(approvalWorkflow.id, workflow.id));
+      assert.equal((await unchanged(() => read(body))).code, "PREVIEW_POLICY_INVALID");
+    }
+    await db.update(approvalWorkflow).set({ conditions: [] }).where(eq(approvalWorkflow.id, workflow.id));
+    const [duplicate] = await db.insert(approvalWorkflow).values({ organizationId: org.id, name: "Ambiguous", entityType: "journal_entry" }).returning();
+    assert.equal((await read(body)).code, "PREVIEW_POLICY_INVALID"); // missing steps
+    const [duplicateStep] = await db.insert(approvalWorkflowStep).values({ workflowId: duplicate.id, stepOrder: 1, approverId: independentMember.id }).returning();
+    assert.equal((await unchanged(() => mcp(body))).code, "PREVIEW_POLICY_INVALID"); // two matches
+    // Invalid policy is rejected even when another policy already matches.
+    await db.update(approvalWorkflow).set({ conditions: [{ field: "unsupported", operator: "eq", value: "x" }] }).where(eq(approvalWorkflow.id, duplicate.id));
+    assert.equal((await read(body)).code, "PREVIEW_POLICY_INVALID");
+    await db.delete(approvalWorkflowStep).where(eq(approvalWorkflowStep.id, duplicateStep.id));
+    await db.delete(approvalWorkflow).where(eq(approvalWorkflow.id, duplicate.id));
+    await db.update(approvalWorkflow).set({ name: "x".repeat(32769) }).where(eq(approvalWorkflow.id, workflow.id));
+    assert.equal((await unchanged(() => read(body))).code, "PREVIEW_TOO_LARGE");
+    await db.update(approvalWorkflow).set({ name: "Private approver name", isActive: false }).where(eq(approvalWorkflow.id, workflow.id));
+    assert.equal((await read(body)).preview.businessApproval.requirement, "not_required");
+    await db.update(approvalWorkflow).set({ isActive: true }).where(eq(approvalWorkflow.id, workflow.id));
+    await db.update(approvalRequest).set({ requestedById: foreignMembership.id }).where(eq(approvalRequest.id, approval.id));
+    assert.equal((await unchanged(() => read(body))).code, "PREVIEW_POLICY_INVALID");
+    await db.update(approvalRequest).set({ requestedById: membership.id }).where(eq(approvalRequest.id, approval.id));
+    await db.update(approvalRequest).set({ currentStepOrder: 2 }).where(eq(approvalRequest.id, approval.id));
+    assert.equal((await read(body)).code, "PREVIEW_POLICY_INVALID");
+    await db.update(approvalRequest).set({ currentStepOrder: 1 }).where(eq(approvalRequest.id, approval.id));
+    await db.update(approvalAction).set({ userId: foreignMembership.id }).where(eq(approvalAction.id, action.id));
+    assert.equal((await unchanged(() => mcp(body))).code, "PREVIEW_POLICY_INVALID");
+    await db.update(approvalAction).set({ userId: independentMember.id }).where(eq(approvalAction.id, action.id));
+    const extraSteps = await db.insert(approvalWorkflowStep).values(Array.from({ length: 100 }, (_, i) => ({ workflowId: workflow.id, stepOrder: i + 2, approverId: independentMember.id }))).returning();
+    assert.equal((await read(body)).code, "PREVIEW_TOO_LARGE");
+    for (const s of extraSteps) await db.delete(approvalWorkflowStep).where(eq(approvalWorkflowStep.id, s.id));
+    const extraActions = await db.insert(approvalAction).values(Array.from({ length: 100 }, () => ({ requestId: approval.id, stepId: step.id, userId: independentMember.id, action: "comment" as const }))).returning();
+    assert.equal((await unchanged(() => mcp(body))).code, "PREVIEW_TOO_LARGE");
+    for (const a of extraActions) await db.delete(approvalAction).where(eq(approvalAction.id, a.id));
+    const extraPolicies = await db.insert(approvalWorkflow).values(Array.from({ length: 20 }, (_, i) => ({ organizationId: org.id, name: `Unused ${i}`, entityType: "journal_entry" as const }))).returning();
+    assert.equal((await read(body)).code, "PREVIEW_TOO_LARGE");
+    for (const w of extraPolicies) await db.delete(approvalWorkflow).where(eq(approvalWorkflow.id, w.id));
     // Unknown keys and forged scope/approval/execution fields are rejected by both transports.
     for (const invalid of [{ ...body, organizationId: foreign.id }, { ...body, approved: true }, { ...body, arguments: {} }, { ...body, action: "delete_entry" }, { entryId: "bad" }, { ...body, expectedResourceVersion: "bad" }]) {
       await read(invalid, 400); await mcp(invalid, true);
@@ -165,6 +254,22 @@ async function main() {
       await locker.query("COMMIT");
       assert.equal((await waiting).code, "PREVIEW_DENIED");
     } finally { await locker.query("ROLLBACK"); locker.release(); await waiting; }
+    await db.update(customRole).set({ permissions }).where(eq(customRole.id, role.id));
+    const policyLocker = await pool.connect();
+    let policyWaiting: ReturnType<typeof previewJournalPost> | undefined;
+    try {
+      await policyLocker.query("BEGIN"); await policyLocker.query("LOCK TABLE approval_workflow IN ACCESS EXCLUSIVE MODE");
+      policyWaiting = previewJournalPost(ctx, body);
+      let blocked = false;
+      for (let i = 0; i < 200; i++) {
+        const observed = await pool.query("select 1 from pg_stat_activity where datname=current_database() and wait_event_type='Lock' and query like '%from \"approval_workflow\"%' and pid<>pg_backend_pid()");
+        if (observed.rowCount) { blocked = true; break; } await delay(10);
+      }
+      assert.equal(blocked, true, "Preview should be waiting on actual policy read");
+      await db.update(customRole).set({ permissions: permissions.filter(p => p !== "use:ai") }).where(eq(customRole.id, role.id));
+      await policyLocker.query("COMMIT");
+      const denied = await policyWaiting; assert.equal(denied.code, "PREVIEW_DENIED"); assert.equal(denied.preview, null);
+    } finally { await policyLocker.query("ROLLBACK"); policyLocker.release(); await policyWaiting; }
     await db.update(customRole).set({ permissions }).where(eq(customRole.id, role.id));
     // Previously obtained contexts do not preserve deleted membership rights.
     await db.delete(member).where(eq(member.id, membership.id));

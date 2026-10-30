@@ -2,7 +2,8 @@
 
 AI-045 implements storage and explicit revisions for the existing AI-041 manual
 journal posting preview. AI-046 owns additional finite sensitive adapters and
-business-policy evaluation; AI-042 retains independent integration. AI-043/044
+business-policy integration; its child AI-047 binds current journal policy and
+AI-048 expands payment/deletion/sending. AI-042 retains independent integration. AI-043/044
 still own explicit decisions and approved execution. These proposals confer no
 approval or execution authority, including when selected or saved.
 
@@ -30,6 +31,11 @@ run/request keys, a partial unique pending row, bounded JSONB, positive versions
 and canonical digests. The original parsed arguments live in `authority`, separate
 from the complete bounded `display`. Per-item authority binds adapter version,
 resource fingerprint, prepared step UUID/version and dependency graph. The batch
+also binds adapter version 2 and the explicit policy fingerprint described in the
+[business-policy contract](AI_BUSINESS_POLICY_PREVIEWS.md). Policy/step/request/
+action changes invalidate the complete display even if timestamps are unchanged.
+Legacy adapter-version-1 rows return BATCH_STALE; explicit revision can upgrade
+them under the original expiry. No existing row is silently rewritten. The batch
 binding digest also covers owner/org/run, row/revision, expiry, selection and the
 display. Canonical hashing survives JSONB property reordering. This unkeyed digest
 is an integrity binding, not an approval token or signed capability.

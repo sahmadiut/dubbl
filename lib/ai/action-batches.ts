@@ -7,7 +7,7 @@ import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
 import { assertRunLease, assertRuntimeEnabled, validateRunSnapshot } from "./run-lifecycle";
-import { previewJournalPost } from "./action-preview";
+import { previewJournalPost, JOURNAL_POST_ADAPTER_VERSION } from "./action-preview";
 
 const id = z.string().uuid().describe("Opaque own-run, proposal, item or organization-owned journal UUID.");
 const version = z.number().int().positive().max(2147483647);
@@ -33,7 +33,7 @@ type Spec = z.infer<typeof actionBatchSpecSchema>;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Run = typeof aiRun.$inferSelect;
 type Batch = typeof aiActionBatch.$inferSelect;
-const authoritySchema = z.object({ items: z.array(item.extend({ stepId: id, stepVersion: z.literal(1), adapterVersion: z.literal(1), resourceVersion: digest }).strict()).min(1).max(10), selectedItemIds: z.array(id).max(10) }).strict();
+const authoritySchema = z.object({ items: z.array(item.extend({ stepId: id, stepVersion: z.literal(1), adapterVersion: z.union([z.literal(1), z.literal(2)]), resourceVersion: digest, policyVersion: digest.optional() }).strict()).min(1).max(10), selectedItemIds: z.array(id).max(10) }).strict();
 type Authority = z.infer<typeof authoritySchema>;
 type Preview = NonNullable<Awaited<ReturnType<typeof previewJournalPost>>["preview"]>;
 type Display = { items: { itemId: string; stepId: string; selected: boolean; dependsOn: string[]; preview: Preview }[]; totals: { currencyCode: string; debitAmountMinor: string; creditAmountMinor: string }[] };
@@ -109,7 +109,7 @@ async function snapshot(ctx: AuthContext, spec: Spec) {
     const observed = await previewJournalPost(ctx, item.arguments);
     if (!observed.preview) fail(observed.code === "PREVIEW_DENIED" ? "BATCH_DENIED" : "BATCH_STALE");
     const preview = observed.preview, stepId = randomUUID(), selected = spec.selectedItemIds.includes(item.itemId);
-    items.push({ ...item, stepId, stepVersion: 1, adapterVersion: 1, resourceVersion: preview.resourceVersion });
+    items.push({ ...item, stepId, stepVersion: 1, adapterVersion: JOURNAL_POST_ADAPTER_VERSION, resourceVersion: preview.resourceVersion, policyVersion: preview.businessApproval.policyVersion });
     display.items.push({ itemId: item.itemId, stepId, selected, dependsOn: item.dependsOn, preview });
     if (selected) for (const amount of preview.amounts) {
       const t = totals.get(amount.currencyCode) ?? { debit: 0n, credit: 0n };
@@ -187,10 +187,12 @@ export async function getActionBatch(ctx: AuthContext, input: unknown) {
       const authority = parsed.data;
       normalized({ ...authority, requestKey: row.requestKey });
       for (const i of authority.items) {
+        if (i.adapterVersion !== JOURNAL_POST_ADAPTER_VERSION || !i.policyVersion) fail("BATCH_STALE");
         const [step] = await tx.select().from(aiStep).where(and(eq(aiStep.id, i.stepId), eq(aiStep.runId, run.id), eq(aiStep.organizationId, current.organizationId), eq(aiStep.ownerId, current.userId)));
         if (!step || step.state !== "prepared" || step.version !== i.stepVersion || step.toolName !== i.action || step.operationKey !== i.stepId || step.dispatchLease !== null || step.argumentDigest !== argumentHash(i)) fail("BATCH_UNAVAILABLE");
         const observed = await previewJournalPost(current, { ...i.arguments, expectedResourceVersion: i.resourceVersion });
         if (!observed.preview) fail(observed.code === "PREVIEW_DENIED" ? "BATCH_DENIED" : "BATCH_STALE");
+        if (observed.preview.businessApproval.policyVersion !== i.policyVersion) fail("BATCH_STALE");
       }
       await actor(ctx, false);
       if (row.expiresAt.getTime() <= Date.now() || run.deadlineAt.getTime() <= Date.now()) fail("BATCH_EXPIRED");

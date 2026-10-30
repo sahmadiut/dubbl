@@ -717,3 +717,14 @@ AI-042 retains every original criterion and independent combined acceptance;
 AI-008 remains its outer parent, and AI-043/044 decisions/dispatch stay separate.
 See [durable batch contract](../docs/AI_ACTION_BATCHES.md). No Stripe/security,
 provider/model catalog or production-activation scope is expanded.
+
+## AI-046 policy and domain-adapter slices (2026-10-30)
+
+- [AI-047](../tasks/AI-047.md): evaluate and bind current manual-journal business
+  policy in shared REST/MCP previews and durable proposals; depends on AI-045.
+- [AI-048](../tasks/AI-048.md): finite payment/deletion/external-sending preflight
+  adapters with strict exact arguments and proposal integration; depends on AI-047.
+
+AI-046 retains every criterion and combined integration; AI-042/008 remain open
+parents, and AI-043/044 decisions/dispatch remain separate. See the
+[policy contract](../docs/AI_BUSINESS_POLICY_PREVIEWS.md). No execution activation.

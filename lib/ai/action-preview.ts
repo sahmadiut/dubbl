@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { approvalRequest, approvalWorkflow, journalEntry, journalLine, chartAccount } from "@/lib/db/schema";
+import { journalEntry, journalLine, chartAccount } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
@@ -11,15 +11,18 @@ import { assertJournalReferences } from "@/lib/api/journal-references";
 import { currencyMetadata } from "@/lib/money/exact";
 import { journalLineDto } from "@/lib/api/journal-wire";
 import { WireCompatibilityError } from "@/lib/money/wire";
+import { previewJournalBusinessPolicy, PreviewPolicyError } from "./business-policy-preview";
+
+export const JOURNAL_POST_ADAPTER_VERSION = 2;
 
 export const journalPostPreviewSchema = z.object({
   entryId: z.string().uuid().describe("Existing organization-owned manual draft journal UUID. This read never posts or approves it."),
-  expectedResourceVersion: z.string().regex(/^[a-f0-9]{64}$/).optional().describe("Optional fingerprint from a previous preview; changed headers, lines or displayed approval status return PREVIEW_STALE. Omit to refresh."),
+  expectedResourceVersion: z.string().regex(/^[a-f0-9]{64}$/).optional().describe("Optional prior fingerprint; changed resources, business policy or approval metadata return PREVIEW_STALE. Omit to refresh; never an approval token."),
 }).strict();
 
-type UnavailableCode = "PREVIEW_DENIED" | "PREVIEW_NOT_FOUND" | "PREVIEW_STALE" | "PREVIEW_UNSUPPORTED" | "PREVIEW_TOO_LARGE" | "PREVIEW_INVALID_RECORD" | "PREVIEW_PERIOD_LOCKED";
+type UnavailableCode = "PREVIEW_DENIED" | "PREVIEW_NOT_FOUND" | "PREVIEW_STALE" | "PREVIEW_UNSUPPORTED" | "PREVIEW_TOO_LARGE" | "PREVIEW_INVALID_RECORD" | "PREVIEW_PERIOD_LOCKED" | "PREVIEW_POLICY_INVALID";
 function unavailable(code: UnavailableCode) {
-  return { code, preview: null, recovery: code === "PREVIEW_DENIED" ? ["contact_administrator"] : code === "PREVIEW_STALE" ? ["refresh_preview"] : ["inspect_record"] };
+  return { code, preview: null, recovery: code === "PREVIEW_DENIED" || code === "PREVIEW_POLICY_INVALID" ? ["contact_administrator"] : code === "PREVIEW_STALE" ? ["refresh_preview"] : ["inspect_record"] };
 }
 async function actor(ctx: AuthContext) {
   const current = await authorizeExecution(executionIdentity(ctx), ctx.organizationId, "use:ai");
@@ -79,21 +82,17 @@ export async function previewJournalPost(ctx: AuthContext, input: unknown) {
     // Separate currencies, with no inferred FX or economically mixed total.
     const rawWorkflowSum = [...totals.values()].reduce((sum, t) => sum + t.debit, 0n);
     if ([...totals.values()].some(t => t.debit !== t.credit) || rawWorkflowSum === 0n || rawWorkflowSum > BigInt(Number.MAX_SAFE_INTEGER)) return unavailable("PREVIEW_INVALID_RECORD");
-    const [workflow] = await tx.select({ id: approvalWorkflow.id }).from(approvalWorkflow).where(and(eq(approvalWorkflow.organizationId, current.organizationId), eq(approvalWorkflow.entityType, "journal_entry"), eq(approvalWorkflow.isActive, true), isNull(approvalWorkflow.deletedAt))).limit(1);
-    const [request] = await tx.select({ id: approvalRequest.id, status: approvalRequest.status, updatedAt: approvalRequest.updatedAt }).from(approvalRequest)
-      .where(and(eq(approvalRequest.organizationId, current.organizationId), eq(approvalRequest.entityType, "journal_entry"), eq(approvalRequest.entityId, entry.id)))
-      .orderBy(sql`${approvalRequest.createdAt} desc`, asc(approvalRequest.id)).limit(1);
-    // A saved business approval is not an AI action approval. This adapter
-    // reports status only; it never evaluates/waives workflow conditions.
-    const businessApproval = { evaluation: "not_evaluated" as const, activeWorkflowPresent: !!workflow, latestRequestStatus: request?.status ?? null };
+    let businessApproval: Awaited<ReturnType<typeof previewJournalBusinessPolicy>>;
+    try { businessApproval = await previewJournalBusinessPolicy(tx, current, entry); }
+    catch (err) { if (err instanceof PreviewPolicyError) return unavailable(err.code); throw err; }
     const displayedLines = lines.map(l => ({ id: l.id, account: accountMap.get(l.accountId)!, description: l.description,
       debitAmountMinor: l.debitAmount, creditAmountMinor: l.creditAmount, currencyCode: l.currencyCode,
       costCenterId: l.costCenterId, projectId: l.projectId, exchangeRate: l.exchangeRate, rateExact: l.rateExact, rateDirection: l.rateDirection }));
-    const resourceVersion = createHash("sha256").update(JSON.stringify({ schemaVersion: 1, actor: current.userId, organization: current.organizationId,
-      action: "post_entry", arguments: { entryId: entry.id }, entry, lines, displayedLines, businessApproval, request })).digest("hex");
+    const resourceVersion = createHash("sha256").update(JSON.stringify({ schemaVersion: JOURNAL_POST_ADAPTER_VERSION, actor: current.userId, organization: current.organizationId,
+      action: "post_entry", arguments: { entryId: entry.id }, entry, lines, displayedLines, businessApproval })).digest("hex");
     if (value.expectedResourceVersion && value.expectedResourceVersion !== resourceVersion) return unavailable("PREVIEW_STALE");
     const observedAt = new Date();
-    const preview = { schemaVersion: 1, action: "post_entry", labelKey: "post_journal", target: { type: "journal_entry", id: entry.id, reference: String(entry.entryNumber), href: `/accounting/${entry.id}` },
+    const preview = { schemaVersion: JOURNAL_POST_ADAPTER_VERSION, action: "post_entry", labelKey: "post_journal", target: { type: "journal_entry", id: entry.id, reference: String(entry.entryNumber), href: `/accounting/${entry.id}` },
       resourceVersion, observedAt: observedAt.toISOString(), expiresAt: new Date(observedAt.getTime() + 300_000).toISOString(),
       before: { status: "draft" }, after: { status: "posted" }, date: entry.date, description: entry.description, reference: entry.reference,
       lines: displayedLines, amounts: [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([currencyCode, t]) => ({ currencyCode, debitAmountMinor: String(t.debit), creditAmountMinor: String(t.credit) })),

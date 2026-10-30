@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { applyCurrent, withDatabase } from "./fixtures";
 
-test("AI-045 exact selected action batches, REST/MCP revisions, retention and no effects", async () => {
+test("AI-045/047 exact batches, live policy binding, REST/MCP revisions, retention and no effects", async () => {
   await withDatabase(async (_pool, url) => {
     applyCurrent(url);
     const result = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "tests/integration/ai-action-batches-worker.ts"], {

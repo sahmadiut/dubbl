@@ -6,8 +6,10 @@ durable selected batches, AI-043 explicit decisions, and AI-044 approved executi
 No sensitive operation was added to the seven-operation automatic model catalog.
 
 AI-045 adds [durable journal proposal batches](AI_ACTION_BATCHES.md), shared own
-reads and explicit revisions. AI-046 expands domain adapters and policy checks;
-AI-042 remains their integration parent. Batches remain preview-only; this
+reads and explicit revisions. AI-047 now evaluates and binds current journal
+business policy; [policy contract](AI_BUSINESS_POLICY_PREVIEWS.md) describes the
+observation-only result. AI-048 expands domain adapters; AI-046 and AI-042 retain
+combined integration. Batches remain preview-only; this
 document's standalone AI-041 adapter still creates no durable proposal itself.
 
 ## Manual journal posting observation
@@ -43,21 +45,24 @@ history and any scheduled reversal date. Labels/memos are untrusted plain text
 for UI rendering, never instructions or approval. The UI-owned localization
 mapping is still AI-027 work; no translated UI is claimed here.
 
-The business-approval observation includes only whether an active journal
-workflow exists and the latest same-organization request status. Workflow names,
-approvers, identities and request IDs are not exposed. `evaluation` is always
-`not_evaluated`: conditions, required actors and binding to revised resources
-must be qualified by AI-042/043/044. Even an approved business request leaves
-`canApprove:false` and `authority:preview_only`. The current direct posting domain
-does not enforce these workflow conditions; this adapter never calls it, and
-future AI dispatch must not bypass that missing integration.
+Version 2 evaluates current journal workflow conditions through the existing
+approval engine. It returns the requirement, an opaque policy fingerprint and
+identity-free next actor categories, plus latest request status as metadata.
+Workflow names, conditions, approvers and request/member IDs remain hidden.
+Malformed/ambiguous policy fails closed. Historical requests lack resource/policy
+digests, so even an approved request leaves `approvalSatisfied:false`,
+`resourceBoundApproval:false`, `canCurrentActorApprove:false`, `canApprove:false`
+and `authority:preview_only`. Self-assigned workflows require policy repair.
+The current direct posting domain does not enforce these workflow conditions;
+future AI dispatch must not bypass that missing integration. See the
+[policy contract](AI_BUSINESS_POLICY_PREVIEWS.md) for exact bounds and limitations.
 
 ## Fingerprint and bounds
 
 A repeatable-read, read-only transaction constructs a consistent snapshot. The
 fingerprint binds adapter version, current actor/organization, fixed action and
-entry ID, full header/line snapshot, displayed account labels and observed
-business approval state. Direct line edits invalidate it even when updatedAt is
+entry ID, full header/line snapshot, displayed account labels and evaluated
+policy/request/action snapshot. Direct edits invalidate it even when updatedAt is
 unchanged. The returned observedAt/expiresAt describe a five-minute display
 window. These timestamps are generated on refresh; the fingerprint is stable
 while the scoped snapshot remains identical. Supplying an obsolete fingerprint
@@ -81,6 +86,7 @@ effect. There is no incomplete-page approval or silent partial selection.
 | PREVIEW_TOO_LARGE | Inspect the record; no truncated effects |
 | PREVIEW_INVALID_RECORD | Inspect/correct the record through existing authorized domain workflows |
 | PREVIEW_PERIOD_LOCKED | Inspect the record and current domain period policy |
+| PREVIEW_POLICY_INVALID | Contact an administrator to correct policy; no policy detail disclosed |
 
 Malformed requests receive existing REST/MCP validation errors. Authentication
 failures remain at the transport boundary. No model confirmation, clarification,

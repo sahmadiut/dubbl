@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { applyCurrent, withDatabase } from "./fixtures";
 
-test("AI-041 read-only journal business previews through actual REST/MCP/SQL", async () => {
+test("AI-041/047 journal previews and bounded business-policy observation through actual REST/MCP/SQL", async () => {
   await withDatabase(async (_pool, url) => {
     applyCurrent(url);
     const result = spawnSync(process.execPath, ["--experimental-test-module-mocks", "--import", "tsx", "tests/integration/ai-action-preview-worker.ts"], {

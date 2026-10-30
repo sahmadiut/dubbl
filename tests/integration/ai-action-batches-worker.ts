@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { spawnSync } from "node:child_process";
 import { mock } from "node:test";
@@ -9,7 +9,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { db } from "../../lib/db";
-import { users, organization, member, customRole, chartAccount, journalEntry, journalLine, aiProvider, aiProviderConfig, aiToolPolicy, aiActionBatch, aiRun, aiStep, aiConversation, aiUsageAttempt } from "../../lib/db/schema";
+import { users, organization, member, customRole, chartAccount, journalEntry, journalLine, aiProvider, aiProviderConfig, aiToolPolicy, aiActionBatch, aiRun, aiStep, aiConversation, aiUsageAttempt, approvalWorkflow, approvalWorkflowStep, approvalRequest, approvalAction } from "../../lib/db/schema";
 
 let session: { user: { id: string }; iat: number; expires: string } | null = null;
 mock.module(new URL("../../lib/auth.ts", import.meta.url).href, { namedExports: { auth: async () => session } });
@@ -79,7 +79,11 @@ async function main() {
       (select count(*)::text from ai_approval) as approvals,
       (select count(*)::text from ai_usage_attempt) as usage,
       (select count(*)::text from document_email_log) as emails,
-      (select count(*)::text from payment) as payments`)).rows[0];
+      (select count(*)::text from payment) as payments,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_request t) as business_requests,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_action t) as business_actions,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_workflow t) as business_policies,
+      (select md5(coalesce(jsonb_agg(t order by t.id)::text,'')) from approval_workflow_step t) as business_steps`)).rows[0];
   }
   async function unchanged<T>(fn: () => Promise<T>) { const before = await hashes(), result = await fn(); assert.deepEqual(await hashes(), before); return result; }
   try {
@@ -194,6 +198,60 @@ async function main() {
     const unavailable = await get(corrupt.run.id); assert.equal(unavailable.code, "BATCH_UNAVAILABLE"); assert.doesNotMatch(JSON.stringify(unavailable), /DO_NOT_EXPOSE/); await runs.cancelRun(ctx, { runId: corrupt.run.id });
     const capacity = await propose(); await db.update(aiRun).set({ payloadBytes: 1048575 }).where(eq(aiRun.id, capacity.run.id));
     assert.equal((await unchanged(async () => revise(capacity.run.id, edit(await get(capacity.run.id))))).code, "BATCH_LIMIT"); await runs.cancelRun(ctx, { runId: capacity.run.id });
+    // Current business policy is part of durable proposal authority. No status,
+    // selection, revision or metadata action constitutes resource-bound approval.
+    const policyBatch = await propose(), policyRunId = policyBatch.run.id;
+    let policyView = await get(policyRunId);
+    const policyExpiry = policyView.batch.expiresAt;
+    const [requester] = await db.select().from(member).where(eq(member.userId, owner.id));
+    const [approver] = await db.select().from(member).where(eq(member.userId, coworker.id));
+    const [workflow] = await db.insert(approvalWorkflow).values({ organizationId: org.id, name: "HIDDEN POLICY", entityType: "journal_entry",
+      conditions: [{ field: "entryNumber", operator: "eq", value: String(first.entryNumber) }] }).returning();
+    const [policyStep] = await db.insert(approvalWorkflowStep).values({ workflowId: workflow.id, stepOrder: 1, approverId: approver.id }).returning();
+    const stalePolicy = await unchanged(() => mcp("get_ai_action_batch", { runId: policyRunId }));
+    assert.equal(stalePolicy.code, "BATCH_STALE"); assert.equal(stalePolicy.batch, null);
+    assert.equal((await revise(policyRunId, edit(policyView))).code, "BATCH_PREVIEW_RECORDED");
+    policyView = await get(policyRunId);
+    assert.equal(policyView.batch.expiresAt, policyExpiry);
+    const observations = policyView.batch.display.items as { preview: { businessApproval: { required: boolean; approvalSatisfied: boolean; policyVersion: string }; schemaVersion: number }; selected: boolean }[];
+    assert.equal(observations.filter(i => i.preview.businessApproval.required).length, 1);
+    assert.ok(observations.every(i => i.preview.schemaVersion === 2 && !i.preview.businessApproval.approvalSatisfied));
+    const policyAuthority = (await stored(policyRunId)).at(-1)!.authority as { items: { adapterVersion: number; policyVersion: string }[] };
+    assert.ok(policyAuthority.items.every(i => i.adapterVersion === 2 && /^[a-f0-9]{64}$/.test(i.policyVersion)));
+    assert.doesNotMatch(JSON.stringify(policyView), /HIDDEN POLICY|approverId|workflowId|requestedById/);
+    await db.update(approvalWorkflowStep).set({ isRequired: false }).where(eq(approvalWorkflowStep.id, policyStep.id));
+    assert.equal((await unchanged(() => get(policyRunId))).code, "BATCH_STALE");
+    assert.equal((await mcp("revise_ai_action_batch", { runId: policyRunId, ...edit(policyView) })).code, "BATCH_PREVIEW_RECORDED");
+    policyView = await get(policyRunId);
+    const [businessRequest] = await db.insert(approvalRequest).values({ organizationId: org.id, workflowId: workflow.id, entityType: "journal_entry", entityId: first.id, requestedById: requester.id, status: "approved" }).returning();
+    assert.equal((await get(policyRunId)).code, "BATCH_STALE");
+    assert.equal((await revise(policyRunId, edit(policyView))).code, "BATCH_PREVIEW_RECORDED"); policyView = await get(policyRunId);
+    assert.ok(policyView.batch.display.items.every((i: { preview: { businessApproval: { approvalSatisfied: boolean; canCurrentActorApprove: boolean } } }) => !i.preview.businessApproval.approvalSatisfied && !i.preview.businessApproval.canCurrentActorApprove));
+    await db.insert(approvalAction).values({ requestId: businessRequest.id, stepId: policyStep.id, userId: approver.id, action: "approve" });
+    assert.equal((await unchanged(() => mcp("get_ai_action_batch", { runId: policyRunId }))).code, "BATCH_STALE");
+    await db.update(approvalWorkflow).set({ conditions: [{ field: "total", operator: "gte", value: "1" }] }).where(eq(approvalWorkflow.id, workflow.id));
+    assert.equal((await unchanged(() => revise(policyRunId, edit(policyView)))).code, "BATCH_STALE");
+    await db.update(approvalWorkflow).set({ conditions: [], isActive: false }).where(eq(approvalWorkflow.id, workflow.id));
+    const policyRevision = edit(policyView);
+    assert.equal((await revise(policyRunId, policyRevision)).code, "BATCH_PREVIEW_RECORDED");
+    policyView = await get(policyRunId); assert.equal(policyView.batch.expiresAt, policyExpiry);
+    assert.ok(policyView.batch.display.items.every((i: { preview: { businessApproval: { required: boolean } } }) => !i.preview.businessApproval.required));
+    await runs.cancelRun(ctx, { runId: policyRunId });
+    // Legacy version-one proposals fail stale; explicit revision upgrades them
+    // under the original expiry. This fixture constructs the documented old
+    // integrity binding, which has never been execution/approval authority.
+    const legacy = await propose(), legacyView = await get(legacy.run.id), legacyRow = (await stored(legacy.run.id))[0];
+    const legacyAuthority = legacyRow.authority as { items: { adapterVersion: number; policyVersion?: string }[] };
+    for (const i of legacyAuthority.items) { i.adapterVersion = 1; delete i.policyVersion; }
+    const canonical = (v: unknown): string => Array.isArray(v) ? `[${v.map(canonical).join(",")}]` : v !== null && typeof v === "object"
+      ? `{${Object.entries(v).sort(([a], [b]) => a.localeCompare(b, "en")).map(([k, value]) => `${JSON.stringify(k)}:${canonical(value)}`).join(",")}}` : JSON.stringify(v);
+    const legacyBinding = createHash("sha256").update(canonical({ id: legacyRow.id, runId: legacyRow.runId, ownerId: legacyRow.ownerId, organizationId: legacyRow.organizationId,
+      version: legacyRow.version, expiresAt: legacyRow.expiresAt.toISOString(), authority: legacyAuthority, display: legacyRow.display })).digest("hex");
+    await db.update(aiActionBatch).set({ authority: legacyAuthority, bindingDigest: legacyBinding }).where(eq(aiActionBatch.id, legacyRow.id));
+    assert.equal((await unchanged(() => get(legacy.run.id))).code, "BATCH_STALE");
+    assert.equal((await revise(legacy.run.id, edit(legacyView))).code, "BATCH_PREVIEW_RECORDED");
+    assert.equal((await get(legacy.run.id)).batch.expiresAt, legacyView.batch.expiresAt);
+    await runs.cancelRun(ctx, { runId: legacy.run.id });
     const bigA = await journal(), bigB = await journal();
     await pool.query("update journal_line set debit_amount=case when debit_amount>0 then 9007199254740991 else 0 end,credit_amount=case when credit_amount>0 then 9007199254740991 else 0 end where journal_entry_id=any($1::uuid[])", [[bigA.id, bigB.id]]);
     const bigSpec = { ...spec, items: [{ ...spec.items[0], arguments: { entryId: bigA.id } }, { ...spec.items[1], arguments: { entryId: bigB.id } }] };

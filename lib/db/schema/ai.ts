@@ -55,6 +55,7 @@ export const aiStep = pgTable("ai_step", {
   requiredPermissions: jsonb("required_permissions").$type<string[]>().notNull(),
   createdAt: time("created_at").notNull().defaultNow(), updatedAt: time("updated_at").notNull().defaultNow(),
 }, t => [unique("ai_step_operation").on(t.runId, t.operationKey), unique("ai_step_scope").on(t.id, t.organizationId, t.ownerId),
+  unique("ai_step_execution_scope").on(t.id, t.runId, t.organizationId, t.ownerId),
   foreignKey({ columns: [t.runId, t.organizationId, t.ownerId], foreignColumns: [aiRun.id, aiRun.organizationId, aiRun.ownerId], name: "ai_step_run_scope" }).onDelete("cascade"),
   check("ai_step_state", sql`${t.state} in ('prepared','executing','succeeded','failed','uncertain','skipped')`), check("ai_step_version", sql`${t.version} > 0`),
   check("ai_step_argument_digest", sql`${t.argumentDigest} is null or ${t.argumentDigest} ~ '^[a-f0-9]{64}$'`),

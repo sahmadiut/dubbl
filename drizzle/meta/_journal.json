@@ -183,6 +183,13 @@
       "when": 1793369005843,
       "tag": "0025_plain_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793400203812,
+      "tag": "0026_first_emma_frost",
+      "breakpoints": true
     }
   ]
 }

@@ -587,3 +587,16 @@ The [AI-046 combined acceptance](../docs/AI_ACTION_INTEGRATION.md) qualifies the
 proposal and current policy through actual REST/MCP/SQL. AI-042/008 remain open
 parents, and AI-043/044 decisions/dispatch remain separate. See the
 [policy contract](../docs/AI_BUSINESS_POLICY_PREVIEWS.md). No execution activation.
+
+
+## AI-044 approved execution slices (2026-10-31)
+
+AI-044 retains every original criterion and final integration acceptance; AI-008 remains the outer parent.
+
+| Task | Scope | Prerequisite |
+|---|---|---|
+| [AI-049](../tasks/AI-049.md) | Exact trusted consumption, durable fencing and receipts | AI-043 |
+| [AI-050](../tasks/AI-050.md) | Domain effect-boundary adapters and reconciliation | AI-049 |
+| [AI-051](../tasks/AI-051.md) | Explicit REST/MCP resume and durable worker journey | AI-050 |
+
+No child alone qualifies sensitive execution or activates rollout.

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiActionBatch, aiActionDecision, aiConversation, aiRun, aiStep, aiUsageAttempt, aiRunInput, aiEvent } from "@/lib/db/schema";
+import { aiActionBatch, aiActionDecision, aiActionConsumption, aiConversation, aiRun, aiStep, aiUsageAttempt, aiRunInput, aiEvent, auditLog } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { requireRole } from "@/lib/api/require-role";
@@ -342,3 +342,109 @@ async function decideActionBatch(ctx: AuthContext, input: unknown, decision: "ap
 }
 export const approveActionBatch = (ctx: AuthContext, input: unknown) => decideActionBatch(ctx, input, "approve");
 export const rejectActionBatch = (ctx: AuthContext, input: unknown) => decideActionBatch(ctx, input, "reject");
+
+const consumptionInput = z.object({ runId: id, lease: id, batchId: id, itemId: id }).strict();
+const outcomeSchema = z.object({ state: z.enum(["succeeded", "failed", "uncertain"]), recordIds: z.array(z.string().uuid()).max(20) }).strict();
+const operationReceipt = (step: typeof aiStep.$inferSelect) => ({ stepId: step.id, state: step.state, version: step.version, recordIds: step.recordIds });
+function executableApproval(run: Run, lease: string, batch: Batch, conversation: typeof aiConversation.$inferSelect) {
+  const now = Date.now();
+  if (conversation.deletedAt || conversation.contentExpiresAt.getTime() <= now || batch.expiresAt.getTime() <= now || !run.deadlineAt || run.deadlineAt.getTime() <= now) fail("BATCH_EXPIRED");
+  if (run.state !== "running" || run.cancelRequestedAt || run.leaseOwner !== lease || !run.leaseExpiresAt || run.leaseExpiresAt.getTime() <= now) fail("BATCH_UNAVAILABLE");
+}
+
+/** Trusted worker primitive only; never registered as an automatic/REST/MCP tool.
+ * A fresh return hands original validated arguments to an eventual domain adapter
+ * ONCE. This is a durable dispatch fence, not an effect-boundary validation or an
+ * effect itself. AI-050 must serialize/recheck domain authority at the mutation.
+ * A lost fresh return is uncertain and must be reconciled, never reconstructed.
+ */
+export async function consumeApprovedAction(input: unknown) {
+  const parsed = consumptionInput.parse(input);
+  const value = { runId: parsed.runId.toLowerCase(), lease: parsed.lease.toLowerCase(), batchId: parsed.batchId.toLowerCase(), itemId: parsed.itemId.toLowerCase() };
+  const lease = await assertRunLease(value.runId, value.lease);
+  return db.transaction(async tx => {
+    const { run, conversation } = await locked(tx, lease.ctx, value.runId, true);
+    const [row] = await tx.select().from(aiActionBatch).where(and(eq(aiActionBatch.id, value.batchId), eq(aiActionBatch.runId, run.id))).for("update");
+    if (!row || row.state !== "pending" || !row.authority || !row.display || binding(row) !== row.bindingDigest) fail("BATCH_UNAVAILABLE");
+    executableApproval(run, value.lease, row, conversation);
+    const authority = authoritySchema.parse(row.authority);
+    normalized({ ...authority, requestKey: row.requestKey });
+    const selected = authority.items.filter(i => authority.selectedItemIds.includes(i.itemId));
+    const item = selected.find(i => i.itemId === value.itemId.toLowerCase());
+    if (!item) fail("BATCH_INVALID");
+    const [decision] = await tx.select().from(aiActionDecision).where(eq(aiActionDecision.batchId, row.id));
+    if (!decision || decision.decision !== "approve" || decision.runId !== run.id || decision.ownerId !== run.ownerId || decision.organizationId !== run.organizationId ||
+      decision.batchVersion !== row.version || decision.bindingDigest !== row.bindingDigest || decision.selectionDigest !== hash(authority.selectedItemIds) ||
+      decision.expiresAt.getTime() !== row.expiresAt.getTime() || decision.acceptedRunVersion <= row.acceptedRunVersion || decision.acceptedRunVersion > run.version) fail("BATCH_UNAVAILABLE");
+    await writable(run, lease.ctx, selected);
+    const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, run.id)).orderBy(asc(aiStep.id)).for("update");
+    const step = steps.find(s => s.id === item.stepId);
+    if (!step || step.ownerId !== run.ownerId || step.organizationId !== run.organizationId || step.operationKey !== item.stepId || step.toolName !== item.action || step.argumentDigest !== argumentHash(item)) fail("BATCH_UNAVAILABLE");
+    const consumed = await tx.select().from(aiActionConsumption).where(eq(aiActionConsumption.runId, run.id));
+    const prior = consumed.find(c => c.stepId === step.id);
+    if (prior) {
+      if (prior.decisionId !== decision.id || prior.itemId !== item.itemId || prior.argumentDigest !== step.argumentDigest || prior.resourceVersion !== item.resourceVersion || prior.policyVersion !== item.policyVersion || prior.dispatchLease !== step.dispatchLease || step.state === "prepared") fail("BATCH_UNAVAILABLE");
+      // A replay only observes the existing operation. It cannot reacquire
+      // arguments, even on the original lease after a lost acknowledgement.
+      await writable(run, lease.ctx, selected); executableApproval(run, value.lease, row, conversation);
+      return { code: "ACTION_ALREADY_CONSUMED" as const, consumptionId: prior.id, receipt: operationReceipt(step) };
+    }
+    if (step.state !== "prepared" || step.version !== item.stepVersion || step.dispatchLease !== null ||
+      steps.some(s => s.state === "executing" || s.state === "uncertain") ||
+      selected.some(i => { const s = steps.find(s => s.id === i.stepId); return !s || s.state === "failed" || s.state === "skipped"; })) fail("BATCH_UNAVAILABLE");
+    for (const dependency of item.dependsOn) {
+      const prerequisite = selected.find(i => i.itemId === dependency), s = steps.find(s => s.id === prerequisite?.stepId);
+      if (!s || s.state !== "succeeded" || !consumed.some(c => c.stepId === s.id && c.itemId === dependency && c.decisionId === decision.id && c.argumentDigest === s.argumentDigest && c.dispatchLease === s.dispatchLease)) fail("BATCH_UNAVAILABLE");
+    }
+    const verify = async () => {
+      await writable(run, lease.ctx, selected);
+      const [{ preview }] = await currentResources(lease.ctx, { items: [item], selectedItemIds: [item.itemId] });
+      if (preview.businessApproval.required) fail("BATCH_UNAVAILABLE"); // No legacy or unbound business-approval bypass.
+      executableApproval(run, value.lease, row, conversation);
+    };
+    await verify();
+    const [recorded] = await tx.insert(aiActionConsumption).values({ decisionId: decision.id, batchId: row.id, runId: run.id, organizationId: run.organizationId, ownerId: run.ownerId,
+      stepId: step.id, itemId: item.itemId, dispatchLease: value.lease, argumentDigest: step.argumentDigest!, resourceVersion: item.resourceVersion, policyVersion: item.policyVersion! }).returning();
+    await tx.update(aiStep).set({ state: "executing", dispatchLease: value.lease, version: step.version + 1, updatedAt: new Date() }).where(eq(aiStep.id, step.id));
+    await tx.update(aiRun).set({ version: run.version + 1, updatedAt: new Date() }).where(eq(aiRun.id, run.id));
+    await tx.insert(aiEvent).values({ runId: run.id, organizationId: run.organizationId, ownerId: run.ownerId, sequence: run.version + 1, kind: "step_updated" });
+    await tx.insert(auditLog).values({ organizationId: run.organizationId, userId: run.ownerId, action: "ai.action.consume", entityType: "ai-action", entityId: recorded.id, changes: null });
+    // SQL constraint/audit waits cannot turn old observations into new authority.
+    await verify();
+    return { code: "ACTION_CONSUMED" as const, consumptionId: recorded.id, stepId: step.id, action: itemToAction(item) };
+  });
+}
+function itemToAction(item: Authority["items"][number]): ActionItem {
+  return actionItemSchema.parse({ itemId: item.itemId, dependsOn: item.dependsOn, action: item.action, arguments: item.arguments });
+}
+
+/** Trusted adapter callback only. A known late receipt may settle during Stop,
+ * revocation or expiry, but a recovered/replaced fence can never be overwritten.
+ * This function neither performs nor retries any business/provider operation.
+ */
+export async function settleApprovedAction(runId: string, lease: string, consumptionId: string, outcome: unknown) {
+  runId = id.parse(runId).toLowerCase(); lease = id.parse(lease).toLowerCase(); consumptionId = id.parse(consumptionId).toLowerCase();
+  const value = outcomeSchema.parse(outcome);
+  return db.transaction(async tx => {
+    const [found] = await tx.select().from(aiRun).where(eq(aiRun.id, runId));
+    if (!found) fail("BATCH_NOT_FOUND");
+    const [conversation] = await tx.select().from(aiConversation).where(eq(aiConversation.id, found.conversationId)).for("share");
+    const [run] = await tx.select().from(aiRun).where(eq(aiRun.id, runId)).for("update");
+    const [consumed] = await tx.select().from(aiActionConsumption).where(and(eq(aiActionConsumption.id, consumptionId), eq(aiActionConsumption.runId, runId)));
+    if (!run || !consumed || consumed.dispatchLease !== lease) fail("BATCH_NOT_FOUND");
+    const [step] = await tx.select().from(aiStep).where(and(eq(aiStep.id, consumed.stepId), eq(aiStep.runId, runId))).for("update");
+    if (!step) fail("BATCH_NOT_FOUND");
+    if (!conversation || conversation.deletedAt || conversation.contentExpiresAt.getTime() <= Date.now() || run.state !== "running" || run.leaseOwner !== lease || step.dispatchLease !== lease || step.state !== "executing") return operationReceipt(step);
+    const [changed] = await tx.update(aiStep).set({ state: value.state, recordIds: [...new Set(value.recordIds.map(id => id.toLowerCase()))], version: step.version + 1, updatedAt: new Date() }).where(eq(aiStep.id, step.id)).returning();
+    const stop = value.state !== "succeeded" || !!run.cancelRequestedAt;
+    const state = value.state === "uncertain" ? "reconciliation_required" as const : run.cancelRequestedAt ? "cancelled" as const : value.state === "failed" ? "failed" as const : "running" as const;
+    if (stop) {
+      await tx.update(aiStep).set({ state: "skipped", version: sql`${aiStep.version} + 1`, updatedAt: new Date() }).where(and(eq(aiStep.runId, runId), eq(aiStep.state, "prepared")));
+      await eraseActionBatches(tx, runId, "cancelled");
+    }
+    await tx.update(aiRun).set({ state, version: run.version + 1, updatedAt: new Date(),
+      ...(stop ? { leaseOwner: null, leaseExpiresAt: null, finishedAt: state === "reconciliation_required" ? null : new Date() } : {}) }).where(eq(aiRun.id, runId));
+    await tx.insert(aiEvent).values({ runId, organizationId: run.organizationId, ownerId: run.ownerId, sequence: run.version + 1, kind: "step_updated" });
+    return operationReceipt(changed);
+  });
+}

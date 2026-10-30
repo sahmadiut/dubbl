@@ -9,6 +9,10 @@ import { requireRole } from "@/lib/api/require-role";
 import { assertRunLease, assertRuntimeEnabled, validateRunSnapshot } from "./run-lifecycle";
 import { actionItemSchema, adapterVersion, observeAction, actionResource, actionPermissions, type ActionItem } from "./action-adapters";
 import { eraseActionBatches } from "./action-batch-retention";
+import { previewJournalInTransaction } from "./action-preview";
+import { lockJournalEffect } from "./journal-effect-locks";
+import { postJournalInTransaction } from "@/lib/api/journal-lifecycle";
+import { deleteDraftJournalInTransaction } from "@/lib/api/journal-delete";
 
 const id = z.string().uuid().describe("Opaque own-run, proposal, item or organization-owned journal UUID.");
 const version = z.number().int().positive().max(2147483647);
@@ -358,7 +362,8 @@ function executableApproval(run: Run, lease: string, batch: Batch, conversation:
  * effect itself. AI-050 must serialize/recheck domain authority at the mutation.
  * A lost fresh return is uncertain and must be reconciled, never reconstructed.
  */
-export async function consumeApprovedAction(input: unknown) {
+export function consumeApprovedAction(input: unknown) { return consumeAction(input); }
+async function consumeAction(input: unknown, journalOnly = false) {
   const parsed = consumptionInput.parse(input);
   const value = { runId: parsed.runId.toLowerCase(), lease: parsed.lease.toLowerCase(), batchId: parsed.batchId.toLowerCase(), itemId: parsed.itemId.toLowerCase() };
   const lease = await assertRunLease(value.runId, value.lease);
@@ -372,6 +377,7 @@ export async function consumeApprovedAction(input: unknown) {
     const selected = authority.items.filter(i => authority.selectedItemIds.includes(i.itemId));
     const item = selected.find(i => i.itemId === value.itemId.toLowerCase());
     if (!item) fail("BATCH_INVALID");
+    if (journalOnly && item.action !== "post_entry" && item.action !== "delete_draft_journal") fail("BATCH_INVALID");
     const [decision] = await tx.select().from(aiActionDecision).where(eq(aiActionDecision.batchId, row.id));
     if (!decision || decision.decision !== "approve" || decision.runId !== run.id || decision.ownerId !== run.ownerId || decision.organizationId !== run.organizationId ||
       decision.batchVersion !== row.version || decision.bindingDigest !== row.bindingDigest || decision.selectionDigest !== hash(authority.selectedItemIds) ||
@@ -422,10 +428,10 @@ function itemToAction(item: Authority["items"][number]): ActionItem {
  * revocation or expiry, but a recovered/replaced fence can never be overwritten.
  * This function neither performs nor retries any business/provider operation.
  */
-export async function settleApprovedAction(runId: string, lease: string, consumptionId: string, outcome: unknown) {
+export async function settleApprovedAction(runId: string, lease: string, consumptionId: string, outcome: unknown, executor?: Tx) {
   runId = id.parse(runId).toLowerCase(); lease = id.parse(lease).toLowerCase(); consumptionId = id.parse(consumptionId).toLowerCase();
   const value = outcomeSchema.parse(outcome);
-  return db.transaction(async tx => {
+  const settle = async (tx: Tx) => {
     const [found] = await tx.select().from(aiRun).where(eq(aiRun.id, runId));
     if (!found) fail("BATCH_NOT_FOUND");
     const [conversation] = await tx.select().from(aiConversation).where(eq(aiConversation.id, found.conversationId)).for("share");
@@ -446,5 +452,74 @@ export async function settleApprovedAction(runId: string, lease: string, consump
       ...(stop ? { leaseOwner: null, leaseExpiresAt: null, finishedAt: state === "reconciliation_required" ? null : new Date() } : {}) }).where(eq(aiRun.id, runId));
     await tx.insert(aiEvent).values({ runId, organizationId: run.organizationId, ownerId: run.ownerId, sequence: run.version + 1, kind: "step_updated" });
     return operationReceipt(changed);
-  });
+  };
+  return executor ? settle(executor) : db.transaction(settle);
+}
+
+/** Trusted worker only: identifiers in, bounded receipt out. Original arguments
+ * can reach the domain exactly once through the fresh consumption return. A
+ * retry/lost handoff never reconstructs arguments or repeats a mutation. */
+export async function executeApprovedJournal(input: unknown) {
+  const parsed = consumptionInput.parse(input);
+  const value = { runId: parsed.runId.toLowerCase(), lease: parsed.lease.toLowerCase(), batchId: parsed.batchId.toLowerCase(), itemId: parsed.itemId.toLowerCase() };
+  const fresh = await consumeAction(value, true);
+  if (fresh.code !== "ACTION_CONSUMED") return fresh;
+  const action = fresh.action;
+  if (action.action !== "post_entry" && action.action !== "delete_draft_journal") fail("BATCH_INVALID");
+  try {
+    const receipt = await db.transaction(async tx => {
+      // Acquire domain/policy/credential locks BEFORE run locks, so Stop can win
+      // while the effect waits on a resource. Read committed observes those waits.
+      await lockJournalEffect(tx, action.action === "delete_draft_journal");
+      const [found] = await tx.select().from(aiRun).where(eq(aiRun.id, value.runId));
+      if (!found) fail("BATCH_NOT_FOUND");
+      const ctx = await validateRunSnapshot(found);
+      const { run, conversation } = await locked(tx, ctx, value.runId, true);
+      const [batch] = await tx.select().from(aiActionBatch).where(and(eq(aiActionBatch.id, value.batchId), eq(aiActionBatch.runId, run.id))).for("update");
+      const [consumption] = await tx.select().from(aiActionConsumption).where(and(eq(aiActionConsumption.id, fresh.consumptionId), eq(aiActionConsumption.runId, run.id)));
+      const [step] = await tx.select().from(aiStep).where(and(eq(aiStep.id, fresh.stepId), eq(aiStep.runId, run.id))).for("update");
+      if (!batch || batch.state !== "pending" || !batch.authority || !batch.display || binding(batch) !== batch.bindingDigest ||
+        !consumption || consumption.batchId !== batch.id || consumption.itemId !== value.itemId || consumption.dispatchLease !== value.lease ||
+        !step || step.state !== "executing" || step.dispatchLease !== value.lease || step.operationKey !== step.id || step.argumentDigest !== argumentHash(action)) fail("BATCH_UNAVAILABLE");
+      const authority = authoritySchema.parse(batch.authority);
+      normalized({ ...authority, requestKey: batch.requestKey });
+      const item = authority.items.find(i => i.itemId === value.itemId);
+      const [decision] = await tx.select().from(aiActionDecision).where(eq(aiActionDecision.id, consumption.decisionId));
+      if (!item || !authority.selectedItemIds.includes(item.itemId) || item.stepId !== step.id || step.version !== item.stepVersion + 1 ||
+        item.adapterVersion !== adapterVersion(action.action) || step.toolName !== action.action || argumentHash(item) !== step.argumentDigest ||
+        consumption.argumentDigest !== step.argumentDigest || consumption.resourceVersion !== item.resourceVersion || consumption.policyVersion !== item.policyVersion ||
+        !decision || decision.decision !== "approve" || decision.batchId !== batch.id || decision.batchVersion !== batch.version ||
+        decision.bindingDigest !== batch.bindingDigest || decision.selectionDigest !== hash(authority.selectedItemIds) || decision.expiresAt.getTime() !== batch.expiresAt.getTime() ||
+        decision.acceptedRunVersion <= batch.acceptedRunVersion || decision.acceptedRunVersion > run.version) fail("BATCH_UNAVAILABLE");
+      const verify = async () => {
+        await writable(run, ctx, [action]);
+        executableApproval(run, value.lease, batch, conversation);
+      };
+      await verify();
+      const observed = await previewJournalInTransaction(ctx, { ...action.arguments, expectedResourceVersion: item.resourceVersion }, action.action, tx);
+      if (!observed.preview || observed.preview.businessApproval.policyVersion !== item.policyVersion || observed.preview.businessApproval.required) fail("BATCH_STALE");
+      await verify();
+      if (action.action === "post_entry") await postJournalInTransaction(ctx, action.arguments.entryId, tx);
+      else await deleteDraftJournalInTransaction(ctx, action.arguments.entryId, tx);
+      // Both audit identity and successful receipt share the domain transaction.
+      // There is no committed-domain / missing-receipt crash window.
+      await tx.insert(auditLog).values({ organizationId: run.organizationId, userId: run.ownerId, action: action.action === "post_entry" ? "post" : "delete",
+        entityType: "journal_entry", entityId: action.arguments.entryId, changes: { consumptionId: consumption.id, operationKey: step.operationKey } });
+      const result = await settleApprovedAction(run.id, value.lease, consumption.id, { state: "succeeded", recordIds: [action.arguments.entryId] }, tx);
+      // Receipt/event/audit INSERTs may wait too. Expiry/runtime loss rolls back
+      // the entire mutation and success receipt before commit.
+      await verify();
+      return result;
+    });
+    return { code: "ACTION_EXECUTED" as const, consumptionId: fresh.consumptionId, receipt };
+  } catch (err) {
+    // A connection failure at COMMIT may have committed everything. The bounded
+    // durable receipt is the only reconciliation source; never inspect current
+    // journal status to guess that this operation performed the effect.
+    const [step] = await db.select().from(aiStep).where(and(eq(aiStep.id, fresh.stepId), eq(aiStep.runId, value.runId)));
+    if (step?.state === "succeeded") return { code: "ACTION_EXECUTED" as const, consumptionId: fresh.consumptionId, receipt: operationReceipt(step) };
+    const known = err instanceof Failure || err instanceof AuthError || err instanceof z.ZodError;
+    const receipt = await settleApprovedAction(value.runId, value.lease, fresh.consumptionId, { state: known ? "failed" : "uncertain", recordIds: [] });
+    return { code: receipt.state === "failed" ? "ACTION_FAILED" as const : "ACTION_RECONCILIATION_REQUIRED" as const, consumptionId: fresh.consumptionId, receipt };
+  }
 }

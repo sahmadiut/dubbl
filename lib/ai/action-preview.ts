@@ -43,12 +43,17 @@ async function actor(ctx: AuthContext, action: "post_entry" | "delete_draft_jour
 export function previewJournalPost(ctx: AuthContext, input: unknown) { return previewJournal(ctx, input, "post_entry"); }
 export function previewJournalDelete(ctx: AuthContext, input: unknown) { return previewJournal(ctx, input, "delete_draft_journal"); }
 
-async function previewJournal(ctx: AuthContext, input: unknown, action: "post_entry" | "delete_draft_journal") {
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+/** Trusted effect-boundary caller supplies its locked transaction; public previews stay read-only. */
+export function previewJournalInTransaction(ctx: AuthContext, input: unknown, action: "post_entry" | "delete_draft_journal", tx: Tx) {
+  return previewJournal(ctx, input, action, tx);
+}
+async function previewJournal(ctx: AuthContext, input: unknown, action: "post_entry" | "delete_draft_journal", executor?: Tx) {
   const value = journalPostPreviewSchema.parse(input);
   let current: AuthContext;
   try { current = await actor(ctx, action); }
   catch (err) { if (err instanceof AuthError) return unavailable("PREVIEW_DENIED"); throw err; }
-  const result = await db.transaction(async tx => {
+  const read = async (tx: Tx) => {
     const [entry] = await tx.select().from(journalEntry).where(and(eq(journalEntry.id, value.entryId), eq(journalEntry.organizationId, current.organizationId), isNull(journalEntry.deletedAt)));
     if (!entry) return unavailable("PREVIEW_NOT_FOUND");
     if (entry.status !== "draft" || (entry.sourceType !== null && entry.sourceType !== "manual") || entry.sourceId || entry.reversesEntryId || entry.reversedByEntryId) return unavailable("PREVIEW_UNSUPPORTED");
@@ -121,7 +126,8 @@ async function previewJournal(ctx: AuthContext, input: unknown, action: "post_en
       businessApproval, authority: "preview_only", canApprove: false, recovery: ["inspect_record", "refresh_preview"] };
     if (Buffer.byteLength(JSON.stringify(preview), "utf8") > 32768) return unavailable("PREVIEW_TOO_LARGE");
     return { code: "PREVIEW_ONLY", preview, recovery: ["inspect_record", "refresh_preview"] };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  };
+  const result = executor ? await read(executor) : await db.transaction(read, { isolationLevel: "repeatable read", accessMode: "read only" });
   // Revoke disclosure if the current credential or grants changed during reads.
   try { await actor(ctx, action); }
   catch (err) { if (err instanceof AuthError) return unavailable("PREVIEW_DENIED"); throw err; }

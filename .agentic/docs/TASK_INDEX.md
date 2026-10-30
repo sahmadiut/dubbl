@@ -745,3 +745,6 @@ AI-044 retains every original criterion and final integration acceptance; AI-008
 | [AI-051](../tasks/AI-051.md) | Explicit REST/MCP resume and durable worker journey | AI-050 |
 
 No child alone qualifies sensitive execution or activates rollout.
+| [AI-052](../tasks/AI-052.md) | Execute approved journal posting and draft deletion atomically | AI-050 bounded child |
+| [AI-053](../tasks/AI-053.md) | Execute approved cash settlements at their transaction boundary | AI-050 bounded child |
+| [AI-054](../tasks/AI-054.md) | Fence approved saved-contact invoice email delivery and reconciliation | AI-050 bounded child |

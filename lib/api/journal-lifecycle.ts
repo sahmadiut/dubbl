@@ -37,20 +37,24 @@ function restEntry(entry: Awaited<ReturnType<typeof loadEntry>>) {
     accountCode: line.account?.code ?? "", accountName: line.account?.name ?? "" })) };
 }
 
+/** Caller-owned transaction permits an approved effect and its receipt to commit together. */
+export async function postJournalInTransaction(ctx: AuthContext, id: string, tx: Tx) {
+  requireRole(ctx, "post:entries");
+  const entry = await loadEntry(tx, ctx, id);
+  if (entry.status !== "draft") throw new AuthError("Only draft entries can be posted", 400);
+  await assertNotLocked(ctx.organizationId, entry.date, ctx, tx);
+  await assertJournalReferences(ctx.organizationId, entry.lines, entry.fiscalYearId, false, tx);
+  const [updated] = await tx.update(journalEntry).set({ status: "posted", postedAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(journalEntry.id, id), eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.status, "draft"))).returning();
+  if (!updated) throw new AuthError("Entry changed before posting", 409);
+  const result = { entry: updated, rest: restEntry({ ...entry, ...updated }) };
+  stringifyWire(result); // A failed compatibility response must roll back the status change.
+  return result;
+}
+
 export async function postJournal(ctx: AuthContext, id: string, request?: Request) {
   requireRole(ctx, "post:entries");
-  const result = await db.transaction(async tx => {
-    const entry = await loadEntry(tx, ctx, id);
-    if (entry.status !== "draft") throw new AuthError("Only draft entries can be posted", 400);
-    await assertNotLocked(ctx.organizationId, entry.date, ctx);
-    await assertJournalReferences(ctx.organizationId, entry.lines, entry.fiscalYearId);
-    const [updated] = await tx.update(journalEntry).set({ status: "posted", postedAt: new Date(), updatedAt: new Date() })
-      .where(and(eq(journalEntry.id, id), eq(journalEntry.organizationId, ctx.organizationId), eq(journalEntry.status, "draft"))).returning();
-    if (!updated) throw new AuthError("Entry changed before posting", 409);
-    const result = { entry: updated, rest: restEntry({ ...entry, ...updated }) };
-    stringifyWire(result); // A failed compatibility response must roll back the status change.
-    return result;
-  });
+  const result = await db.transaction(tx => postJournalInTransaction(ctx, id, tx));
   await logAudit({ ctx, action: "post", entityType: "journal_entry", entityId: id, changes: { previousStatus: "draft" }, request });
   return result;
 }

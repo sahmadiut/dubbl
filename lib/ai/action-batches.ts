@@ -56,8 +56,10 @@ function canonical(value: unknown): string {
 const hash = (value: unknown) => createHash("sha256").update(canonical(value)).digest("hex");
 const argumentHash = (i: z.infer<typeof item>) => hash({ name: i.action, version: 1, arguments: i.arguments });
 function normalized(spec: Spec): Spec {
-  const items = spec.items.map(i => ({ ...i, dependsOn: [...i.dependsOn].sort() })).sort((a, b) => a.itemId.localeCompare(b.itemId));
-  const selectedItemIds = [...spec.selectedItemIds].sort(), ids = new Set(items.map(i => i.itemId));
+  // PostgreSQL UUID identity is case-insensitive. Canonicalize graph IDs before
+  // uniqueness/closure checks so spelling aliases cannot propose duplicate effects.
+  const items = spec.items.map(i => ({ ...i, itemId: i.itemId.toLowerCase(), dependsOn: i.dependsOn.map(id => id.toLowerCase()).sort() })).sort((a, b) => a.itemId.localeCompare(b.itemId));
+  const selectedItemIds = spec.selectedItemIds.map(id => id.toLowerCase()).sort(), ids = new Set(items.map(i => i.itemId));
   if (ids.size !== items.length || new Set(items.map(actionResource)).size !== items.length || new Set(selectedItemIds).size !== selectedItemIds.length || selectedItemIds.some(i => !ids.has(i))) fail("BATCH_INVALID");
   const visiting = new Set<string>(), visited = new Set<string>();
   function visit(i: typeof items[number]) {

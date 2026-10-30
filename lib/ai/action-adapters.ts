@@ -51,7 +51,7 @@ export function actionPermissions(action: ActionItem["action"]) { return ["view:
 // One resource may appear only once, even across action variants. Effects on a
 // common invoice/journal require a fresh later observation, not speculative state.
 export function actionResource(item: ActionItem) {
-  return "entryId" in item.arguments ? `journal:${item.arguments.entryId}` : `${"documentType" in item.arguments ? item.arguments.documentType : "invoice"}:${item.arguments.documentId}`;
+  return "entryId" in item.arguments ? `journal:${item.arguments.entryId.toLowerCase()}` : `${"documentType" in item.arguments ? item.arguments.documentType : "invoice"}:${item.arguments.documentId.toLowerCase()}`;
 }
 function unavailable(code: string) { return { code, preview: null, recovery: code === "PREVIEW_DENIED" || code === "PREVIEW_POLICY_INVALID" ? ["contact_administrator"] : code === "PREVIEW_STALE" ? ["refresh_preview"] : ["inspect_record"] }; }
 function invalid(): never { throw new WireCompatibilityError("Unsupported preview record"); }

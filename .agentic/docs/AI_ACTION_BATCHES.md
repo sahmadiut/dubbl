@@ -22,13 +22,19 @@ Creation is not registered through REST, MCP or the ordinary model catalog.
 This primitive is prepared for future executor integration; current model turns
 still support only their existing seven read/draft tools.
 
-The strict spec contains a request key, 1..10 item UUIDs with action `post_entry`,
-exact `{entryId}` arguments, explicit prerequisite item UUIDs, and selection.
-All journal resources must be distinct, supported and currently visible under
-AI-041's manual-draft, currency, period/reference and safe-workflow limits.
+The strict spec contains a request key, 1..10 item UUIDs, one of the four finite
+actions (`post_entry`, `delete_draft_journal`, `settle_document`, `email_invoice`),
+its exact action-specific arguments, explicit prerequisite item UUIDs and selection.
+The [finite contract](AI_FINITE_ACTION_ADAPTERS.md) defines each domain's supported
+records, currencies, permissions, reference/period gates and display bounds.
+All resources must be distinct and currently supported, including across action
+variants. Resource UUID comparisons follow PostgreSQL's case-insensitive identity;
+new item, prerequisite and selection IDs are normalized to lowercase before graph
+and duplicate checks. Original domain arguments retain their validated spelling.
 Duplicate/self/missing/cyclic dependencies are rejected, and selection must
-include the complete prerequisite closure. No arbitrary tool, amount, actor,
-organization, approval or provider fields are accepted.
+include the complete prerequisite closure. Only settlement accepts an exact
+positive document-currency amountMinor string under its domain ceiling. No arbitrary
+tool, monetary override, actor, organization, approval or provider fields are accepted.
 
 A new generated migration, `0024_serious_chat.sql`, adds `ai_action_batch` with
 owner/organization/run scope enforced by a composite FK, unique run/revision and
@@ -36,11 +42,12 @@ run/request keys, a partial unique pending row, bounded JSONB, positive versions
 and canonical digests. The original parsed arguments live in `authority`, separate
 from the complete bounded `display`. Per-item authority binds adapter version,
 resource fingerprint, prepared step UUID/version and dependency graph. The batch
-also binds adapter version 2 and the explicit policy fingerprint described in the
+also binds the per-action adapter version and explicit policy fingerprint described in the
 [business-policy contract](AI_BUSINESS_POLICY_PREVIEWS.md). Policy/step/request/
 action changes invalidate the complete display even if timestamps are unchanged.
-Legacy adapter-version-1 rows return BATCH_STALE; explicit revision can upgrade
-them under the original expiry. No existing row is silently rewritten. The batch
+Legacy journal adapter-version-1 rows return BATCH_STALE; explicit revision can
+upgrade them under the original expiry. Settlement/email version 1 and current
+journal posting/deletion version 2 remain valid. No existing row is silently rewritten. The batch
 binding digest also covers owner/org/run, row/revision, expiry, selection and the
 display. Canonical hashing survives JSONB property reordering. This unkeyed digest
 is an integrity binding, not an approval token or signed capability.
@@ -60,7 +67,10 @@ charges, attempt counters and completed receipts are preserved.
 | Revise entire batch | POST /api/v1/ai/runs/[id]/action-batch/revise | revise_ai_action_batch |
 
 Both use `lib/ai/action-batches.ts`, current credential/membership and `use:ai`,
-`view:ai-history`, `view:data`, `post:entries` permissions, plus own-run scope.
+`view:ai-history`, `view:data` and every item's current domain permission, plus
+own-run scope. Domain grants are post:entries, edit:entries, manage:payments and
+manage:invoices for posting, deletion, settlement and email respectively. A batch
+containing no posting effect does not require post:entries.
 REST path IDs cannot be overridden in request bodies; query fields are rejected.
 Responses, including errors, use private,no-store. Client MCP tools are excluded
 from the ordinary chat catalog. They do not approve or execute.
@@ -70,7 +80,9 @@ resource fingerprint, then rechecks live grants after async reads. It returns
 one complete stored display or nothing. It exposes proposed step references,
 selection/dependencies, every effect and selected totals grouped by explicit
 currency; SQL minor strings and bigint totals retain USD/IRR units without
-conversion or mixed-currency economic sums. No raw execution arguments,
+conversion or mixed-currency economic sums. Cash source amounts remain separate
+from base GL values; only selected posting/settlement GL effects enter totals.
+Unposted draft deletion and external email have no new GL impact. No raw execution arguments,
 credential/lease or model-generated success are returned. Read is permitted with
 runtime disabled and does not write or refresh expiry.
 

@@ -728,6 +728,7 @@ provider/model catalog or production-activation scope is expanded.
   invoice/bill cash settlements, qualified manual draft deletion and derived
   saved-contact invoice email; decisions/dispatch and parent integration remain separate.
 
-AI-046 retains every criterion and combined integration; AI-042/008 remain open
+The [AI-046 combined acceptance](AI_ACTION_INTEGRATION.md) qualifies the mixed
+proposal and current policy through actual REST/MCP/SQL. AI-042/008 remain open
 parents, and AI-043/044 decisions/dispatch remain separate. See the
 [policy contract](../docs/AI_BUSINESS_POLICY_PREVIEWS.md). No execution activation.

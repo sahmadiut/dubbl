@@ -65,3 +65,20 @@ export const aiActionConsumption = pgTable("ai_action_consumption", {
   unique("ai_action_consumption_scope").on(t.id, t.organizationId, t.ownerId),
   check("ai_action_consumption_digests", sql`${t.argumentDigest} ~ '^[a-f0-9]{64}$' and ${t.resourceVersion} ~ '^[a-f0-9]{64}$' and ${t.policyVersion} ~ '^[a-f0-9]{64}$'`),
 ]);
+
+// Explicit queue receipt, separate from decision and one-time consumption.
+// No executable arguments or display content are copied here.
+export const aiActionResume = pgTable("ai_action_resume", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  decisionId: uuid("decision_id").notNull(), batchId: uuid("batch_id").notNull(),
+  runId: uuid("run_id").notNull(), organizationId: uuid("organization_id").notNull(), ownerId: uuid("owner_id").notNull(),
+  requestKey: text("request_key").notNull(), requestDigest: text("request_digest").notNull(),
+  acceptedRunVersion: integer("accepted_run_version").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  foreignKey({ columns: [t.decisionId, t.batchId, t.runId, t.organizationId, t.ownerId], foreignColumns: [aiActionDecision.id, aiActionDecision.batchId, aiActionDecision.runId, aiActionDecision.organizationId, aiActionDecision.ownerId], name: "ai_action_resume_decision_scope" }).onDelete("cascade"),
+  unique("ai_action_resume_batch").on(t.batchId), unique("ai_action_resume_request").on(t.runId, t.requestKey),
+  check("ai_action_resume_digest", sql`${t.requestDigest} ~ '^[a-f0-9]{64}$'`),
+  check("ai_action_resume_key", sql`${t.requestKey} ~ '^[A-Za-z0-9_-]{1,128}$'`),
+  check("ai_action_resume_version", sql`${t.acceptedRunVersion} > 0`),
+]);

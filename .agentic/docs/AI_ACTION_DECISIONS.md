@@ -6,6 +6,10 @@ Recording approval never queues a run, dispatches a domain operation, calls a
 provider or changes existing business approvals. The automatic model catalog
 remains seven read/draft operations.
 
+AI-051 now provides the separate explicit REST/MCP resume and durable worker
+branch; see [approved batch resume](AI_APPROVED_BATCH_RESUME.md). AI-044 retains
+independent combined acceptance. Approval receipts alone still never queue work.
+
 | Operation | REST | MCP |
 |---|---|---|
 | Approve exact selection | POST /api/v1/ai/runs/[id]/action-batch/approve | approve_ai_action_batch |

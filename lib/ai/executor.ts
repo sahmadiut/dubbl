@@ -14,6 +14,7 @@ import { getRunProgress } from "./run-progress";
 import { requestRunInput } from "./run-input";
 import { createRunTransport } from "./run-transport";
 import { closeProviderAttempts } from "./provider-recovery";
+import { executeApprovedBatch } from "./action-batches";
 
 type Run = typeof aiRun.$inferSelect;
 
@@ -124,6 +125,8 @@ export async function executeRun(runId: string, lease: string, transport?: Provi
     const lock = await connection.query("select pg_try_advisory_lock(hashtextextended($1, 38)) as locked", [runId]);
     locked = lock.rows[0].locked;
     if (!locked) return { runId, state: "busy" as const };
+    const approved = await executeApprovedBatch(runId, lease, options.signal);
+    if (approved) return approved;
     if (!transport && process.env.AI_PROVIDER_CALLS_ENABLED !== "true") return await closeRun(runId, lease, false);
     const dispatch = transport ?? createRunTransport(runId, lease);
     // Accepted calls carry executable arguments only in their fresh receipt.

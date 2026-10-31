@@ -1,11 +1,12 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { aiConversation, aiEvent, aiProviderAttempt, aiRun, aiStep, contact, expenseClaim, journalEntry, type AiRunState } from "@/lib/db/schema";
+import { aiConversation, aiEvent, aiProviderAttempt, aiRun, aiStep, contact, expenseClaim, journalEntry, invoice, bill, type AiRunState } from "@/lib/db/schema";
 import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { hasPermission } from "@/lib/plans";
 import { catalogEntry } from "./tool-catalog";
+import { actionPermissions } from "./action-adapters";
 
 const id = z.string().uuid().describe("Opaque UUID checked against the authenticated run owner and organization.");
 export const progressSchema = z.object({
@@ -22,7 +23,8 @@ export const observationSchema = z.object({
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Step = typeof aiStep.$inferSelect;
-type RecordReference = { type: "contact" | "journal_entry" | "expense_claim"; id: string; href: string; status?: string; amountMinor?: string; currencyCode?: string };
+type RecordReference = { type: "contact" | "journal_entry" | "expense_claim" | "invoice" | "bill"; id: string; href: string; status?: string; amountMinor?: string; currencyCode?: string };
+const sensitiveActions = new Set(["post_entry", "delete_draft_journal", "settle_document", "email_invoice"]);
 const terminal = new Set<AiRunState>(["succeeded", "failed", "cancelled", "expired"]);
 const stateCodes: Record<AiRunState, string> = {
   queued: "QUEUED", running: "RUNNING", awaiting_input: "INPUT_REQUIRED", awaiting_approval: "APPROVAL_REQUIRED",
@@ -41,9 +43,15 @@ async function recordReferences(tx: Tx, ctx: AuthContext, step: Step) {
     if (step.toolName === "get_contact" || step.toolName === "list_contacts") {
       const [row] = await tx.select({ id: contact.id }).from(contact).where(and(eq(contact.id, recordId), eq(contact.organizationId, ctx.organizationId), isNull(contact.deletedAt)));
       if (row) records.push({ type: "contact", id: row.id, href: `/contacts/${row.id}` });
-    } else if (step.toolName === "get_entry" || step.toolName === "list_entries") {
+    } else if (step.toolName === "get_entry" || step.toolName === "list_entries" || step.toolName === "post_entry") {
       const [row] = await tx.select({ id: journalEntry.id, status: journalEntry.status }).from(journalEntry).where(and(eq(journalEntry.id, recordId), eq(journalEntry.organizationId, ctx.organizationId), isNull(journalEntry.deletedAt)));
       if (row) records.push({ type: "journal_entry", id: row.id, href: `/accounting/${row.id}`, status: row.status });
+    } else if (step.toolName === "settle_document" || step.toolName === "email_invoice") {
+      for (const [table, type, href, permission] of [[invoice, "invoice", "/invoices/", "manage:invoices"], [bill, "bill", "/bills/", "manage:bills"]] as const) {
+        if (step.toolName === "email_invoice" && type !== "invoice" || !permitted(ctx, permission)) continue;
+        const [row] = await tx.select({ id: table.id, status: table.status }).from(table).where(and(eq(table.id, recordId), eq(table.organizationId, ctx.organizationId), isNull(table.deletedAt)));
+        if (row) records.push({ type, id: row.id, href: `${href}${row.id}`, status: row.status });
+      }
     } else if (["get_expense_claim", "list_expense_claims", "create_expense_claim"].includes(step.toolName)) {
       const [row] = await tx.select({ id: expenseClaim.id, status: expenseClaim.status, amountMinor: sql<string>`${expenseClaim.totalAmount}::text`, currencyCode: expenseClaim.currencyCode })
         .from(expenseClaim).where(and(eq(expenseClaim.id, recordId), eq(expenseClaim.organizationId, ctx.organizationId), isNull(expenseClaim.deletedAt)));
@@ -56,13 +64,15 @@ async function recordReferences(tx: Tx, ctx: AuthContext, step: Step) {
 
 async function stepSummary(tx: Tx, ctx: AuthContext, step: Step) {
   const entry = catalogEntry(step.toolName);
-  const visible = entry && step.requiredPermissions.length > 0 && step.requiredPermissions.every(p => permitted(ctx, p)) && permitted(ctx, entry.permission) && permitted(ctx, "view:data");
+  const sensitive = sensitiveActions.has(step.toolName);
+  const visible = (entry || sensitive) && step.requiredPermissions.length > 0 && step.requiredPermissions.every(p => permitted(ctx, p)) &&
+    (sensitive ? actionPermissions(step.toolName as Parameters<typeof actionPermissions>[0]).every(p => permitted(ctx, p)) : permitted(ctx, entry!.permission)) && permitted(ctx, "view:data");
   const base = { id: step.id, version: step.version, state: step.state, createdAt: step.createdAt, updatedAt: step.updatedAt };
   if (!visible) return { ...base, action: null, code: "RESULT_RESTRICTED", records: [], recordsOmitted: true };
   // Executing/provisional output is never confirmed. Known references on uncertain
   // effects remain inspectable without claiming that the operation completed.
   const refs = ["succeeded", "uncertain"].includes(step.state) ? await recordReferences(tx, ctx, step) : { records: [], recordsOmitted: step.recordIds.length > 0 };
-  const code = step.state === "succeeded" && entry.effect === "draft"
+  const code = step.state === "succeeded" && sensitive ? "ACTION_COMPLETED" : step.state === "succeeded" && entry?.effect === "draft"
     ? refs.records.length ? "DRAFT_CREATED" : "RESULT_UNAVAILABLE"
     : stepCodes[step.state];
   return { ...base, action: step.toolName, code, ...refs };

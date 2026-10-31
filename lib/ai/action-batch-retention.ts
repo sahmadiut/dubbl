@@ -9,7 +9,7 @@ export async function eraseActionBatches(tx: Tx, runId: string, state: "cancelle
 }
 export async function expireActionBatchContent(tx: Tx, now: Date) {
   const rows = await tx.select({ id: aiActionBatch.id }).from(aiActionBatch)
-    .where(and(lte(aiActionBatch.expiresAt, now), sql`${aiActionBatch.authority} is not null or ${aiActionBatch.display} is not null`)).limit(100).for("update", { skipLocked: true });
+    .where(and(lte(aiActionBatch.expiresAt, now), sql`(${aiActionBatch.authority} is not null or ${aiActionBatch.display} is not null)`)).limit(100).for("update", { skipLocked: true });
   if (!rows.length) return;
   await tx.update(aiActionBatch).set({ state: sql`case when ${aiActionBatch.state} = 'pending' then 'expired' else ${aiActionBatch.state} end`, authority: null, display: null })
     .where(inArray(aiActionBatch.id, rows.map(r => r.id)));

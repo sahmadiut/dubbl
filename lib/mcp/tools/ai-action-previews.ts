@@ -4,10 +4,15 @@ import { wrapTool } from "@/lib/mcp/errors";
 import { journalPostPreviewSchema, previewJournalPost, previewJournalDelete } from "@/lib/ai/action-preview";
 import { getActionBatch, getActionBatchSchema, reviseActionBatch, reviseActionBatchSchema } from "@/lib/ai/action-batches";
 import { actionDecisionSchema, approveActionBatch, rejectActionBatch } from "@/lib/ai/action-batches";
+import { resumeActionBatchSchema, resumeActionBatch } from "@/lib/ai/action-batches";
 
 import { settlementPreviewSchema, previewSettlement, emailActionPreviewSchema, previewInvoiceEmail } from "@/lib/ai/action-adapters";
 
 export function registerAiActionPreviewTools(server: McpServer, ctx: AuthContext) {
+  server.registerTool("resume_ai_action_batch", {
+    description: "Explicitly queue an own current approved batch using exact batch/run versions, bindingDigest, complete selected item UUIDs and a unique requestKey. Requires an existing interactive approval receipt and live original identity, domain permissions, resources, policy and fixed expiry. Returns a stable queue receipt; identical retries never queue again. No arguments, money, recipients, policy or selection may change. The durable worker runs only this dependency-closed selection; failed or uncertain work stops later effects. Never invokes a model or executes at this endpoint. Not model-callable; observation and clarification never resume work.",
+    inputSchema: resumeActionBatchSchema,
+  }, input => wrapTool(ctx, () => resumeActionBatch(ctx, input)));
   server.registerTool("approve_ai_action_batch", {
     description: "Record explicit approval of one own exact persisted batch selection using batch/run versions, bindingDigest, selected item UUIDs and a unique requestKey. Returns a stable content-free decision receipt after current domain/resource/policy/expiry checks; amounts/arguments cannot be changed. Requires a live interactive user session: MCP tokens/API keys return DECISION_INTERACTION_REQUIRED and must open interactive approval. Existing business approval requirements cannot be satisfied by this operation. Never queues, executes, grants blanket permission or accepts model/clarification confirmation. Not model-callable.",
     inputSchema: actionDecisionSchema,

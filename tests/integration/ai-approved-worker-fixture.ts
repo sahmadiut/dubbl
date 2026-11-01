@@ -165,6 +165,107 @@ async function main() {
     throw new Error(`Missing SQL wait: ${query}`);
   }
   try {
+    if (process.env.AI044_ACCEPTANCE === "true") {
+      const noModel = async () => { throw new Error("Approved execution called the model"); };
+      const inputFor = (p: Proposal, lease: string, n: number) => ({ runId: p.id, lease, batchId: p.resumeInput.batchId, itemId: p.items[n].itemId });
+      const claim = async (p: Proposal) => {
+        const claimed = await runs.claimNextRun(); assert.equal(claimed?.id, p.id); return claimed!.leaseOwner!;
+      };
+      // A second executor on the same lease cannot pass the process fence. Lose
+      // the acknowledgement AFTER a real middle payment/receipt commit, then
+      // finish the dependency chain from that original durable receipt.
+      const p = await propose("IRR"); const queued = await resume(p, "mcp"), lease = await claim(p);
+      const payStep = p.view.batch.display.items.find((i: { itemId: string }) => i.itemId === p.items[1].itemId).stepId;
+      let lostAcknowledgements = 0;
+      const transaction = db.transaction.bind(db);
+      const lostAck = mock.method(db, "transaction", async (...args: Parameters<typeof db.transaction>) => {
+        const result = await transaction(...args);
+        if (result && typeof result === "object" && "stepId" in result && result.stepId === payStep && "state" in result && result.state === "succeeded" && !lostAcknowledgements++) {
+          throw new Error("Lost actual payment COMMIT acknowledgement");
+        }
+        return result;
+      });
+      const lock = await pool.connect(); await lock.query("begin"); await lock.query("lock table invoice in row exclusive mode");
+      const executing = executeRun(p.id, lease, noModel);
+      try {
+        await waitFor('lock table %"invoice"%');
+        assert.equal((await executeRun(p.id, lease, noModel)).state, "busy");
+        await lock.query("commit"); assert.equal((await executing).state, "succeeded");
+      } finally { await lock.query("rollback"); lock.release(); await executing; lostAck.mock.restore(); }
+      assert.equal(lostAcknowledgements, 1); await assertPartial(p, 5);
+      const receipts = await consumptions(p), steps = await stepRows(p), delivered = sent.length;
+      assert.equal(receipts.length, 5); assert.equal(new Set(receipts.map(c => c.itemId)).size, 5);
+      assert.equal(new Set(receipts.map(c => c.decisionId)).size, 1); assert.equal(delivered, 1);
+      const paymentReceipt = steps.find(s => s.id === payStep)!;
+      assert.equal((await pool.query("select count(*)::int n from payment where id=$1 and amount::text=$2", [paymentReceipt.recordIds![1], p.amountMinor])).rows[0].n, 1);
+      assert.equal((await pool.query("select count(*)::int n from payment_allocation where payment_id=$1 and document_id=$2 and amount::text=$3", [paymentReceipt.recordIds![1], p.paid.id, p.amountMinor])).rows[0].n, 1);
+      assert.deepEqual((await pool.query("select count(*)::int n, sum(amount)::text total from payment_allocation where document_id=$1", [p.paid.id])).rows[0], { n: 1, total: p.amountMinor });
+      assert.equal((await pool.query("select count(*)::int n from audit_log where action='ai.settle' and changes->>'consumptionId'=$1", [receipts.find(c => c.stepId === payStep)!.id])).rows[0].n, 1);
+      assert.equal((await pool.query("select coalesce(sum(debit_amount),0)::text debit, coalesce(sum(credit_amount),0)::text credit from journal_line where journal_entry_id=$1", [paymentReceipt.recordIds![2]])).rows[0].debit, p.amountMinor);
+      assert.equal((await pool.query("select coalesce(sum(debit_amount-credit_amount),0)::text balance from journal_line where journal_entry_id=$1", [paymentReceipt.recordIds![2]])).rows[0].balance, "0");
+      assert.deepEqual(await resume(p), queued); assert.equal(await runs.claimNextRun(), null);
+      assert.deepEqual(await consumptions(p), receipts); assert.deepEqual(await stepRows(p), steps); assert.equal(sent.length, delivered);
+
+      // A succeeded step/domain status alone cannot establish a prerequisite.
+      // Damage each distinct durable binding after a real posting, then let a
+      // fresh lease recover through the actual worker executor.
+      for (const damage of ["missing", "arguments", "policy", "resource"] as const) {
+        const q = await propose(); const receipt = await resume(q), originalLease = await claim(q);
+        await batches.executeApprovedJournal(inputFor(q, originalLease, 0));
+        const [consumed] = await consumptions(q);
+        if (damage === "missing") await pool.query("delete from ai_action_consumption where id=$1", [consumed.id]);
+        else {
+          const column = { arguments: "argument_digest", policy: "policy_version", resource: "resource_version" }[damage];
+          await pool.query(`update ai_action_consumption set ${column}=$1 where id=$2`, ["a".repeat(64), consumed.id]);
+        }
+        await db.update(aiRun).set({ leaseExpiresAt: new Date(Date.now() - 1) }).where(eq(aiRun.id, q.id));
+        await runs.maintainRuns(); await work();
+        await assertPartial(q, 1); assert.equal((await runRow(q)).state, "failed");
+        assert.equal((await deliveryRows(q)).length, 0);
+        assert.deepEqual(await resume(q, "mcp"), receipt); assert.equal(await runs.claimNextRun(), null);
+      }
+
+      // The durable consumption is already committed while the payment waits.
+      // Expiry or a new business approval policy must still prevent its effect.
+      for (const change of ["expiry", "business-policy", "permission"] as const) {
+        const q = await propose(); await resume(q); const originalLease = await claim(q);
+        const blocker = await pool.connect(); await blocker.query("begin"); await blocker.query("lock table invoice in row exclusive mode");
+        const pending = executeRun(q.id, originalLease, noModel);
+        let workflowId: string | undefined;
+        try {
+          await waitFor('lock table %"invoice"%');
+          assert.equal((await consumptions(q)).length, 2);
+          if (change === "expiry") await pool.query("update ai_run set deadline_at=now()-interval '1 second', started_at=now()-interval '2 minutes' where id=$1", [q.id]);
+          else if (change === "permission") await db.update(customRole).set({ permissions: permissions.filter(p => p !== "manage:payments") }).where(eq(customRole.id, role.id));
+          else {
+            const [approver] = await db.insert(users).values({ name: "Independent approver", email: "ai044-approver@test.invalid" }).returning();
+            const [approverMember] = await db.insert(member).values({ organizationId: org.id, userId: approver.id, role: "member" }).returning();
+            workflowId = (await pool.query("insert into approval_workflow (organization_id,name,entity_type,conditions) values ($1,'Late required approval','invoice','[]'::jsonb) returning id", [org.id])).rows[0].id;
+            await pool.query("insert into approval_workflow_step (workflow_id,step_order,approver_id) values ($1,1,$2)", [workflowId, approverMember.id]);
+          }
+          await blocker.query("commit"); await pending;
+          await assertPartial(q, 1); assert.notEqual((await runRow(q)).state, "succeeded");
+          assert.equal((await deliveryRows(q)).length, 0);
+          assert.equal((await stepRows(q)).find(s => s.id === (q.view.batch.display.items as {itemId: string; stepId: string}[]).find(i => i.itemId === q.items[1].itemId)!.stepId)!.state, "failed");
+        } finally {
+          await blocker.query("rollback"); blocker.release(); await pending;
+          if (workflowId) await pool.query("delete from approval_workflow where id=$1", [workflowId]);
+          await db.update(customRole).set({ permissions }).where(eq(customRole.id, role.id));
+        }
+      }
+      // No clarification, executor primitive or security operation is exposed
+      // as an automatic tool; the registered transport has no execution bypass.
+      const { AI_TOOL_NAMES, catalogEntry } = await import("../../lib/ai/tool-catalog");
+      assert.equal(AI_TOOL_NAMES.length, 7);
+      assert.ok(AI_TOOL_NAMES.every(name => ["read", "draft"].includes(catalogEntry(name)!.effect)));
+      const tools = (await client.listTools()).tools.map(t => t.name);
+      for (const name of ["execute_approved_journal", "execute_approved_settlement", "execute_approved_invoice_email", "consume_approved_action", "update_ai_provider", "update_role"]) {
+        assert.equal(catalogEntry(name), undefined); assert.ok(!tools.includes(name));
+      }
+      assert.equal((await pool.query("select count(*)::int n from ai_provider_attempt")).rows[0].n, 0);
+      console.log("AI-044 combined execution acceptance verified");
+      return;
+    }
     for (const currency of ["USD", "IRR"]) {
       const p = await propose(currency), before = sent.length;
       assert.equal((await runRow(p)).state, "awaiting_approval");

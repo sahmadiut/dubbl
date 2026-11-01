@@ -165,6 +165,155 @@ async function main() {
     throw new Error(`Missing SQL wait: ${query}`);
   }
   try {
+    if (process.env.AI008_ACCEPTANCE === "true") {
+      const getRoute = await import("../../app/api/v1/ai/runs/[id]/action-batch/route");
+      const reviseRoute = await import("../../app/api/v1/ai/runs/[id]/action-batch/revise/route");
+      const rejectRoute = await import("../../app/api/v1/ai/runs/[id]/action-batch/reject/route");
+      const params = (id: string) => ({ params: Promise.resolve({ id }) });
+      async function data(response: Response) {
+        assert.equal(response.status, 200, await response.clone().text());
+        assert.equal(response.headers.get("cache-control"), "private, no-store"); return response.json();
+      }
+      const read = (p: Proposal) => getRoute.GET(req(), params(p.id)).then(data);
+      const body = (view: Proposal["view"], requestKey: string) => ({ batchId: view.batch.id, expectedVersion: view.batch.version,
+        expectedRunVersion: view.runVersion, bindingDigest: view.batch.bindingDigest,
+        selectedItemIds: view.batch.display.items.filter((i: { selected: boolean }) => i.selected).map((i: { itemId: string }) => i.itemId), requestKey });
+      const decide = (p: Proposal, input: object, reject = false) => (reject ? rejectRoute : approveRoute).POST(req(input), params(p.id)).then(data);
+      const revise = (p: Proposal, input: object) => reviseRoute.POST(req(input), params(p.id)).then(data);
+      const metadata = async (p: Proposal) => (await pool.query(`select
+        (select count(*) from ai_action_decision where run_id=$1)::int decisions,
+        (select count(*) from ai_action_resume where run_id=$1)::int resumes,
+        (select count(*) from ai_action_consumption where run_id=$1)::int consumptions,
+        (select count(*) from ai_provider_attempt where run_id=$1)::int providers`, [p.id])).rows[0];
+
+      const p = await propose("IRR", false), view = await read(p);
+      assert.deepEqual(view, await mcp("get_ai_action_batch", { runId: p.id }));
+      assert.equal(view.batch.display.items.length, 6);
+      assert.equal(view.batch.display.items.filter((i: {selected: boolean}) => i.selected).length, 5);
+      assert.equal(view.batch.authority, "preview_only");
+      assert.ok(!/"(arguments|leaseOwner|credential)"/.test(JSON.stringify(view)));
+      const original = (await pool.query("select authority,expires_at from ai_action_batch where run_id=$1 order by version limit 1", [p.id])).rows[0];
+      assert.deepEqual(original.authority.selectedItemIds, []); // Trusted creation never preselects.
+      assert.equal(new Date(view.batch.expiresAt).getTime(), original.expires_at.getTime());
+      const before = await metadata(p);
+      const previewOperations = [
+        ["journal-post", "preview_ai_journal_post", p.items[0]],
+        ["settlement", "preview_ai_settlement", p.items[1]],
+        ["settlement", "preview_ai_settlement", p.items[2]],
+        ["invoice-email", "preview_ai_invoice_email", p.items[3]],
+        ["journal-delete", "preview_ai_journal_delete", p.items[4]],
+      ] as const;
+      for (const [route, tool, item] of previewOperations) {
+        const handler = await import(`../../app/api/v1/ai/previews/${route}/route`);
+        const rest = await data(await handler.POST(req(item.arguments))), linked = await mcp(tool, item.arguments);
+        assert.equal(rest.code, "PREVIEW_ONLY"); assert.equal(linked.code, rest.code);
+        // Observation timestamps differ; the actual business fields and resource binding must agree.
+        const { observedAt, expiresAt, ...business } = rest.preview;
+        const { observedAt: linkedAt, expiresAt: linkedExpiry, ...linkedBusiness } = linked.preview;
+        assert.deepEqual(business, linkedBusiness);
+        assert.ok(Date.parse(observedAt) < Date.parse(expiresAt)); assert.ok(Date.parse(linkedAt) < Date.parse(linkedExpiry));
+        assert.equal(business.action, item.action); assert.ok(business.labelKey);
+        assert.ok(business.target.reference); assert.ok(business.target.href);
+        assert.ok(business.before); assert.ok(business.after); assert.ok(business.effects.length);
+        assert.equal(business.businessApproval.required, false); assert.equal(business.authority, "preview_only");
+        assert.equal(business.resourceVersion, view.batch.display.items.find((i: {itemId: string}) => i.itemId === item.itemId).preview.resourceVersion);
+        if (item.action === "settle_document") assert.deepEqual(business.payment, { amountMinor: p.amountMinor, currencyCode: "IRR", direction: item === p.items[1] ? "received" : "made" });
+        if (item.action === "email_invoice") assert.deepEqual(business.recipients, [{ email: party.email, name: party.name }]);
+      }
+      assert.deepEqual(await metadata(p), before); await assertPartial(p, 0); assert.equal(sent.length, 0);
+      assert.equal((await resume(p)).code, "BATCH_UNAVAILABLE");
+      const firstInput = body(view, "outer-first");
+      assert.equal((await approveRoute.POST(req({ ...firstInput, confirmation: "yes", confirmed: true }), params(p.id))).status, 400);
+      assert.ok((await client.callTool({ name: "approve_ai_action_batch", arguments: { runId: p.id, ...firstInput, confirmation: "yes" } })).isError);
+      const first = await mcp("approve_ai_action_batch", { runId: p.id, ...firstInput });
+      assert.equal(first.code, "DECISION_APPROVED"); assert.deepEqual(await decide(p, firstInput), first);
+      assert.equal((await runRow(p)).state, "awaiting_approval"); assert.equal(await runs.claimNextRun(), null);
+      await assertPartial(p, 0); assert.equal((await metadata(p)).resumes, 0);
+
+      // Revise an already-approved proposal: change both the amount and exact selection.
+      // All prior step/decision bindings must lose effect authority, even if their receipt is replayed.
+      const approved = await read(p), changedAmount = "1073741824";
+      const items = p.items.map(i => i.itemId === p.items[1].itemId ? { ...i, arguments: { ...p.items[1].arguments, amountMinor: changedAmount } } : i);
+      const revision = { batchId: approved.batch.id, expectedVersion: approved.batch.version, expectedRunVersion: approved.runVersion,
+        requestKey: "outer-revision", items, selectedItemIds: [p.items[0].itemId, p.items[1].itemId] };
+      const invalid = await revise(p, { ...revision, selectedItemIds: [p.items[1].itemId] });
+      assert.equal(invalid.code, "BATCH_INVALID"); assert.equal((await read(p)).batch.id, approved.batch.id);
+      const revised = await revise(p, revision); assert.equal(revised.code, "BATCH_PREVIEW_RECORDED");
+      assert.deepEqual(await mcp("revise_ai_action_batch", { runId: p.id, ...revision }), revised);
+      const current = await read(p);
+      assert.notEqual(current.batch.id, view.batch.id); assert.notEqual(current.batch.bindingDigest, view.batch.bindingDigest);
+      assert.equal(current.batch.expiresAt, view.batch.expiresAt); assert.equal(current.batch.decision, undefined);
+      assert.equal(current.batch.display.items.find((i: {itemId: string}) => i.itemId === p.items[1].itemId).preview.payment.amountMinor, changedAmount);
+      assert.deepEqual(current.batch.display.totals, [{ currencyCode: "IRR", debitAmountMinor: "3221225472", creditAmountMinor: "3221225472" }]);
+      assert.deepEqual(await decide(p, firstInput), first); // Stable historical acknowledgement, no new authority.
+      p.resumeInput.expectedRunVersion = current.runVersion;
+      assert.equal((await resume(p)).code, "BATCH_UNAVAILABLE"); assert.equal(await runs.claimNextRun(), null);
+      const secondInput = body(current, "outer-second");
+      const decisions = await Promise.all([decide(p, secondInput), mcp("approve_ai_action_batch", { runId: p.id, ...secondInput })]);
+      assert.equal(decisions[0].code, "DECISION_APPROVED"); assert.deepEqual(decisions[0], decisions[1]);
+      p.resumeInput = { runId: p.id, ...secondInput, expectedRunVersion: (await runRow(p)).version, requestKey: "outer-resume" };
+      const queue = await resume(p); assert.deepEqual(await resume(p, "mcp"), queue); await work();
+      assert.equal((await runRow(p)).state, "succeeded");
+      assert.deepEqual(await metadata(p), { decisions: 2, resumes: 1, consumptions: 2, providers: 0 });
+      assert.equal((await pool.query("select status from journal_entry where id=$1", [p.drafts[0].id])).rows[0].status, "posted");
+      assert.deepEqual((await pool.query("select status,amount_paid::text,amount_due::text from invoice where id=$1", [p.paid.id])).rows[0], { status: "partial", amount_paid: changedAmount, amount_due: changedAmount });
+      assert.equal((await pool.query("select amount_paid::text from bill where id=$1", [p.payable.id])).rows[0].amount_paid, "0");
+      assert.equal((await pool.query("select count(*)::int n from journal_entry where id=any($1::uuid[]) and status='draft'", [[p.drafts[1].id, p.drafts[2].id]])).rows[0].n, 2);
+      assert.equal(sent.length, 0); assert.equal((await deliveryRows(p)).length, 0);
+      assert.ok((await consumptions(p)).every(c => c.batchId === current.batch.id));
+      const progressRequest = new Request("http://test.invalid/ai?limit=20", { headers: req().headers });
+      const progress = await data(await progressRoute.GET(progressRequest, params(p.id)));
+      assert.deepEqual(progress, await mcp("get_ai_run_progress", { runId: p.id, limit: 20 }));
+      assert.equal(progress.steps.filter((s: {code: string}) => s.code === "ACTION_COMPLETED").length, 2);
+      const receipts = await consumptions(p); assert.deepEqual(await resume(p), queue); assert.equal(await runs.claimNextRun(), null);
+      assert.deepEqual(await consumptions(p), receipts);
+
+      // Reject through either transport; the entire selected dependency chain stays unexecuted.
+      const rejected = await propose("USD", false), rejectInput = body(rejected.view, "outer-reject");
+      const rejections = await Promise.all([decide(rejected, rejectInput, true), mcp("reject_ai_action_batch", { runId: rejected.id, ...rejectInput })]);
+      assert.equal(rejections[0].code, "DECISION_REJECTED"); assert.deepEqual(rejections[0], rejections[1]);
+      assert.equal((await runRow(rejected)).state, "cancelled"); await assertPartial(rejected, 0);
+      assert.ok((await stepRows(rejected)).every(s => s.state === "skipped"));
+      assert.equal((await pool.query("select count(*)::int n from ai_action_batch where run_id=$1 and (authority is not null or display is not null)", [rejected.id])).rows[0].n, 0);
+      assert.equal((await resume(rejected)).code, "BATCH_CONFLICT"); assert.equal((await metadata(rejected)).consumptions, 0);
+
+      // Safe localized codes travel through real read/decision transports without business detail.
+      for (const change of ["resource", "expiry", "permission"] as const) {
+        const q = await propose("USD", false), input = body(q.view, `outer-${change}`);
+        if (change === "resource") await pool.query("update invoice set reference='edited after preview' where id=$1", [q.paid.id]);
+        if (change === "expiry") await pool.query("update ai_run set deadline_at=now()-interval '1 second',started_at=now()-interval '2 minutes' where id=$1", [q.id]);
+        if (change === "permission") await db.update(customRole).set({ permissions: permissions.filter(p => p !== "manage:payments") }).where(eq(customRole.id, role.id));
+        const expected = change === "resource" ? "BATCH_STALE" : change === "expiry" ? "BATCH_EXPIRED" : "BATCH_DENIED";
+        for (const result of [await read(q), await mcp("get_ai_action_batch", { runId: q.id }), await decide(q, input), await mcp("approve_ai_action_batch", { runId: q.id, ...input })]) {
+          assert.equal(result.code, expected); assert.equal(result.batch, null);
+          assert.deepEqual(result.recovery, change === "resource" ? ["refresh_preview"] : change === "permission" ? ["contact_administrator"] : ["inspect_run", "cancel_run"]);
+          assert.doesNotMatch(JSON.stringify(result), /saved@|Original|amountMinor|arguments/);
+        }
+        await db.update(customRole).set({ permissions }).where(eq(customRole.id, role.id));
+        await assertPartial(q, 0); assert.deepEqual(await metadata(q), { decisions: 0, resumes: 0, consumptions: 0, providers: 0 }); await stop(q);
+      }
+      const [approver] = await db.insert(users).values({ name: "Private independent approver", email: "ai008-approver@test.invalid" }).returning();
+      const [approverMember] = await db.insert(member).values({ organizationId: org.id, userId: approver.id, role: "owner" }).returning();
+      const workflow = (await pool.query("insert into approval_workflow (organization_id,name,entity_type,conditions) values ($1,'PRIVATE_APPROVAL_POLICY','journal_entry','[]'::jsonb) returning id", [org.id])).rows[0];
+      await pool.query("insert into approval_workflow_step (workflow_id,step_order,approver_id) values ($1,1,$2)", [workflow.id, approverMember.id]);
+      const policy = await propose("USD", false), policyInput = body(policy.view, "outer-business-policy");
+      assert.equal(policy.view.batch.canApprove, false);
+      for (const result of [await decide(policy, policyInput), await mcp("approve_ai_action_batch", { runId: policy.id, ...policyInput })]) {
+        assert.equal(result.code, "DECISION_BUSINESS_APPROVAL_REQUIRED"); assert.equal(result.batch, null);
+        assert.deepEqual(result.nextActors, ["independent_business_approver"]);
+        assert.deepEqual(result.recovery, ["complete_business_approval", "refresh_preview", "cancel_run"]);
+        for (const privateValue of [approver.id, approverMember.id, workflow.id, "PRIVATE_APPROVAL_POLICY", approver.name]) assert.ok(!JSON.stringify(result).includes(privateValue));
+      }
+      assert.equal((await resume(policy)).code, "BATCH_UNAVAILABLE");
+      // An organization owner still cannot decide or read a sibling user's run.
+      session = { user: { id: approver.id }, iat: Math.floor(Date.now() / 1000), expires: new Date(Date.now() + 3600000).toISOString() };
+      assert.equal((await read(policy)).code, "BATCH_NOT_FOUND"); assert.equal((await decide(policy, policyInput)).code, "BATCH_NOT_FOUND");
+      session = { user: { id: owner.id }, iat: Math.floor(Date.now() / 1000), expires: new Date(Date.now() + 3600000).toISOString() };
+      await assertPartial(policy, 0); assert.deepEqual(await metadata(policy), { decisions: 0, resumes: 0, consumptions: 0, providers: 0 });
+      await stop(policy); await pool.query("delete from approval_workflow where id=$1", [workflow.id]);
+      console.log("AI-008 outer action journey REST/MCP/SQL verified");
+      return;
+    }
     if (process.env.AI044_ACCEPTANCE === "true") {
       const noModel = async () => { throw new Error("Approved execution called the model"); };
       const inputFor = (p: Proposal, lease: string, n: number) => ({ runId: p.id, lease, batchId: p.resumeInput.batchId, itemId: p.items[n].itemId });

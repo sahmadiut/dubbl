@@ -748,3 +748,13 @@ No child alone qualifies sensitive execution or activates rollout.
 | [AI-052](../tasks/AI-052.md) | Execute approved journal posting and draft deletion atomically | AI-050 bounded child |
 | [AI-053](../tasks/AI-053.md) | Execute approved cash settlements at their transaction boundary | AI-050 bounded child |
 | [AI-054](../tasks/AI-054.md) | Fence approved saved-contact invoice email delivery and reconciliation | AI-050 bounded child |
+
+## AI-011 bounded dashboard delivery (2026-11-01)
+
+- [AI-055](../tasks/AI-055.md): Add filtered paginated organization-scoped AI usage reports.
+- [AI-056](../tasks/AI-056.md): Add site-session AI usage aggregates and scoped export.
+- [AI-057](../tasks/AI-057.md): Build bilingual immutable AI price and budget administration forms.
+- [AI-058](../tasks/AI-058.md): Expose scoped AI quota and run operations services.
+- [AI-059](../tasks/AI-059.md): Build bilingual scoped AI usage and operations dashboard views.
+
+AI-011 retains independent combined acceptance of its original requirements after all five children. Child completion does not qualify the assembled dashboard, site access, native Persian or live providers.

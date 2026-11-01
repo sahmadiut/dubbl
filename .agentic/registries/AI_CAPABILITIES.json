@@ -3,8 +3,8 @@
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
     "modules": 110,
-    "tools": 825,
-    "apiRoutes": 587,
+    "tools": 827,
+    "apiRoutes": 589,
     "pages": 210
   },
   "modules": [
@@ -139,7 +139,9 @@
       "tools": [
         "configure_ai_budget",
         "create_ai_price",
+        "export_ai_usage",
         "get_ai_usage",
+        "get_ai_usage_page",
         "list_ai_budgets",
         "list_ai_prices"
       ],
@@ -2971,7 +2973,7 @@
     {
       "name": "configure_ai_budget",
       "module": "ai-usage",
-      "line": 12,
+      "line": 15,
       "description": "Administration only; excluded from ordinary chat. Set an additional org or member budget in explicit billing currency using optimistic version. Costs are exact major-currency decimal strings, tokens integer strings. UTC-month token quota and global rate/concurrency cover all currencies; cost quota is currency-specific. Both org and user policies are required; zero disables. Requires manage:ai-policy.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -3145,7 +3147,7 @@
     {
       "name": "create_ai_price",
       "module": "ai-usage",
-      "line": 10,
+      "line": 13,
       "description": "Administration only; excluded from ordinary chat. Create an immutable organization-scoped price version for a delegated provider/model. Rates are exact decimal strings per MILLION tokens in explicit major billing currency, not cents. No live-price or invoice claim. Requires manage:ai-providers.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -5639,6 +5641,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "export_ai_usage",
+      "module": "ai-usage",
+      "line": 12,
+      "description": "Export complete filtered own or authorized organization AI usage groups as JSON with full per-currency totals. Uses the same filters and authorization as get_ai_usage_page; accepts no pagination. Maximum 93-day UTC window and 10000 groups; larger exports fail with 413 and require narrower filters, never silently truncate. Costs are exact estimated major billing-currency strings, not cents or invoices; null categories remain unknown. No transcripts, secrets or site-wide scope.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage-reports#exportUsageReport"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "export_all_csv_data",
       "module": "import-export",
       "line": 49,
@@ -6063,11 +6077,23 @@
     {
       "name": "get_ai_usage",
       "module": "ai-usage",
-      "line": 14,
+      "line": 17,
       "description": "Get own usage or explicitly authorized organization aggregates within a maximum 93-day UTC creation-time window. Groups remain separated by user/provider/model/billing currency. Token category nulls remain unknown; reported sums are partial observed totals. Charged cost includes conservative unknown reservations, is an estimate and is never a provider invoice. No prompts, outputs, credentials or transcript access. Own requires view:ai-history; org requires view:ai-usage.",
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/ai/usage#usageReport"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_usage_page",
+      "module": "ai-usage",
+      "line": 11,
+      "description": "Read a filtered page of own or permitted organization AI usage groups by user/provider/model/currency/immutable price version. Full filtered totals are separate from the page and separated by billing currency. Costs are exact major billing-currency decimal estimates, not cents or invoices; count strings stay exact and null token categories remain unknown. Reserved, in-flight, unknown and settled states are explicit. Maximum 93-day UTC window and 100 groups/page. Own requires view:ai-history; organization requires view:ai-usage. No transcripts or global access.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/usage-reports#usageReportPage"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -7880,7 +7906,7 @@
     {
       "name": "list_ai_budgets",
       "module": "ai-usage",
-      "line": 13,
+      "line": 16,
       "description": "Administration only; excluded from ordinary chat. List scoped organization/member budgets and current versions; costs are exact major billing-currency strings, never provider invoices or accounting entries. Requires manage:ai-policy.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -7917,7 +7943,7 @@
     {
       "name": "list_ai_prices",
       "module": "ai-usage",
-      "line": 11,
+      "line": 14,
       "description": "Administration only; excluded from ordinary chat. List up to 200 organization-scoped immutable price versions; integer rates are MICRO-major billing units per million tokens. Requires manage:ai-providers; returns no credentials.",
       "directPermissions": [],
       "directImportedCalls": [
@@ -13509,6 +13535,20 @@
     },
     {
       "source": "app/api/v1/ai/tools/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/usage/export/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/usage/report/route.ts",
       "methods": [
         "GET"
       ],

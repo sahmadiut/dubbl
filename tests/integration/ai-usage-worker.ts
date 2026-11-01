@@ -118,7 +118,7 @@ async function main() {
   try {
     assert.deepEqual(await call("list_ai_budgets", {}), (await data(await budgetRoute.GET(req()))).budgets);
     assert.deepEqual(await call("get_ai_usage", { ...query, scope: "organization" }), await meter.usageReport(ctx, { ...query, scope: "organization" }));
-    assert.equal((await client.listTools()).tools.length, 5); assert.equal(meter.AI_USAGE_ADMIN_TOOLS.size, 4);
+    assert.equal((await client.listTools()).tools.length, 7); assert.equal(meter.AI_USAGE_ADMIN_TOOLS.size, 4);
     // Existing server closure must honor current custom role changes.
     const [role] = await db.insert(customRole).values({ organizationId: org.id, name: "No AI reporting", permissions: ["view:data"] }).returning();
     await db.update(member).set({ customRoleId: role.id }).where(and(eq(member.organizationId, org.id), eq(member.userId, owner.id)));

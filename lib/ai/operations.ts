@@ -6,6 +6,7 @@ import { AuthError, type AuthContext } from "@/lib/api/auth-context";
 import { authorizeExecution, executionIdentity } from "@/lib/api/execution-identity";
 import { costDecimal, reportSchema } from "./usage";
 import { stopRun } from "./run-lifecycle";
+import { hasPermission } from "@/lib/plans";
 
 const id = z.string().uuid().transform(value => value.toLowerCase()).describe("Opaque UUID, checked within the authenticated organization.");
 const scope = reportSchema.shape.scope;
@@ -118,8 +119,9 @@ export async function getOperationRun(ctx: AuthContext, input: unknown) {
     if (!run) throw new AuthError("Run not found", 404);
     return { run, outcomes: await outcomes(tx, where) };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
-  await actor(ctx, permission);
-  return { ...result, reasonCode: result.run.cancelRequestedAt ? "STOP_REQUESTED" : `RUN_${result.run.state.toUpperCase()}` };
+  const finalActor = await actor(ctx, permission);
+  return { ...result, reasonCode: result.run.cancelRequestedAt ? "STOP_REQUESTED" : `RUN_${result.run.state.toUpperCase()}`,
+    canStop: hasPermission(finalActor.permissions ?? finalActor.role, value.scope === "own" ? "view:ai-history" : "manage:ai-policy") && !result.run.cancelRequestedAt && !["succeeded", "failed", "cancelled", "expired"].includes(result.run.state) };
 }
 export async function stopOperationRun(ctx: AuthContext, input: unknown) {
   const value = stopOperationSchema.parse(input), current = await actor(ctx, value.scope === "own" ? "view:ai-history" : "manage:ai-policy");

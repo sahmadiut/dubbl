@@ -5,7 +5,7 @@
     "modules": 112,
     "tools": 834,
     "apiRoutes": 597,
-    "pages": 210
+    "pages": 211
   },
   "modules": [
     {
@@ -6062,7 +6062,7 @@
       "name": "get_ai_operation_run",
       "module": "ai-operations",
       "line": 9,
-      "description": "Inspect own or authorized organization run UUID as sanitized state/version/timestamps, duration milliseconds and request/tool-state counts plus finite reason code. Grants no transcript, record or execution access. Requires own view:ai-history or organization view:ai-usage. Not model-callable.",
+      "description": "Inspect own or authorized organization run UUID as sanitized state/version/timestamps, duration milliseconds and request/tool-state counts plus finite reason code and current canStop affordance. canStop is advisory; Stop rechecks live authority and exact reviewed version. Grants no transcript, record or execution access. Requires own view:ai-history or organization view:ai-usage. Not model-callable.",
       "directPermissions": [],
       "directImportedCalls": [
         "@/lib/ai/operations#getOperationRun"
@@ -17783,6 +17783,7 @@
     "app/(dashboard)/sales/revenue-schedules/page.tsx",
     "app/(dashboard)/settings/advisors/page.tsx",
     "app/(dashboard)/settings/ai/page.tsx",
+    "app/(dashboard)/settings/ai/usage/page.tsx",
     "app/(dashboard)/settings/api-keys/page.tsx",
     "app/(dashboard)/settings/approval-workflows/page.tsx",
     "app/(dashboard)/settings/audit-log/page.tsx",

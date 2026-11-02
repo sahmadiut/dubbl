@@ -32,6 +32,7 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const st = useTranslations("SettingsNavigation");
+  const ai = useTranslations("AiDashboard");
   const GROUPS: NavGroup[] = [
     {
       label: st("organization"),
@@ -39,7 +40,8 @@ export default function SettingsLayout({
         { href: "/settings", label: st("general"), icon: Settings, exact: true },
         { href: "/settings/members", label: st("members"), icon: Users },
         { href: "/settings/roles", label: st("roles"), icon: ShieldCheck },
-        { href: "/settings/ai", label: st("ai"), icon: Sparkles },
+        { href: "/settings/ai", label: st("ai"), icon: Sparkles, exact: true },
+        { href: "/settings/ai/usage", label: ai("navigation"), icon: Sparkles },
         { href: "/settings/billing", label: st("billing"), icon: CreditCard },
         { href: "/settings/advisors", label: st("advisors"), icon: Shield },
         { href: "/settings/document-templates", label: st("templates"), icon: PaintbrushVertical },

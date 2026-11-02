@@ -5,7 +5,7 @@
     "modules": 112,
     "tools": 834,
     "apiRoutes": 597,
-    "pages": 210,
+    "pages": 211,
     "reviewedTools": 7,
     "unlistedTools": 827
   },
@@ -10163,6 +10163,11 @@
     },
     {
       "source": "app/(dashboard)/settings/ai/page.tsx",
+      "chatDisposition": "UI actions unsupported unless separately represented by a reviewed MCP operation",
+      "followUp": "AI-021"
+    },
+    {
+      "source": "app/(dashboard)/settings/ai/usage/page.tsx",
       "chatDisposition": "UI actions unsupported unless separately represented by a reviewed MCP operation",
       "followUp": "AI-021"
     },

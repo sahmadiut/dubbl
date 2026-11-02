@@ -78,5 +78,8 @@ Concurrent callers with the same version have one winner.
 
 These operations remain excluded from ordinary model tool discovery; new MCP
 registrations do not expand the seven reviewed model-callable domain tools.
-UI confirmation, localized dashboard views, native review and independent
-assembled acceptance remain AI-059/AI-011 work.
+AI-059 supplies confirmations and localized dashboard views; see
+[AI_USAGE_DASHBOARD](AI_USAGE_DASHBOARD.md). Run details also return advisory
+`canStop` from the final live authorization check and persisted state. Stop
+always rechecks live authority and reviewed version independently. Native review
+and independent AI-011 assembled acceptance remain separate.

@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 110,
-    "tools": 827,
-    "apiRoutes": 589,
+    "modules": 111,
+    "tools": 829,
+    "apiRoutes": 592,
     "pages": 210
   },
   "modules": [
@@ -119,6 +119,17 @@
       ],
       "apiImports": [
         "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-site-usage",
+      "source": "lib/mcp/tools/ai-site-usage.ts",
+      "tools": [
+        "export_ai_site_usage",
+        "get_ai_site_usage_page"
+      ],
+      "apiImports": [
+        "@/lib/api/require-site-admin"
       ]
     },
     {
@@ -5641,6 +5652,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "export_ai_site_usage",
+      "module": "ai-site-usage",
+      "line": 9,
+      "description": "Site administration only; excluded from ordinary chat. Requires a verified current site-admin session, never organization/API/OAuth credentials. Export complete filtered site AI usage as JSON grouped by organization/user/provider/model/currency/price version with full separate billing-currency totals. Same filters as get_ai_site_usage_page, no pagination. Positive UTC window up to 93 days and at most 10000 groups; larger exports fail with 413 and require narrower filters, never truncate. Costs are exact estimated major-currency decimal strings, not cents; null token categories remain unknown. No transcripts, credentials or provider calls.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/site-usage#exportSiteUsageReport"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "export_ai_usage",
       "module": "ai-usage",
       "line": 12,
@@ -6070,6 +6093,18 @@
       "directImportedCalls": [
         "@/lib/ai/run-progress#getRunProgress",
         "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_site_usage_page",
+      "module": "ai-site-usage",
+      "line": 8,
+      "description": "Site administration only; excluded from ordinary chat. Requires a verified current site-admin session, never organization/API/OAuth credentials. Read filtered AI usage grouped by organization/user/provider/model/currency/immutable price version, with full per-currency totals independent of page. Optional exact organization/user/provider/model/currency/price/state filters; positive UTC window up to 93 days, 1..100 groups/page. Counts and token sums are exact strings; null is unknown. Costs are estimated major billing-currency decimal strings, not cents or invoices. No transcripts or secrets.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/site-usage#siteUsageReportPage"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -13227,6 +13262,27 @@
         "POST"
       ],
       "domain": "accrual-schedules"
+    },
+    {
+      "source": "app/api/v1/admin/ai/mcp/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "admin"
+    },
+    {
+      "source": "app/api/v1/admin/ai/usage/export/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "admin"
+    },
+    {
+      "source": "app/api/v1/admin/ai/usage/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "admin"
     },
     {
       "source": "app/api/v1/admin/check/route.ts",

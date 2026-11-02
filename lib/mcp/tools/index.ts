@@ -1,4 +1,7 @@
 import { registerAiActionPreviewTools } from "./ai-action-previews";
+import { registerAiSiteUsageTools } from "./ai-site-usage";
+import type { SiteSessionContext } from "@/lib/api/require-site-admin";
+
 import { registerAiUsageTools } from "./ai-usage";
 import { registerAiToolPolicyTools } from "./ai-tool-policy";
 import { registerAiRunTools } from "./ai-runs";
@@ -222,4 +225,9 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerAiToolPolicyTools(server, ctx);
   registerAiRunTools(server, ctx);
   registerAiActionPreviewTools(server, ctx);
+}
+
+// Separate site registration: never install global operations on an org server.
+export function registerSiteTools(server: McpServer, ctx: SiteSessionContext) {
+  registerAiSiteUsageTools(server, ctx);
 }

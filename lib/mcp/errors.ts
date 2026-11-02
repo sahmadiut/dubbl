@@ -7,19 +7,21 @@ import { MissingExchangeRateError } from "@/lib/currency/converter";
 import { CurrencyRolloutError } from "@/lib/currency/rollout";
 import { stringifyWire, WireCompatibilityError, type WireRepresentation } from "@/lib/money/wire";
 import { revalidateToolIdentity } from "@/lib/api/execution-identity";
+import { assertSiteSession, type SiteSessionContext } from "@/lib/api/require-site-admin";
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
   isError?: boolean;
 };
 
-export function wrapTool<T>(
-  ctx: AuthContext,
-  handler: (ctx: AuthContext) => Promise<T>,
+export function wrapTool<T, C extends AuthContext | SiteSessionContext = AuthContext>(
+  ctx: C,
+  handler: (ctx: C) => Promise<T>,
   representation: WireRepresentation = "legacy",
 ): Promise<ToolResult> {
   return Promise.resolve().then(async () => {
-    await revalidateToolIdentity(ctx);
+    if ("kind" in ctx && ctx.kind === "site-session") await assertSiteSession(ctx);
+    else await revalidateToolIdentity(ctx as AuthContext);
     return handler(ctx);
   })
     .then((result) => ({

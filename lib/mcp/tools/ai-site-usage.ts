@@ -1,0 +1,10 @@
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { SiteSessionContext } from "@/lib/api/require-site-admin";
+import { siteUsageFilterSchema, siteUsagePageSchema } from "@/lib/ai/usage-reports";
+import { siteUsageReportPage, exportSiteUsageReport } from "@/lib/ai/site-usage";
+import { wrapTool } from "../errors";
+
+export function registerAiSiteUsageTools(server: McpServer, ctx: SiteSessionContext) {
+  server.registerTool("get_ai_site_usage_page", { description: "Site administration only; excluded from ordinary chat. Requires a verified current site-admin session, never organization/API/OAuth credentials. Read filtered AI usage grouped by organization/user/provider/model/currency/immutable price version, with full per-currency totals independent of page. Optional exact organization/user/provider/model/currency/price/state filters; positive UTC window up to 93 days, 1..100 groups/page. Counts and token sums are exact strings; null is unknown. Costs are estimated major billing-currency decimal strings, not cents or invoices. No transcripts or secrets.", inputSchema: siteUsagePageSchema }, input => wrapTool(ctx, () => siteUsageReportPage(ctx, input)));
+  server.registerTool("export_ai_site_usage", { description: "Site administration only; excluded from ordinary chat. Requires a verified current site-admin session, never organization/API/OAuth credentials. Export complete filtered site AI usage as JSON grouped by organization/user/provider/model/currency/price version with full separate billing-currency totals. Same filters as get_ai_site_usage_page, no pagination. Positive UTC window up to 93 days and at most 10000 groups; larger exports fail with 413 and require narrower filters, never truncate. Costs are exact estimated major-currency decimal strings, not cents; null token categories remain unknown. No transcripts, credentials or provider calls.", inputSchema: siteUsageFilterSchema }, input => wrapTool(ctx, () => exportSiteUsageReport(ctx, input)));
+}

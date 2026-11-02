@@ -41,18 +41,26 @@ function displayCosts<T extends { chargedCost: string; settledCost: string; rese
   return { ...row, chargedCost: costDecimal(row.chargedCost), settledCost: costDecimal(row.settledCost), reservedCost: costDecimal(row.reservedCost), unresolvedCost: costDecimal(row.unresolvedCost) };
 }
 
-async function report(ctx: AuthContext, input: unknown, exporting: boolean) {
-  const value = exporting ? { ...usageFilterSchema.parse(input), page: 1, pageSize: USAGE_EXPORT_GROUP_LIMIT } : usagePageSchema.parse(input);
-  const permission = value.scope === "own" ? "view:ai-history" : "view:ai-usage";
-  const identity = executionIdentity(ctx);
-  const current = await authorizeExecution(identity, ctx.organizationId, permission);
-  if (value.scope === "own" && value.userId && value.userId !== current.userId) throw new AuthError("Own usage cannot select another user", 403);
+export const siteUsageFilterSchema = usageFilterSchema.omit({ scope: true }).extend({
+  organizationId: scopedId.optional().describe("Optional exact organization UUID. Only a verified site administrator session can read across organizations."),
+  userId: scopedId.optional().describe("Optional exact usage-owner UUID across site organizations; does not grant transcript access."),
+  providerId: scopedId.optional().describe("Optional exact platform provider UUID across site organizations."),
+}).strict();
+export const siteUsagePageSchema = siteUsageFilterSchema.extend(usagePageSchema.pick({ page: true, pageSize: true }).shape).strict();
+
+/** Internal read primitive; callers must establish and recheck their own authority.
+ * Site grouping includes organization even when two tenants share user/provider/model.
+ */
+export async function readUsageGroups(value: z.output<typeof siteUsagePageSchema>, exporting: boolean, site = false) {
+  if (!site && !value.organizationId) throw new AuthError("Organization scope required", 403);
+  const reportKeys = site ? { organizationId: attempt.organizationId, ...keys } : keys;
+  const columns = site ? [attempt.organizationId, ...groupColumns] : groupColumns;
   const from = new Date(value.from), to = new Date(value.to);
   if (to <= from || to.getTime() - from.getTime() > 93 * 86400000) throw new AuthError("Report window must be positive and at most 93 days", 400);
   const where = and(
-    eq(attempt.organizationId, current.organizationId),
+    value.organizationId ? eq(attempt.organizationId, value.organizationId) : undefined,
     sql`${attempt.createdAt} >= ${from} and ${attempt.createdAt} < ${to}`,
-    value.scope === "own" ? eq(attempt.ownerId, current.userId) : value.userId ? eq(attempt.ownerId, value.userId) : undefined,
+    value.userId ? eq(attempt.ownerId, value.userId) : undefined,
     value.providerId ? eq(attempt.providerId, value.providerId) : undefined,
     value.model ? eq(attempt.model, value.model) : undefined,
     value.currency ? eq(attempt.currency, value.currency) : undefined,
@@ -61,15 +69,24 @@ async function report(ctx: AuthContext, input: unknown, exporting: boolean) {
   );
   // A single MVCC snapshot keeps group count, full totals and page/export coherent
   // while provider callbacks settle usage concurrently. No locks on execution.
-  const result = await db.transaction(async tx => {
-    const grouped = tx.select(keys).from(attempt).where(where).groupBy(...groupColumns).as("usage_groups");
+  return db.transaction(async tx => {
+    const grouped = tx.select(reportKeys).from(attempt).where(where).groupBy(...columns).as("usage_groups");
     const [count] = await tx.select({ total: sql<string>`count(*)::text` }).from(grouped);
     if (exporting && BigInt(count.total) > BigInt(USAGE_EXPORT_GROUP_LIMIT)) throw new AuthError("Usage export exceeds 10000 groups; narrow the report filters", 413);
     const totals = await tx.select({ currency: attempt.currency, ...metrics }).from(attempt).where(where).groupBy(attempt.currency).orderBy(asc(attempt.currency));
-    const groups = await tx.select({ ...keys, ...metrics }).from(attempt).where(where).groupBy(...groupColumns).orderBy(...groupColumns.map(column => asc(column)))
+    const groups = await tx.select({ ...reportKeys, ...metrics }).from(attempt).where(where).groupBy(...columns).orderBy(...columns.map(column => asc(column)))
       .limit(value.pageSize).offset((value.page - 1) * value.pageSize);
     return { groups: groups.map(displayCosts), totalsByCurrency: totals.map(displayCosts), totalGroups: count.total };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
+async function report(ctx: AuthContext, input: unknown, exporting: boolean) {
+  const value = exporting ? { ...usageFilterSchema.parse(input), page: 1, pageSize: USAGE_EXPORT_GROUP_LIMIT } : usagePageSchema.parse(input);
+  const permission = value.scope === "own" ? "view:ai-history" : "view:ai-usage";
+  const identity = executionIdentity(ctx);
+  const current = await authorizeExecution(identity, ctx.organizationId, permission);
+  if (value.scope === "own" && value.userId && value.userId !== current.userId) throw new AuthError("Own usage cannot select another user", 403);
+  const result = await readUsageGroups({ ...value, organizationId: current.organizationId, userId: value.scope === "own" ? current.userId : value.userId }, exporting);
   // An existing MCP closure or long export must not retain revoked access.
   await authorizeExecution(identity, current.organizationId, permission);
   const { page, pageSize, ...filters } = value;

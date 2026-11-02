@@ -2,12 +2,12 @@
   "version": 1,
   "interpretation": "Exhaustive source disposition, not a full feature claim. Every unlisted tool, REST method and UI action is unsupported by chat. Shared domain names and source presence do not prove per-operation parity. Frozen/security/provider operations cannot be enabled by follow-up work without applicable owner authorization. Policies default to deny; this registry does not enable runtime/providers.",
   "counts": {
-    "modules": 110,
-    "tools": 827,
-    "apiRoutes": 589,
+    "modules": 111,
+    "tools": 829,
+    "apiRoutes": 592,
     "pages": 210,
     "reviewedTools": 7,
-    "unlistedTools": 820
+    "unlistedTools": 822
   },
   "modules": [
     {
@@ -242,6 +242,22 @@
         },
         {
           "name": "submit_ai_run",
+          "status": "not-allowlisted"
+        }
+      ]
+    },
+    {
+      "module": "ai-site-usage",
+      "source": "lib/mcp/tools/ai-site-usage.ts",
+      "followUp": null,
+      "disposition": "excluded-from-chat-security-provider-or-frozen-scope",
+      "tools": [
+        {
+          "name": "export_ai_site_usage",
+          "status": "not-allowlisted"
+        },
+        {
+          "name": "get_ai_site_usage_page",
           "status": "not-allowlisted"
         }
       ]
@@ -4442,6 +4458,30 @@
         "POST"
       ],
       "domain": "accrual-schedules",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/admin/ai/mcp/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "admin",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/admin/ai/usage/export/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "admin",
+      "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
+    },
+    {
+      "source": "app/api/v1/admin/ai/usage/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "admin",
       "chatDisposition": "not-directly-dispatchable; only independently reviewed MCP contracts may be used"
     },
     {

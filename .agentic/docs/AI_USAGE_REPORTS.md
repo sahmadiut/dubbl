@@ -17,8 +17,8 @@ Every query is pinned to the authenticated organization. Organization scope may
 filter another user within that organization; own scope rejects another user
 with 403. Foreign or unmatched resource filters return no groups, without
 disclosing whether those resources exist elsewhere. Organization IDs and site
-scope are not accepted as query filters. Site-session aggregates belong to
-AI-056; an organization credential cannot request global usage.
+scope are not accepted as query filters. AI-056 adds separate site-session
+operations described below; an organization credential cannot request global usage.
 
 Inputs are strict: inclusive `from` and exclusive `to` are UTC ISO instants,
 with a positive window of at most 93 days. Optional filters are `userId`,
@@ -80,3 +80,43 @@ run operations belong to AI-058, forms to AI-057, and bilingual dashboard
 presentation to AI-059. The two new MCP operations remain outside the reviewed
 automatic chat catalog. Native Persian, deployed provider/worker behavior and
 production activation remain separate gates.
+
+## Site-session reports and exports
+
+AI-056, 2026-11-02. `GET /api/v1/admin/ai/usage` and
+`GET /api/v1/admin/ai/usage/export` use the existing site-session boundary,
+independently of organization membership. No dummy organization, organization
+role, or transcript permission is required or implied. These operations require
+a current authenticated session and the current database `isSiteAdmin` flag.
+Session expiry/revocation and the site flag are checked before aggregation and
+again before disclosure. All Authorization headers are rejected, even alongside
+a valid site-admin cookie: API keys and organization OAuth tokens retain their
+existing organization authority.
+
+Site inputs omit `scope` and add an optional exact `organizationId` UUID filter.
+They retain the date/user/provider/model/currency/price/state filters and strict
+validation above. `x-organization-id` does not select or constrain site scope;
+only the explicit validated filter does. Rows group and sort by organization
+UUID first, then the existing grouping keys. Full filtered totals stay separated
+by billing currency; they can span organizations only under site authority.
+Response `scope` is `site`, with no synthetic organization ID. Empty results,
+partial observations, exact decimals, per-request read-only snapshot semantics,
+page bounds and complete 10000-group export limit are shared with scoped
+reports. A successful REST export uses the fixed `ai-site-usage.json` filename.
+The service selects only the same content-free usage columns plus organization
+UUID; it never joins transcripts, names, credentials or snapshot contents.
+
+`POST /api/v1/admin/ai/mcp` supplies matching `get_ai_site_usage_page` and
+`export_ai_site_usage` operations through a separate stateless MCP JSON server.
+It uses authenticated cookie sessions, rejects cross-origin requests when an
+Origin header is present, and supplies no wildcard CORS or bearer-token upgrade.
+It is a same-origin administrative integration, not a new OAuth service for
+external clients. All site tools use `wrapTool()` and a server-bound site-session
+reference; a fabricated context or organization context fails closed. Existing
+MCP closures recheck the original session and live site flag on every call.
+The ordinary organization MCP server never registers these operations, and
+they are explicitly excluded from chat coverage. MCP uses direct shared DB
+services without REST self-calls. All successful responses use private/no-store.
+
+No schema, provider call, execution authority, quota control or UI is added.
+AI-057/058/059 and AI-011 assembled dashboard acceptance remain separate.

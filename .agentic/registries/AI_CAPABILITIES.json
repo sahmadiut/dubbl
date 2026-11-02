@@ -2,9 +2,9 @@
   "version": 1,
   "interpretation": "Static source discovery only. Direct permissions/calls exclude transitive helpers and dynamic guards. Empty permissions are NOT permissionless. Names/descriptions do not prove reads, safe writes, shared-service parity or authorization. All tools remain disabled for chat until individually reviewed in AI-006.",
   "counts": {
-    "modules": 111,
-    "tools": 829,
-    "apiRoutes": 592,
+    "modules": 112,
+    "tools": 834,
+    "apiRoutes": 597,
     "pages": 210
   },
   "modules": [
@@ -81,6 +81,20 @@
         "delete_ai_conversation",
         "get_ai_conversation",
         "list_ai_conversations"
+      ],
+      "apiImports": [
+        "@/lib/api/auth-context"
+      ]
+    },
+    {
+      "module": "ai-operations",
+      "source": "lib/mcp/tools/ai-operations.ts",
+      "tools": [
+        "disable_ai_operation_config",
+        "get_ai_operation_run",
+        "get_ai_quota",
+        "list_ai_operation_runs",
+        "stop_ai_operation_run"
       ],
       "apiImports": [
         "@/lib/api/auth-context"
@@ -5503,6 +5517,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "disable_ai_operation_config",
+      "module": "ai-operations",
+      "line": 11,
+      "description": "Disable one organization provider configuration by UUID and exact reviewed version, requiring manage:ai-providers. Works after delegation withdrawal and while runtime is off. Preserves credentials/history; prevents future dispatch under existing configuration checks, does not roll back in-flight work. Returns only id/version/enabled. Stale versions fail 409. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/operations#disableOperationConfig"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "discard_project_timer",
       "module": "project-master",
       "line": 8,
@@ -6028,6 +6054,30 @@
       "directImportedCalls": [
         "@/lib/ai/persistence#getConversation",
         "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_operation_run",
+      "module": "ai-operations",
+      "line": 9,
+      "description": "Inspect own or authorized organization run UUID as sanitized state/version/timestamps, duration milliseconds and request/tool-state counts plus finite reason code. Grants no transcript, record or execution access. Requires own view:ai-history or organization view:ai-usage. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/operations#getOperationRun"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "get_ai_quota",
+      "module": "ai-operations",
+      "line": 7,
+      "description": "Explain own or authorized organization current UTC-month quota for an explicit billing currency. Full observed partial token sums, settled/reserved/unresolved cost estimates in exact major billing-currency decimal strings (not cents), active runs, remaining org/member constraints and reset instant. Tokens/rate/concurrency cover every currency; costs stay separate. Missing and zero budgets deny admission; within-limits is never execution authority or provider readiness. No transcripts. Own requires view:ai-history; organization requires view:ai-usage. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/operations#getQuota"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -7959,6 +8009,18 @@
       "directImportedCalls": [
         "@/lib/ai/persistence#listConversations",
         "@/lib/mcp/errors#wrapTool"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
+      "name": "list_ai_operation_runs",
+      "module": "ai-operations",
+      "line": 8,
+      "description": "Page through own or permitted organization content-free run operations in a maximum 93-day UTC creation window. Returns deterministic bounded rows, full filtered request/tool outcome counts and summed duration milliseconds with sample counts independent of page. Duration includes waits, null without start/finish. No transcripts, tool arguments, provider diagnostics or domain links. Requires own view:ai-history or organization view:ai-usage. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/operations#listOperationRuns"
       ],
       "directDatabase": false,
       "exposure": "disabled-pending-AI-006-review"
@@ -11432,6 +11494,18 @@
       "exposure": "disabled-pending-AI-006-review"
     },
     {
+      "name": "stop_ai_operation_run",
+      "module": "ai-operations",
+      "line": 10,
+      "description": "Request Stop for an own run (view:ai-history) or organization run (manage:ai-policy) with exact reviewed version; stale versions fail 409. Available with runtime off. Skips prepared work; completed effects remain and in-flight outcomes may require reconciliation. Never retries, rolls back or executes work. No transcripts. Not model-callable.",
+      "directPermissions": [],
+      "directImportedCalls": [
+        "@/lib/ai/operations#stopOperationRun"
+      ],
+      "directDatabase": false,
+      "exposure": "disabled-pending-AI-006-review"
+    },
+    {
       "name": "stop_timer",
       "module": "time-tracking",
       "line": 298,
@@ -13405,6 +13479,41 @@
       "source": "app/api/v1/ai/conversations/route.ts",
       "methods": [
         "GET",
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/operations/disable/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/operations/quota/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/operations/run/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/operations/runs/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "domain": "ai"
+    },
+    {
+      "source": "app/api/v1/ai/operations/stop/route.ts",
+      "methods": [
         "POST"
       ],
       "domain": "ai"

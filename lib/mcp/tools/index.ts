@@ -3,6 +3,7 @@ import { registerAiSiteUsageTools } from "./ai-site-usage";
 import type { SiteSessionContext } from "@/lib/api/require-site-admin";
 
 import { registerAiUsageTools } from "./ai-usage";
+import { registerAiOperationTools } from "./ai-operations";
 import { registerAiToolPolicyTools } from "./ai-tool-policy";
 import { registerAiRunTools } from "./ai-runs";
 import { registerDocumentRenderingTools } from "./document-rendering";
@@ -222,6 +223,7 @@ export function registerAllTools(server: McpServer, ctx: AuthContext) {
   registerAiHistoryTools(server, ctx);
   registerAiProviderTools(server, ctx);
   registerAiUsageTools(server, ctx);
+  registerAiOperationTools(server, ctx);
   registerAiToolPolicyTools(server, ctx);
   registerAiRunTools(server, ctx);
   registerAiActionPreviewTools(server, ctx);

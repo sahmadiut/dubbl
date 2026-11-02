@@ -105,9 +105,17 @@ export async function getRunEvents(ctx: AuthContext, input: unknown) {
 /** Stop is available even while runtime is disabled. An in-flight effect is not rolled back. */
 export async function cancelRun(ctx: AuthContext, input: unknown) {
   const { runId } = runIdSchema.parse(input), current = await actor(ctx, "view:ai-history");
+  return stopRun(current, runId);
+}
+
+/** Operations callers establish explicit own or organization authority; no transcript read. */
+export async function stopRun(current: AuthContext, runId: string, expectedVersion?: number, organizationScope = false) {
+  const permission = organizationScope ? "manage:ai-policy" : "view:ai-history";
   return db.transaction(async tx => {
-    const [run] = await tx.select().from(aiRun).where(own(current, runId)).for("update");
+    const [run] = await tx.select().from(aiRun).where(and(eq(aiRun.id, runId), eq(aiRun.organizationId, current.organizationId), organizationScope ? undefined : eq(aiRun.ownerId, current.userId))).for("update");
+    await actor(current, permission);
     if (!run || !await activeConversation(tx, run)) throw new AuthError("Run not found or expired", 404);
+    if (expectedVersion !== undefined && run.version !== expectedVersion) throw new AuthError("Run version conflict", 409);
     if (terminal.has(run.state) || run.cancelRequestedAt) return publicRun(run);
     const steps = await tx.select().from(aiStep).where(eq(aiStep.runId, runId));
     const uncertain = steps.some(s => s.state === "uncertain"), executing = steps.some(s => s.state === "executing");
@@ -118,6 +126,7 @@ export async function cancelRun(ctx: AuthContext, input: unknown) {
     await eraseActionBatches(tx, run.id, "cancelled");
     await closeProviderAttempts(tx, run);
     await audit(tx, current, run.id, "ai.run.stop_requested");
+    await actor(current, permission);
     return publicRun(changed);
   });
 }

@@ -82,7 +82,9 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
     const [providers, configs, policies] = await Promise.all([
       read(
         platform ? "provider-catalog/platform" : "provider-catalog",
-        z.object({ providers: z.array(providerDto) }).transform((v) => v.providers)
+        z
+          .object({ providers: z.array(providerDto) })
+          .transform((v) => v.providers)
       ),
       platform
         ? Promise.resolve({})
@@ -122,7 +124,13 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
 
     try {
       const responseSchema = resolveResponseSchema(path);
-      await adminRequest(organization.current, path, responseSchema, method, body);
+      await adminRequest(
+        organization.current,
+        path,
+        responseSchema,
+        method,
+        body
+      );
       setNotice({ success: path.endsWith("/test") ? "connected" : "saved" });
       await load();
     } catch (err) {
@@ -141,7 +149,7 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
     return (
       <p
         role="alert"
-        className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+        className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive shadow-2xs"
       >
         {errors(error)}
       </p>
@@ -154,14 +162,17 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
     ) ?? [];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8" aria-busy={loading || busy}>
+    <div
+      className="mx-auto max-w-5xl space-y-8 pb-12"
+      aria-busy={loading || busy}
+    >
       {/* Page Header */}
-      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t(platform ? "platformTitle" : "title")}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             {t(platform ? "platformHelp" : "help")}
           </p>
         </div>
@@ -173,7 +184,7 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
             setNotice({});
             void load();
           }}
-          className="shrink-0 self-start sm:self-auto"
+          className="shrink-0 self-start shadow-2xs sm:self-auto"
         >
           {t("reload")}
         </Button>
@@ -183,7 +194,7 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
       {notice.error && (
         <p
           role="alert"
-          className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive shadow-xs"
+          className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3.5 text-sm font-medium text-destructive shadow-xs"
         >
           {errors(notice.error)}
         </p>
@@ -192,7 +203,7 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
       {notice.success && (
         <p
           role="status"
-          className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-700 dark:text-emerald-300 shadow-xs"
+          className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3.5 text-sm font-medium text-emerald-700 shadow-xs dark:text-emerald-300"
         >
           {t(notice.success)}
         </p>
@@ -200,17 +211,20 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
 
       {/* Main Content */}
       {loading ? (
-        <div className="rounded-xl border bg-card p-8 text-center shadow-xs">
-          <p role="status" className="text-sm font-medium text-muted-foreground animate-pulse">
+        <div className="rounded-2xl border bg-card p-10 text-center shadow-2xs">
+          <p
+            role="status"
+            className="text-sm font-medium text-muted-foreground animate-pulse"
+          >
             {t("loading")}
           </p>
         </div>
       ) : (
-        <div key={generation} className="space-y-10">
+        <div key={generation} className="space-y-12">
           {/* Providers / Configurations Section */}
-          <section className="space-y-5">
-            <div className="border-b pb-2">
-              <h2 className="text-lg font-semibold tracking-tight">
+          <section className="space-y-6">
+            <div className="border-b pb-3">
+              <h2 className="text-lg font-semibold tracking-tight text-foreground">
                 {t(platform ? "providerCatalog" : "providerConfigurations")}
               </h2>
             </div>
@@ -238,7 +252,7 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
                 {state.configs.data && state.providers.data && (
                   <>
                     {state.providers.data.length === 0 && (
-                      <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                      <p className="rounded-xl border border-dashed bg-muted/20 p-8 text-center text-sm text-muted-foreground">
                         {t("noProviders")}
                       </p>
                     )}
@@ -276,9 +290,9 @@ export function AiManagement({ platform = false }: { platform?: boolean }) {
 
           {/* Tool Policies Section */}
           {!platform && (
-            <section className="space-y-5">
+            <section className="space-y-6">
               <div className="space-y-1 border-b pb-3">
-                <h2 className="text-lg font-semibold tracking-tight">
+                <h2 className="text-lg font-semibold tracking-tight text-foreground">
                   {t("toolPolicies")}
                 </h2>
                 <p className="text-sm text-muted-foreground">

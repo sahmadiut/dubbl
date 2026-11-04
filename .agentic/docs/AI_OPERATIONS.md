@@ -1,7 +1,8 @@
 # Scoped AI quota and run operations
 
-AI-058 supplies backend services for AI-059's dashboard. AI-011 retains assembled
-dashboard acceptance. No runtime, provider, deployment or rollout is enabled.
+AI-058 supplies backend services for AI-059's dashboard. AI-011 assembled technical
+acceptance is recorded in [AI-011-attempt-1](../evidence/AI-011-attempt-1.md).
+No runtime, provider, deployment or rollout is enabled.
 
 All five REST endpoints under `/api/v1/ai/operations` call the same
 `lib/ai/operations.ts` services as the registered MCP tools. Responses use
@@ -82,4 +83,4 @@ AI-059 supplies confirmations and localized dashboard views; see
 [AI_USAGE_DASHBOARD](AI_USAGE_DASHBOARD.md). Run details also return advisory
 `canStop` from the final live authorization check and persisted state. Stop
 always rechecks live authority and reviewed version independently. Native review
-and independent AI-011 assembled acceptance remain separate.
+and production qualification remain separate from assembled fixture acceptance.

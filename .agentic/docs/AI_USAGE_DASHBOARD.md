@@ -3,7 +3,8 @@
 AI-059 adds `/settings/ai/usage` to existing settings navigation, with distinct
 My usage and organization views. `/admin/ai` embeds a separate site-session
 aggregate dashboard. Site requests need no organization and never load
-organization run controls. AI-011 retains independent assembled acceptance.
+organization run controls. AI-011 assembled technical acceptance is recorded in
+[AI-011-attempt-1](../evidence/AI-011-attempt-1.md).
 
 The browser uses AI-055/056 reporting/export endpoints and AI-058 operations,
 with their existing matching MCP tools. No provider calls, rollout changes,
@@ -71,3 +72,22 @@ state, and a disposable PostgreSQL integration drives the browser controller
 through actual REST handlers. These qualify the tested interactions, not actual
 browser viewport/zoom, screen-reader behavior or native Persian approval.
 Those and production session/provider/deployment/activation gates remain open.
+
+## Assembled acceptance
+
+The independent AI-011 fixture runs both production browser controllers through
+real REST handlers and linked organization/site MCP against one migrated,
+disposable PostgreSQL database. It creates immutable prices and both budgets,
+then checks historical usage, exact remaining quota, zero-limit changes and
+version conflicts across transports. MCP Stop invalidates the dashboard's
+reviewed version; dashboard Disable invalidates MCP's reviewed version.
+Completed steps, credentials, the site provider catalog and usage history remain
+intact. Ordinary users, usage-only auditors, foreign organizations and revoked
+site administrators exercise the same assembled views without transcript grants.
+
+The combined regression command also exercises full filtered pagination and
+exports, separate currencies, unknown usage, authorization rechecks, concurrent
+operations and the bilingual component interactions. This is technical fixture
+acceptance; it does not qualify live providers, production sessions or browsers,
+native Persian, deployment or rollout. AI-012/013 and the existing product and
+release follow-ups retain those obligations.

@@ -1,7 +1,8 @@
 # AI price and budget forms
 
 AI-057, 2026-11-02. Organization `/settings/ai` now includes a separate
-price/budget workspace. AI-011 dashboard acceptance remains open.
+price/budget workspace. AI-011 assembled technical acceptance is recorded in
+[AI-011-attempt-1](../evidence/AI-011-attempt-1.md).
 
 Prices require `manage:ai-providers` and a currently delegated provider/model.
 Budgets require `manage:ai-policy`; member selection uses current organization
@@ -57,4 +58,5 @@ inline validation descriptions and first-invalid-field focus; controls use
 logical spacing, minimum 44px heights, wrapping buttons and isolated identifiers.
 No browser viewport/zoom, screen-reader, native Persian, live-provider or
 production authentication qualification is claimed by these component tests.
-AI-058/059 and AI-011 retain operations/dashboard integration acceptance.
+AI-058/059 supply operations/dashboard integration; see
+[assembled dashboard acceptance](AI_USAGE_DASHBOARD.md#assembled-acceptance).

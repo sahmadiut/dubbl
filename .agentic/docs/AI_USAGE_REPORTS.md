@@ -1,7 +1,8 @@
 # Filtered AI usage reports
 
-AI-055, 2026-11-01. Backend foundation for AI-011, whose assembled dashboard
-acceptance remains open. Existing `GET /api/v1/ai/usage` and `get_ai_usage`
+AI-055, 2026-11-01. Backend foundation for AI-011; assembled technical acceptance
+is recorded in [AI-011-attempt-1](../evidence/AI-011-attempt-1.md).
+Existing `GET /api/v1/ai/usage` and `get_ai_usage`
 retain their original contracts.
 
 ## Operations and scope
@@ -118,5 +119,6 @@ The ordinary organization MCP server never registers these operations, and
 they are explicitly excluded from chat coverage. MCP uses direct shared DB
 services without REST self-calls. All successful responses use private/no-store.
 
-No schema, provider call, execution authority, quota control or UI is added.
-AI-057/058/059 and AI-011 assembled dashboard acceptance remain separate.
+AI-056 added no schema, provider call, execution authority, quota control or UI.
+AI-057/058/059 supply those forms, operations and dashboard views; see
+[assembled dashboard acceptance](AI_USAGE_DASHBOARD.md#assembled-acceptance).
